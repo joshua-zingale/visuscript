@@ -10,41 +10,61 @@ mod action;
 mod array;
 
 use crate::array::*;
+use crate::action::*;
 
 pub fn init() {
 
+
     let (request_sender, request_reciever) = mpsc::channel();
+    let (data_sender, data_reciever) = mpsc::channel();
 
     thread::spawn(move || {
-        web_server::run(request_sender)
+        web_server::run(data_reciever, request_sender);
     });
 
     App::new()
         .add_plugins(DefaultPlugins)
-        // .insert_non_send_resource(request_reciever)
+        .insert_non_send_resource(request_reciever)
+        .insert_non_send_resource(data_sender)
         .add_event::<InsertToArrayEvent>()
         .add_event::<RemoveFromArrayEvent>()
         .add_event::<SwapInArrayEvent>()
         .add_systems(Startup, setup)
         // .add_systems(Update, cursor_position)
         .add_systems(Update, (debug_array, insert_to_arrays, remove_from_arrays, swap_in_arrays, align_arrays, move_transforms_toward_transform_targets).chain())
-        // .add_systems(Update, move_text)
+        .add_systems(Update, debug_http)
         .run();
+
+        
+
+
 }
 
 
 
-// fn debug_http(
-//     rx: NonSend<mpsc::Receiver<i32>>,
-//     array: Single<Entity, With<Array>>,
-//     mut ev_inserts: EventWriter<InsertToArrayEvent>
-// ) {
-//     let array = array.into_inner();
-//     while let Ok(r) = rx.try_recv() {
-//         ev_inserts.send(InsertToArrayEvent { entity: array, value: "h".to_string(), index: 0 });
-//         println!("HERE!lsls");
-//     }
-// }
+fn debug_http(
+    request_receiver: NonSend<mpsc::Receiver<action::Action>>,
+    request_sender: NonSend<mpsc::Sender<Entity>>,
+    mut ev_inserts: EventWriter<InsertToArrayEvent>,
+    mut commands: Commands,
+) {
+
+    if let Ok(r) = request_receiver.try_recv(){
+        let entity = match r {
+            Action::Create(Structure::Array) => {
+                commands.spawn(Array::new()).id()
+            },
+            Action::Insert(entity, value, index) => {
+                ev_inserts.send(InsertToArrayEvent { entity: entity, value: value, index: index });
+                entity
+            },
+            _ => {panic!("Not implemented for debug_http!");}
+        };
+
+        request_sender.send(entity);
+
+    }
+}
 
 
 // fn cursor_position(
@@ -72,11 +92,11 @@ fn setup(mut commands: Commands) {
     commands.spawn(Camera2d);
     
 
-    let array = commands.spawn(Array::new()).id();
+    // let array = commands.spawn(Array::new()).id();
 
-    let cell2 = commands.spawn(ArrayCell::new("1".to_string())).id();
+    // let cell2 = commands.spawn(ArrayCell::new("1".to_string())).id();
 
-    commands.entity(array).add_children(&[cell2]);
+    // commands.entity(array).add_children(&[cell2]);
 
 }
 
@@ -200,25 +220,27 @@ fn swap_in_arrays(
 
 fn debug_array(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    array: Single<Entity, With<Array>>,
+    array_query: Query<Entity, With<Array>>,
     mut ev_inserts: EventWriter<InsertToArrayEvent>,
     mut ev_removals: EventWriter<RemoveFromArrayEvent>,
     mut ev_swaps: EventWriter<SwapInArrayEvent>,
 ) {
-    let array = array.into_inner();
-    if keyboard_input.just_pressed(KeyCode::Digit0) {
-        ev_inserts.send(InsertToArrayEvent { entity: array, value: "0".to_string(), index: 0});
+    for array in array_query.iter() {
+        if keyboard_input.just_pressed(KeyCode::Digit0) {
+            ev_inserts.send(InsertToArrayEvent { entity: array, value: "0".to_string(), index: 0});
+        }
+        if keyboard_input.just_pressed(KeyCode::Digit7) {
+            ev_inserts.send(InsertToArrayEvent { entity: array, value: "7".to_string(), index: 0});
+        }
+        if keyboard_input.just_pressed(KeyCode::KeyR) {
+            ev_removals.send(RemoveFromArrayEvent { entity: array, index: 4});
+        }
+    
+        if keyboard_input.just_pressed(KeyCode::KeyS) {
+            ev_swaps.send(SwapInArrayEvent { entity: array, index1: 0, index2: 4});
+        }
     }
-    if keyboard_input.just_pressed(KeyCode::Digit7) {
-        ev_inserts.send(InsertToArrayEvent { entity: array, value: "7".to_string(), index: 0});
-    }
-    if keyboard_input.just_pressed(KeyCode::KeyR) {
-        ev_removals.send(RemoveFromArrayEvent { entity: array, index: 4});
-    }
-
-    if keyboard_input.just_pressed(KeyCode::KeyS) {
-        ev_swaps.send(SwapInArrayEvent { entity: array, index1: 0, index2: 4});
-    }
+   
 }
 
 

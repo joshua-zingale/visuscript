@@ -7,7 +7,7 @@ pub enum Structure {
 
 pub enum Action {
     Create(Structure),
-    Insert(Entity, String, i32),
+    Insert(Entity, String, usize),
 }
 
 impl Action {
