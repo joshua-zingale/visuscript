@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 
-const ARRAY_CELL_FONT_SIZE: f32 = 32.0;
+pub const ARRAY_CELL_FONT_SIZE: f32 = 32.0;
 #[derive(Component)]
 #[require(Transform)]
-struct Array;
+pub struct Array;
 
 impl Array {
-    fn new() -> (Array, Visibility, Transform) {
+    pub fn new() -> (Array, Visibility, Transform) {
         (
             Array,
             Visibility::default(),
@@ -20,10 +20,10 @@ impl Array {
 
 #[derive(Component)]
 #[require(Transform, Text2d)]
-struct ArrayCell;
+pub struct ArrayCell;
 
 impl ArrayCell {
-    fn new(value: String) -> (ArrayCell, Transform, Text2d, TextFont){
+    pub fn new(value: String) -> (ArrayCell, Transform, Text2d, TextFont){
         (
             ArrayCell,
             Transform {

@@ -9,7 +9,7 @@ mod web_server;
 mod action;
 mod array;
 
-use crate::array;
+use crate::array::*;
 
 pub fn init() {
 
@@ -21,30 +21,30 @@ pub fn init() {
 
     App::new()
         .add_plugins(DefaultPlugins)
-        .insert_non_send_resource(request_reciever)
+        // .insert_non_send_resource(request_reciever)
         .add_event::<InsertToArrayEvent>()
         .add_event::<RemoveFromArrayEvent>()
         .add_event::<SwapInArrayEvent>()
         .add_systems(Startup, setup)
         // .add_systems(Update, cursor_position)
-        .add_systems(Update, (debug_array, debug_http, insert_to_arrays, remove_from_arrays, swap_in_arrays, align_arrays, move_transforms_toward_transform_targets).chain())
+        .add_systems(Update, (debug_array, insert_to_arrays, remove_from_arrays, swap_in_arrays, align_arrays, move_transforms_toward_transform_targets).chain())
         // .add_systems(Update, move_text)
         .run();
 }
 
 
 
-fn debug_http(
-    rx: NonSend<mpsc::Receiver<i32>>,
-    array: Single<Entity, With<Array>>,
-    mut ev_inserts: EventWriter<InsertToArrayEvent>
-) {
-    let array = array.into_inner();
-    while let Ok(r) = rx.try_recv() {
-        ev_inserts.send(InsertToArrayEvent { entity: array, value: "h".to_string(), index: 0 });
-        println!("HERE!lsls");
-    }
-}
+// fn debug_http(
+//     rx: NonSend<mpsc::Receiver<i32>>,
+//     array: Single<Entity, With<Array>>,
+//     mut ev_inserts: EventWriter<InsertToArrayEvent>
+// ) {
+//     let array = array.into_inner();
+//     while let Ok(r) = rx.try_recv() {
+//         ev_inserts.send(InsertToArrayEvent { entity: array, value: "h".to_string(), index: 0 });
+//         println!("HERE!lsls");
+//     }
+// }
 
 
 // fn cursor_position(
