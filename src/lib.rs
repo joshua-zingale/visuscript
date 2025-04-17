@@ -12,52 +12,80 @@ mod array;
 use crate::array::*;
 use crate::action::*;
 
+
 pub fn init() {
 
 
-    let (request_sender, request_reciever) = mpsc::channel();
-    let (data_sender, data_reciever) = mpsc::channel();
+    let (request_sender, request_reciever) = mpsc::channel::<Action>();
+    let (data_sender, data_reciever) = mpsc::channel::<Entity>();
 
-    thread::spawn(move || {
-        web_server::run(data_reciever, request_sender);
-    });
+    // thread::spawn(move || {
+    //     web_server::run(data_reciever, request_sender);
+    // });
 
     App::new()
         .add_plugins(DefaultPlugins)
+        .insert_non_send_resource(request_sender)
         .insert_non_send_resource(request_reciever)
         .insert_non_send_resource(data_sender)
-        .add_event::<InsertToArrayEvent>()
-        .add_event::<RemoveFromArrayEvent>()
-        .add_event::<SwapInArrayEvent>()
         .add_systems(Startup, setup)
         // .add_systems(Update, cursor_position)
-        .add_systems(Update, (debug_array, insert_to_arrays, remove_from_arrays, swap_in_arrays, align_arrays, move_transforms_toward_transform_targets).chain())
-        .add_systems(Update, debug_http)
+        .add_systems(Update, (debug_array, align_arrays).chain())
+        .add_systems(Update, (move_transforms_toward_transform_targets, move_transforms_toward_entity_targets))
+        .add_systems(Update, run_action)
         .run();
-
-        
-
-
 }
 
 
 
-fn debug_http(
+fn run_action(
     request_receiver: NonSend<mpsc::Receiver<action::Action>>,
     request_sender: NonSend<mpsc::Sender<Entity>>,
-    mut ev_inserts: EventWriter<InsertToArrayEvent>,
     mut commands: Commands,
+    mut children_query: Query<&mut Children, With<Array>>,
+    mut parent_query: Query<&mut Parent, With<Array>>,
 ) {
 
     if let Ok(r) = request_receiver.try_recv(){
         let entity = match r {
             Action::Create(Structure::Array) => {
-                commands.spawn(Array::new()).id()
+                commands.spawn((TransformAnchor, Transform::default(), Visibility::default())).with_child(Array::new()).id()
             },
-            Action::Insert(entity, value, index) => {
-                ev_inserts.send(InsertToArrayEvent { entity: entity, value: value, index: index });
+            Action::InsertToArray{entity, index, value} => {
+                let cell = commands.spawn(ArrayCell::new(value)).id();
+                commands.entity(entity).insert_children(index, &[cell]);
                 entity
             },
+            Action::SwapInArray { entity, a_index, b_index } => {
+                children_query.get_mut(entity).unwrap().swap(a_index, b_index);
+                entity
+            }
+            Action::RemoveFromArray { entity, index } => {
+
+                let children: Vec<&Entity> = children_query.get(entity).unwrap().iter().collect();
+                let &child = children[index];
+
+                commands.entity(entity).remove_children(&[child]);
+                commands.entity(child).despawn();
+                entity
+            }
+            Action::SetInArray {entity, index, value} => {
+
+                let children: Vec<&Entity> = children_query.get(entity).expect("The array entity must have children").iter().collect();
+                let &child = children[index];
+                let parent = parent_query.get(entity).expect("The array entity must have an anchoring parent").get();
+                
+                let new_entity = commands.spawn((
+                    Text2d::new(value),
+                    Transform {translation: Vec3::new(-50.0, -100.0, 0.0 ), ..default()},
+                    TargetEntity::new(child, Path::LinearInterpolation)
+                )).id();
+                commands.entity(parent).add_child(new_entity);
+
+
+
+                entity
+            }
             _ => {panic!("Not implemented for debug_http!");}
         };
 
@@ -87,17 +115,46 @@ fn debug_http(
 //     }
 // }
 
-fn setup(mut commands: Commands) {
-
+fn setup(
+    mut commands: Commands,
+    request_sender: NonSendMut<mpsc::Sender<Action>>,
+) {
     commands.spawn(Camera2d);
-    
+}
 
-    // let array = commands.spawn(Array::new()).id();
 
-    // let cell2 = commands.spawn(ArrayCell::new("1".to_string())).id();
+fn move_transforms_toward_entity_targets(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut TargetEntity)>,
+    mut transform_query: Query<(&mut Transform, &GlobalTransform)>,
+) {
+    let time_delta = time.delta_secs();
 
-    // commands.entity(array).add_children(&[cell2]);
+    for (entity, mut target_entity) in &mut query {
 
+        target_entity.time_passed = target_entity.time_passed + time_delta;
+
+
+        let [(mut transform, global_transform), (target_transform, target_global_transform)] = transform_query.get_many_mut([entity, target_entity.entity]).expect("Both the entity and its target must have transforms");
+
+        // let offset = transform.translation + (target_global_transform.translation() - global_transform.translation()) * global_transform.scale();
+        
+        // let target_transform= transform_query.get(target_entity.entity).expect("Target entity must have a transform component");
+        let progress = target_entity.get_progress();
+
+        // let transform: Mut<'_, Transform> = transform_query.get_mut(entity).expect("");
+
+        transform.translation = if progress < 1.0 {
+            match target_entity.path {
+                Path::LinearInterpolation => target_transform.translation * progress + transform.translation * (1.0 - progress)
+            }
+        }
+        else {
+            commands.entity(entity).remove::<TargetEntity>();
+            target_transform.translation
+        }
+    }
 }
 
 fn move_transforms_toward_transform_targets(
@@ -113,38 +170,18 @@ fn move_transforms_toward_transform_targets(
 
         let progress = target.get_progress();
 
-        transform.translation = if progress >= 1.0 {
-            commands.entity(entity).remove::<TargetTransform>();
-            target.transform.translation
-        }
-        else {
+        transform.translation = if progress < 1.0 {
             match target.path {
                 Path::LinearInterpolation => target.transform.translation * progress + transform.translation * (1.0 - progress)
             }
         }
+        else {
+            commands.entity(entity).remove::<TargetTransform>();
+            target.transform.translation
+            
+        }
     }
 }
-
-#[derive(Event, Debug)]
-struct InsertToArrayEvent {
-    entity: Entity,
-    value: String,
-    index: usize,
-}
-
-#[derive(Event, Debug)]
-struct RemoveFromArrayEvent {
-    entity: Entity,
-    index: usize,
-}
-
-#[derive(Event, Debug)]
-struct SwapInArrayEvent {
-    entity: Entity,
-    index1: usize,
-    index2: usize,
-}
-
 
 
 fn align_arrays(
@@ -153,101 +190,118 @@ fn align_arrays(
 ) {
     for children in &children_set_query {
         let children: Vec<&Entity> = children.iter().collect();
-        let num_children = children.len();
-        let mut next_x = -(num_children as f32) * ARRAY_CELL_FONT_SIZE;
-        for child in children {
+        let mut index = 0;
+        for &child in children {
             let transform_target = TargetTransform::new(
-                &Transform {
-                    translation: Vec3::new(next_x, 0.0, 0.0),
+                Transform {
+                    translation: get_grid_position_row_wise(index, ARRAY_CELL_FONT_SIZE, ARRAY_CELL_FONT_SIZE, 5),
                     ..default()
                 },
                 Path::LinearInterpolation
             );
-            commands.entity(*child).insert(transform_target);
-            next_x += ARRAY_CELL_FONT_SIZE * 2.0;
+            commands.entity(child).insert(transform_target);
+            index += 1;
         }
     }
 }
 
-fn insert_to_arrays(
-    mut commands: Commands,
-    mut ev_inserts: EventReader<InsertToArrayEvent>,
-    // children_query: Query<&Children, (Changed<Children>, With<Array>)>,
-    
-) {
-    for insertion in ev_inserts.read() {
-        let cell = commands.spawn(ArrayCell::new(insertion.value.clone())).id();
-        commands.entity(insertion.entity).insert_children(insertion.index, &[cell]);
-    }
+
+fn get_grid_position_row_wise(
+    index: usize,
+    cell_width: f32,
+    cell_height: f32,
+    num_columns: usize) -> Vec3 {
+
+        let column_index = (index % num_columns) as f32;
+        let row_index = (index / num_columns) as f32;
+
+
+        Vec3::new(
+            column_index * cell_width,
+            -row_index * cell_height,
+            0.0,
+        )
 }
 
-fn remove_from_arrays(
-    mut commands: Commands,
-    mut ev_removals: EventReader<RemoveFromArrayEvent>,
-    children_query: Query<&Children, With<Array>>
-) {
-    // let removals: Vec<&RemoveFromArrayEvent> = ev_removals.read().collect();
-    
-    for removal in ev_removals.read() {
-
-        let children: Vec<&Entity> = children_query.get(removal.entity).unwrap().iter().collect();
-
-        let child = children[removal.index];
-
-        commands.entity(removal.entity).remove_children(&[*child]);
-
-        commands.entity(*child).despawn();
-
-    }
-}
-
-fn swap_in_arrays(
-    mut ev_swaps: EventReader<SwapInArrayEvent>,
-
-    mut children_query: Query<&mut Children, With<Array>>,
-) {
-
-    for swap in ev_swaps.read() {
-
-        // let mut children: Vec<&Entity> = children_query.get(swap.entity).unwrap().iter().collect();
-        children_query.get_mut(swap.entity.clone()).unwrap().swap(swap.index1, swap.index2);
-            
-        // children.swap(swap.index1, swap.index2);
-        // commands.entity(swap.entity).replace_children(children.as_mut_slice());
-    }
-
-}
 
 fn debug_array(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     array_query: Query<Entity, With<Array>>,
-    mut ev_inserts: EventWriter<InsertToArrayEvent>,
-    mut ev_removals: EventWriter<RemoveFromArrayEvent>,
-    mut ev_swaps: EventWriter<SwapInArrayEvent>,
+    request_sender: NonSendMut<mpsc::Sender<Action>>,
 ) {
+
+    if keyboard_input.just_pressed(KeyCode::KeyC) {
+        request_sender.send(Action::Create(Structure::Array)).unwrap();
+    }
+
     for array in array_query.iter() {
         if keyboard_input.just_pressed(KeyCode::Digit0) {
-            ev_inserts.send(InsertToArrayEvent { entity: array, value: "0".to_string(), index: 0});
+            request_sender.send(Action::InsertToArray { entity: array, value: "0".to_string(), index: 0}).unwrap();
+        }
+        if keyboard_input.just_pressed(KeyCode::Digit1) {
+            request_sender.send(Action::InsertToArray { entity: array, value: "1".to_string(), index: 1}).unwrap();
+        }
+        if keyboard_input.just_pressed(KeyCode::Digit2) {
+            request_sender.send(Action::InsertToArray { entity: array, value: "2".to_string(), index: 2}).unwrap();
+        }
+        if keyboard_input.just_pressed(KeyCode::Digit3) {
+            request_sender.send(Action::InsertToArray { entity: array, value: "3".to_string(), index: 3}).unwrap();
         }
         if keyboard_input.just_pressed(KeyCode::Digit7) {
-            ev_inserts.send(InsertToArrayEvent { entity: array, value: "7".to_string(), index: 0});
+            request_sender.send(Action::InsertToArray { entity: array, value: "7".to_string(), index: 0}).unwrap();
         }
         if keyboard_input.just_pressed(KeyCode::KeyR) {
-            ev_removals.send(RemoveFromArrayEvent { entity: array, index: 4});
+            request_sender.send(Action::RemoveFromArray { entity: array, index: 4}).unwrap();
         }
     
         if keyboard_input.just_pressed(KeyCode::KeyS) {
-            ev_swaps.send(SwapInArrayEvent { entity: array, index1: 0, index2: 4});
+            request_sender.send(Action::SwapInArray{entity: array, a_index: 1, b_index: 4}).unwrap();
         }
+
+        if keyboard_input.just_pressed(KeyCode::KeyE) {
+            request_sender.send(Action::SetInArray {entity: array, index: 0, value: "E".to_string()}).unwrap();
+        }
+
     }
    
 }
 
 
+#[derive(Component)]
+struct TransformAnchor;
+
 
 type InterpolationFn = fn(Vec3, Vec3, f32) -> Vec3;
 enum Path {
     LinearInterpolation
+}
+
+
+#[derive(Component)]
+struct TargetEntity {
+    entity: Entity,
+    path: Path,
+    total_time: f32,
+    time_passed: f32,
+}
+
+impl TargetEntity {
+    fn new(entity: Entity, path: Path) -> Self {
+        Self {
+            entity,
+            path: path,
+            total_time: 1.0,
+            time_passed: 0.0,
+        }
+    }
+    fn get_progress(&self) -> f32 {
+        if self.time_passed >= self.total_time {
+            1.0
+        }
+        else {
+            self.time_passed/self.total_time            
+        }
+    }
 }
 
 #[derive(Component)]
@@ -259,9 +313,9 @@ struct TargetTransform {
 }
 
 impl TargetTransform {
-    fn new(transform: &Transform, path: Path) -> Self {
+    fn new(transform: Transform, path: Path) -> Self {
         Self {
-            transform: transform.clone(),
+            transform: transform,
             path: path,
             total_time: 1.0,
             time_passed: 0.0,

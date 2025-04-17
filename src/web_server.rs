@@ -14,8 +14,8 @@ pub fn run(
 
     request_sender.send(Action::Create(Structure::Array));
 
-    let entity = data_receiver.recv().expect("Entity will be returned :)");
+    let entity = data_receiver.recv().unwrap();
 
-    request_sender.send(Action::Insert(entity, "h".to_string(), 0));
+    request_sender.send(Action::InsertToArray{entity, value: "h".to_string(), index: 0});
     
 }

@@ -18,12 +18,26 @@ impl Array {
     }
 }
 
+
+// #[derive(Component)]
+// #[require(Transform)]
+// pub struct ArrayCells;
+// impl ArrayCells {
+//     pub fn new() -> (ArrayCell, Transform) {
+//         (
+//             ArrayCell,
+//             Transform {..default()}
+//         )
+//     }
+// }
+
+
 #[derive(Component)]
 #[require(Transform, Text2d)]
 pub struct ArrayCell;
 
 impl ArrayCell {
-    pub fn new(value: String) -> (ArrayCell, Transform, Text2d, TextFont){
+    pub fn new(value: String) -> (ArrayCell, Transform, Text2d, TextFont) {
         (
             ArrayCell,
             Transform {
