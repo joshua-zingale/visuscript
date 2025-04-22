@@ -1,4 +1,3 @@
-// use visuscript::*;
 use bevy::prelude::*;
 // use std::net::TcpListener;
 use std::sync::mpsc;
@@ -7,9 +6,9 @@ use std::thread;
 
 mod web_server;
 mod action;
-mod array;
+mod array_struct;
 
-use crate::array::*;
+use crate::array_struct::*;
 use crate::action::*;
 
 
@@ -17,48 +16,57 @@ pub fn init() {
 
 
     let (request_sender, request_reciever) = mpsc::channel::<Action>();
-    let (data_sender, data_reciever) = mpsc::channel::<Entity>();
+    let (data_sender, data_reciever) = mpsc::channel::<(u64, web_server::Data)>();
 
-    // thread::spawn(move || {
-    //     web_server::run(data_reciever, request_sender);
-    // });
+    thread::spawn(move || {
+        web_server::run(data_reciever, request_sender);
+    });
 
     App::new()
         .add_plugins(DefaultPlugins)
-        .insert_non_send_resource(request_sender)
+        // .insert_non_send_resource(request_sender)
         .insert_non_send_resource(request_reciever)
         .insert_non_send_resource(data_sender)
         .add_systems(Startup, setup)
+        // .add_systems(Update, debug_array)
         // .add_systems(Update, cursor_position)
-        .add_systems(Update, (debug_array, align_arrays).chain())
         .add_systems(Update, (move_transforms_toward_transform_targets, move_transforms_toward_entity_targets))
-        .add_systems(Update, run_action)
+        .add_systems(Update, (run_action, align_arrays).chain())
+        .add_systems(Update, count)
+        // .add_systems(Update, replace_children)
         .run();
 }
 
 
+fn count(t: Query<&TargetTransform>) {
+    println!("{}", t.iter().len());
+}
 
 fn run_action(
     request_receiver: NonSend<mpsc::Receiver<action::Action>>,
-    request_sender: NonSend<mpsc::Sender<Entity>>,
+    data_sender: NonSend<mpsc::Sender<(u64, web_server::Data)>>,
     mut commands: Commands,
     mut children_query: Query<&mut Children, With<Array>>,
-    mut parent_query: Query<&mut Parent, With<Array>>,
+    parent_query: Query<&mut Parent, With<Array>>,
 ) {
 
     if let Ok(r) = request_receiver.try_recv(){
-        let entity = match r {
+        let data_to_send = match r {
             Action::Create(Structure::Array) => {
-                commands.spawn((TransformAnchor, Transform::default(), Visibility::default())).with_child(Array::new()).id()
+                let ancestor = commands.spawn((TransformAnchor, Transform::default(), Visibility::default())).id();
+                let entity = commands.spawn(Array::new()).id();
+                commands.entity(ancestor).add_child(entity);
+                
+                (1000, web_server::Data::Entity(entity))
             },
             Action::InsertToArray{entity, index, value} => {
                 let cell = commands.spawn(ArrayCell::new(value)).id();
                 commands.entity(entity).insert_children(index, &[cell]);
-                entity
+                (1000, web_server::Data::None)
             },
             Action::SwapInArray { entity, a_index, b_index } => {
                 children_query.get_mut(entity).unwrap().swap(a_index, b_index);
-                entity
+                (1000, web_server::Data::None)
             }
             Action::RemoveFromArray { entity, index } => {
 
@@ -67,7 +75,7 @@ fn run_action(
 
                 commands.entity(entity).remove_children(&[child]);
                 commands.entity(child).despawn();
-                entity
+                (1000, web_server::Data::None)
             }
             Action::SetInArray {entity, index, value} => {
 
@@ -81,15 +89,14 @@ fn run_action(
                     TargetEntity::new(child, Path::LinearInterpolation)
                 )).id();
                 commands.entity(parent).add_child(new_entity);
+                commands.spawn(ReplaceTextTimer {replacer: new_entity, replacee: child, time: 1.0});
 
-
-
-                entity
+                (1000, web_server::Data::None)
             }
             _ => {panic!("Not implemented for debug_http!");}
         };
 
-        request_sender.send(entity);
+        data_sender.send(data_to_send);
 
     }
 }
@@ -117,11 +124,34 @@ fn run_action(
 
 fn setup(
     mut commands: Commands,
-    request_sender: NonSendMut<mpsc::Sender<Action>>,
+    // request_sender: NonSendMut<mpsc::Sender<Action>>,
 ) {
     commands.spawn(Camera2d);
 }
 
+
+fn replace_children(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut child_replacement_query: Query<(Entity, &mut ReplaceTextTimer)>,
+    mut text2d_query: Query<&mut Text2d>,
+) {
+    let delta = time.delta_secs();
+    for (replacement_entity, mut child_replacement) in child_replacement_query.iter_mut() {
+        child_replacement.tick(delta);
+
+        if child_replacement.done() {
+            
+            let [replacer_text, mut replacee_text] = text2d_query.get_many_mut([child_replacement.replacer, child_replacement.replacee]).expect("Entities must have text2d components");
+
+            replacee_text.clear();
+            replacee_text.push_str(replacer_text.as_str());
+            commands.entity(child_replacement.replacer).despawn();
+            commands.entity(replacement_entity).despawn();
+            
+        }
+    }
+}
 
 fn move_transforms_toward_entity_targets(
     time: Res<Time>,
@@ -136,9 +166,11 @@ fn move_transforms_toward_entity_targets(
         target_entity.time_passed = target_entity.time_passed + time_delta;
 
 
-        let [(mut transform, global_transform), (target_transform, target_global_transform)] = transform_query.get_many_mut([entity, target_entity.entity]).expect("Both the entity and its target must have transforms");
+        let [(mut transform, _global_transform), (target_transform, _target_global_transform)] = transform_query.get_many_mut([entity, target_entity.entity]).expect("Both the entity and its target must have transforms");
 
-        // let offset = transform.translation + (target_global_transform.translation() - global_transform.translation()) * global_transform.scale();
+        // let global_target = (target_global_transform.translation() - global_transform.translation());
+
+        // let local_target = transform.translation + global_target;
         
         // let target_transform= transform_query.get(target_entity.entity).expect("Target entity must have a transform component");
         let progress = target_entity.get_progress();
@@ -147,7 +179,7 @@ fn move_transforms_toward_entity_targets(
 
         transform.translation = if progress < 1.0 {
             match target_entity.path {
-                Path::LinearInterpolation => target_transform.translation * progress + transform.translation * (1.0 - progress)
+                Path::LinearInterpolation =>  target_transform.translation * progress + transform.translation * (1.0 - progress)
             }
         }
         else {
@@ -170,7 +202,10 @@ fn move_transforms_toward_transform_targets(
 
         let progress = target.get_progress();
 
+        println!("HERE! (2)");
+
         transform.translation = if progress < 1.0 {
+            println!("HERE! (3)");
             match target.path {
                 Path::LinearInterpolation => target.transform.translation * progress + transform.translation * (1.0 - progress)
             }
@@ -190,18 +225,34 @@ fn align_arrays(
 ) {
     for children in &children_set_query {
         let children: Vec<&Entity> = children.iter().collect();
-        let mut index = 0;
-        for &child in children {
-            let transform_target = TargetTransform::new(
-                Transform {
-                    translation: get_grid_position_row_wise(index, ARRAY_CELL_FONT_SIZE, ARRAY_CELL_FONT_SIZE, 5),
-                    ..default()
-                },
-                Path::LinearInterpolation
-            );
-            commands.entity(child).insert(transform_target);
-            index += 1;
-        }
+        align_to_grid(children.as_slice(), &mut commands);
+        // let mut index = 0;
+        // for &child in children {
+        //     let transform_target = TargetTransform::new(
+        //         Transform {
+        //             translation: get_grid_position_row_wise(index, ARRAY_CELL_FONT_SIZE, ARRAY_CELL_FONT_SIZE, 5),
+        //             ..default()
+        //         },
+        //         Path::LinearInterpolation
+        //     );
+        //     commands.entity(child).insert(transform_target);
+        //     index += 1;
+        // }
+    }
+}
+
+fn align_to_grid(enities: &[&Entity],  commands: &mut Commands) {
+    let mut index = 0;
+    for &entity in enities.iter() {
+        let transform_target = TargetTransform::new(
+            Transform {
+                translation: get_grid_position_row_wise(index, ARRAY_CELL_FONT_SIZE, ARRAY_CELL_FONT_SIZE, 5),
+                ..default()
+            },
+            Path::LinearInterpolation
+        );
+        commands.entity(*entity).insert(transform_target);
+        index += 1;
     }
 }
 
@@ -261,9 +312,26 @@ fn debug_array(
         if keyboard_input.just_pressed(KeyCode::KeyE) {
             request_sender.send(Action::SetInArray {entity: array, index: 0, value: "E".to_string()}).unwrap();
         }
-
     }
-   
+}
+
+#[derive(Component)]
+struct ReplaceTextTimer {
+    replacer: Entity,
+    replacee: Entity,
+    time: f32,
+}
+
+impl ReplaceTextTimer {
+    fn tick(&mut self, delta: f32) {
+        self.time =  match self.time {
+            ..=0.0 => 0.0,
+            t => t - delta,
+        };
+    }
+    fn done(&self) -> bool{
+        self.time <= 0.0
+    }
 }
 
 
