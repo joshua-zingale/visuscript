@@ -18,17 +18,19 @@ pub fn run(
         data
     };
 
-    let Data::Entity(entity) = make_request(Action::Create(Structure::Array)) else {
+    let Data::Entity(entity) = make_request(Action::CreateArray(vec!["5".to_string(),"3".to_string(),"0".to_string()])) else {
         panic!("Did not get entity")
     };
 
-    make_request(Action::InsertToArray{entity, value: "0".to_string(), index: 0});
-    make_request(Action::InsertToArray{entity, value: "1".to_string(), index: 0});
-    make_request(Action::InsertToArray{entity, value: "2".to_string(), index: 0});
-    
+    make_request(Action::InsertToArray{entity, value: "9".to_string(), index: 0});
+    make_request(Action::InsertToArray{entity, value: "1".to_string(), index: 1});
+    // make_request(Action::SetInArray { entity: entity, index: 1, value: "3".to_string() });
+    make_request(Action::InsertToArray{entity, value: "5".to_string(), index: 2});
+    make_request(Action::InsertToArray{entity, value: "4".to_string(), index: 1});
+    make_request(Action::SwapInArray { entity, a_index: 0, b_index: 2 });
+
 }
-
-
+#[derive(Debug)]
 pub enum Data {
     None,
     Entity(Entity),

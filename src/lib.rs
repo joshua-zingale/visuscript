@@ -32,15 +32,15 @@ pub fn init() {
         // .add_systems(Update, cursor_position)
         .add_systems(Update, (move_transforms_toward_transform_targets, move_transforms_toward_entity_targets))
         .add_systems(Update, (run_action, align_arrays).chain())
-        .add_systems(Update, count)
-        // .add_systems(Update, replace_children)
+        // .add_systems(Update, count)
+        .add_systems(Update, replace_children)
         .run();
 }
 
 
-fn count(t: Query<&TargetTransform>) {
-    println!("{}", t.iter().len());
-}
+// fn count(t: Query<&TargetTransform>) {
+//     println!("{}", t.iter().len());
+// }
 
 fn run_action(
     request_receiver: NonSend<mpsc::Receiver<action::Action>>,
@@ -48,24 +48,42 @@ fn run_action(
     mut commands: Commands,
     mut children_query: Query<&mut Children, With<Array>>,
     parent_query: Query<&mut Parent, With<Array>>,
+    text2d_query: Query<&Text2d>
 ) {
 
     if let Ok(r) = request_receiver.try_recv(){
         let data_to_send = match r {
-            Action::Create(Structure::Array) => {
+            Action::CreateArray(elements) => {
                 let ancestor = commands.spawn((TransformAnchor, Transform::default(), Visibility::default())).id();
                 let entity = commands.spawn(Array::new()).id();
                 commands.entity(ancestor).add_child(entity);
+
+                for element in elements {
+                    commands.spawn(array_struct::ArrayCell::new(element)).set_parent(entity);
+                }
                 
                 (1000, web_server::Data::Entity(entity))
             },
             Action::InsertToArray{entity, index, value} => {
                 let cell = commands.spawn(ArrayCell::new(value)).id();
-                commands.entity(entity).insert_children(index, &[cell]);
+                let num_children = match children_query.get(entity) {
+                    Ok(children) => children.iter().len(),
+                    Err(_) => 0
+                };
+                
+                if index > num_children {
+                    panic!("Index must be less than or equal to the length of the array");
+                } else if index == num_children {
+                    commands.entity(entity).add_child(cell);
+                }
+                else {
+                    commands.entity(entity).insert_children(index, &[cell]);
+                }
+                
                 (1000, web_server::Data::None)
             },
             Action::SwapInArray { entity, a_index, b_index } => {
-                children_query.get_mut(entity).unwrap().swap(a_index, b_index);
+                children_query.get_mut(entity).expect("Array must have elements to swap elements therein").swap(a_index, b_index);
                 (1000, web_server::Data::None)
             }
             Action::RemoveFromArray { entity, index } => {
@@ -93,10 +111,33 @@ fn run_action(
 
                 (1000, web_server::Data::None)
             }
+            Action::GetArrayContents { entity } => {
+                (0, web_server::Data::Vector(
+                    match children_query.get(entity) {
+                        Ok(children) => {
+                            let children: Vec<&Entity> = children.iter().collect();
+                            
+                            let mut elements: Vec<String> = Vec::new();
+
+                            for &&entity in children.iter() {
+                                elements.push(
+                                    text2d_query
+                                    .get(entity)
+                                    .expect("All children of array must have a Text2d component")
+                                    .as_str().to_string());
+                            }
+
+                            elements
+                        }
+                        Err(_) => vec![]
+                    }
+                    
+                ))
+            }
             _ => {panic!("Not implemented for debug_http!");}
         };
 
-        data_sender.send(data_to_send);
+        data_sender.send(data_to_send).expect("The web-server thread must stay active.");
 
     }
 }
@@ -202,10 +243,7 @@ fn move_transforms_toward_transform_targets(
 
         let progress = target.get_progress();
 
-        println!("HERE! (2)");
-
         transform.translation = if progress < 1.0 {
-            println!("HERE! (3)");
             match target.path {
                 Path::LinearInterpolation => target.transform.translation * progress + transform.translation * (1.0 - progress)
             }
@@ -243,7 +281,7 @@ fn align_arrays(
 
 fn align_to_grid(enities: &[&Entity],  commands: &mut Commands) {
     let mut index = 0;
-    for &entity in enities.iter() {
+    for &&entity in enities.iter() {
         let transform_target = TargetTransform::new(
             Transform {
                 translation: get_grid_position_row_wise(index, ARRAY_CELL_FONT_SIZE, ARRAY_CELL_FONT_SIZE, 5),
@@ -251,7 +289,7 @@ fn align_to_grid(enities: &[&Entity],  commands: &mut Commands) {
             },
             Path::LinearInterpolation
         );
-        commands.entity(*entity).insert(transform_target);
+        commands.entity(entity).insert(transform_target);
         index += 1;
     }
 }
@@ -282,7 +320,7 @@ fn debug_array(
 ) {
 
     if keyboard_input.just_pressed(KeyCode::KeyC) {
-        request_sender.send(Action::Create(Structure::Array)).unwrap();
+        request_sender.send(Action::CreateArray(vec![])).unwrap();
     }
 
     for array in array_query.iter() {
