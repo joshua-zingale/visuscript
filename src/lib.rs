@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-// use std::net::TcpListener;
 use std::sync::mpsc;
 use std::thread;
 
@@ -31,7 +30,7 @@ pub fn init() {
         // .add_systems(Update, debug_array)
         // .add_systems(Update, cursor_position)
         .add_systems(Update, (move_transforms_toward_transform_targets, move_transforms_toward_entity_targets))
-        .add_systems(Update, (run_action, align_arrays).chain())
+        .add_systems(Update, (run_action, align_arrays))
         // .add_systems(Update, count)
         .add_systems(Update, replace_children)
         .run();
@@ -134,6 +133,7 @@ fn run_action(
                     
                 ))
             }
+            Action::None => {(0, web_server::Data::None)}
             _ => {panic!("Not implemented for debug_http!");}
         };
 
@@ -278,6 +278,15 @@ fn align_arrays(
         // }
     }
 }
+
+// fn align_to_grid_event(
+//     mut align_to_grid_ev: EventReader<AlignToGridEvent>,
+//     commands: Commands
+// ) {
+//     for &AlignToGridEvent{entities, width, height, num_columns} in align_to_grid_ev.read() {
+        
+//     }
+// }
 
 fn align_to_grid(enities: &[&Entity],  commands: &mut Commands) {
     let mut index = 0;
@@ -439,3 +448,10 @@ impl TargetTransform {
 
 
 
+// #[derive(Event)]
+// struct AlignToGridEvent {
+//     entities: Vec<Entity>,
+//     width: f32,
+//     height: f32,
+//     num_columns: usize
+// }
