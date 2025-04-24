@@ -5,6 +5,8 @@ use std::io::{prelude::*, BufReader};
 use crate::action::*;
 use bevy::prelude::*;
 use std::io::{Error, ErrorKind};
+use serde::{Serialize, Deserialize};
+use serde_json;
 
 
 pub fn run(
@@ -21,51 +23,49 @@ pub fn run(
     };
 
 
-
-    let Data::Entity(entity) = make_request(Action::CreateArray(vec!["5".to_string(),"3".to_string(),"0".to_string()])) else {
-        panic!("Did not get entity")
-    };
-
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
 
-        let Ok(action) = handle_request(&stream) else {
-            panic!("Bad request");
+        let(status_line, contents) = match process_request(&stream) {
+            Err(e) => {
+                ("HTTP/1.1 400 Bad Request".to_string(), e.to_string())
+            }
+            Ok(action) => {
+                (
+                    "HTTP/1.1 200 OK".to_string(),
+                    serde_json::to_string(&make_request(action)).expect("The data from Bevy must serialize.")
+                )
+            }
         };
 
-        let data = make_request(action);
 
-        handle_response(stream, data);
+        make_response(stream, status_line, contents);
+
 
 
     }
-
-    make_request(Action::InsertToArray{entity, value: "9".to_string(), index: 0});
-    make_request(Action::InsertToArray{entity, value: "1".to_string(), index: 1});
-    // make_request(Action::SetInArray { entity: entity, index: 1, value: "3".to_string() });
-    make_request(Action::InsertToArray{entity, value: "5".to_string(), index: 2});
-    make_request(Action::InsertToArray{entity, value: "4".to_string(), index: 1});
-    make_request(Action::SwapInArray { entity, a_index: 0, b_index: 2 });        
+   
 }
 
 
 
-fn handle_request(stream: &TcpStream) -> Result<Action, Error> {
+fn process_request(stream: &TcpStream) -> Result<Action, Error> {
     let mut buf_reader = BufReader::new(stream);
     let mut headers = std::collections::HashMap::new();
     let mut request_line = String::new();
 
 
-    buf_reader.read_line(&mut request_line).map_err(|e| Error::new(ErrorKind::Other, "Error reading request line"))?;
+    buf_reader.read_line(&mut request_line).map_err(|_| Error::new(ErrorKind::Other, "Error reading request line"))?;
+
     if request_line.is_empty() {
         return Err(Error::new(ErrorKind::Other, "Empty request line."));
     }
 
     loop {
         let mut header_line = String::new();
-        buf_reader.read_line(&mut header_line).map_err(|e| Error::new(ErrorKind::Other, "Error reading request line"))?;
+        buf_reader.read_line(&mut header_line).map_err(|_| Error::new(ErrorKind::Other, "Error reading request line"))?;
         if header_line.trim().is_empty() {
             break; // End of headers
         }
@@ -93,28 +93,29 @@ fn handle_request(stream: &TcpStream) -> Result<Action, Error> {
         return Err(Error::new(ErrorKind::Other, format!("Received the wrong number of bytes in the HTTP request's content: {bytes_read} instead of {content_length}.")));
     }
 
-    let content = String::from_utf8_lossy(&buffer);
-    println!("Content:\n{}", content);
+    let content = String::from_utf8_lossy(&buffer).to_string();
+    
+    
+    let action = match Action::from_json(&content) {
+        Ok(action) => action,
+        Err(e) => return Err(Error::new(ErrorKind::Other, format!("Received invalid JSON: {e}")))
+    };
 
 
-    Ok(Action::None)
+    Ok(action)
 }
 
-fn handle_response(mut stream: TcpStream, data: Data) {
 
-    let status_line = "HTTP/1.1 200 OK";
-    let contents = "Hello, World!";
-    let length = contents.len();
-
-    let response =
-        format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
-
+fn make_response(mut stream: TcpStream, status_line: String, contents: String) {
+    let length = contents.bytes().len();
+    let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
     stream.write_all(response.as_bytes()).unwrap();
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Data {
     None,
+    Value(String),
     Entity(Entity),
     Vector(Vec<String>),
 }

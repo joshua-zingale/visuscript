@@ -45,14 +45,21 @@ fn run_action(
     request_receiver: NonSend<mpsc::Receiver<action::Action>>,
     data_sender: NonSend<mpsc::Sender<(u64, web_server::Data)>>,
     mut commands: Commands,
-    mut children_query: Query<&mut Children, With<Array>>,
-    parent_query: Query<&mut Parent, With<Array>>,
-    text2d_query: Query<&Text2d>
+    mut children_query: Query<&mut Children>,
+    parent_query: Query<&mut Parent>,
+    text2d_query: Query<&Text2d>,
 ) {
 
-    if let Ok(r) = request_receiver.try_recv(){
-        let data_to_send = match r {
-            Action::CreateArray(elements) => {
+    if let Ok(action) = request_receiver.try_recv(){
+        let data_to_send = match action {
+            Action::Clear => {
+                for parent in &parent_query {
+                    commands.entity(parent.get()).despawn_recursive();
+                }
+
+                (0, web_server::Data::None)
+            }
+            Action::CreateArray{array: elements} => {
                 let ancestor = commands.spawn((TransformAnchor, Transform::default(), Visibility::default())).id();
                 let entity = commands.spawn(Array::new()).id();
                 commands.entity(ancestor).add_child(entity);
@@ -85,14 +92,16 @@ fn run_action(
                 children_query.get_mut(entity).expect("Array must have elements to swap elements therein").swap(a_index, b_index);
                 (1000, web_server::Data::None)
             }
-            Action::RemoveFromArray { entity, index } => {
+            Action::PopFromArray { entity, index } => {
 
                 let children: Vec<&Entity> = children_query.get(entity).unwrap().iter().collect();
                 let &child = children[index];
 
+                let value = text2d_query.get(child).expect("The array element must have a Text2d").to_string();
+
                 commands.entity(entity).remove_children(&[child]);
                 commands.entity(child).despawn();
-                (1000, web_server::Data::None)
+                (1000, web_server::Data::Value(value))
             }
             Action::SetInArray {entity, index, value} => {
 
@@ -134,7 +143,6 @@ fn run_action(
                 ))
             }
             Action::None => {(0, web_server::Data::None)}
-            _ => {panic!("Not implemented for debug_http!");}
         };
 
         data_sender.send(data_to_send).expect("The web-server thread must stay active.");
@@ -322,45 +330,45 @@ fn get_grid_position_row_wise(
 }
 
 
-fn debug_array(
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    array_query: Query<Entity, With<Array>>,
-    request_sender: NonSendMut<mpsc::Sender<Action>>,
-) {
+// fn debug_array(
+//     keyboard_input: Res<ButtonInput<KeyCode>>,
+//     array_query: Query<Entity, With<Array>>,
+//     request_sender: NonSendMut<mpsc::Sender<Action>>,
+// ) {
 
-    if keyboard_input.just_pressed(KeyCode::KeyC) {
-        request_sender.send(Action::CreateArray(vec![])).unwrap();
-    }
+//     if keyboard_input.just_pressed(KeyCode::KeyC) {
+//         request_sender.send(Action::CreateArray(vec![])).unwrap();
+//     }
 
-    for array in array_query.iter() {
-        if keyboard_input.just_pressed(KeyCode::Digit0) {
-            request_sender.send(Action::InsertToArray { entity: array, value: "0".to_string(), index: 0}).unwrap();
-        }
-        if keyboard_input.just_pressed(KeyCode::Digit1) {
-            request_sender.send(Action::InsertToArray { entity: array, value: "1".to_string(), index: 1}).unwrap();
-        }
-        if keyboard_input.just_pressed(KeyCode::Digit2) {
-            request_sender.send(Action::InsertToArray { entity: array, value: "2".to_string(), index: 2}).unwrap();
-        }
-        if keyboard_input.just_pressed(KeyCode::Digit3) {
-            request_sender.send(Action::InsertToArray { entity: array, value: "3".to_string(), index: 3}).unwrap();
-        }
-        if keyboard_input.just_pressed(KeyCode::Digit7) {
-            request_sender.send(Action::InsertToArray { entity: array, value: "7".to_string(), index: 0}).unwrap();
-        }
-        if keyboard_input.just_pressed(KeyCode::KeyR) {
-            request_sender.send(Action::RemoveFromArray { entity: array, index: 4}).unwrap();
-        }
+//     for array in array_query.iter() {
+//         if keyboard_input.just_pressed(KeyCode::Digit0) {
+//             request_sender.send(Action::InsertToArray { entity: array, value: "0".to_string(), index: 0}).unwrap();
+//         }
+//         if keyboard_input.just_pressed(KeyCode::Digit1) {
+//             request_sender.send(Action::InsertToArray { entity: array, value: "1".to_string(), index: 1}).unwrap();
+//         }
+//         if keyboard_input.just_pressed(KeyCode::Digit2) {
+//             request_sender.send(Action::InsertToArray { entity: array, value: "2".to_string(), index: 2}).unwrap();
+//         }
+//         if keyboard_input.just_pressed(KeyCode::Digit3) {
+//             request_sender.send(Action::InsertToArray { entity: array, value: "3".to_string(), index: 3}).unwrap();
+//         }
+//         if keyboard_input.just_pressed(KeyCode::Digit7) {
+//             request_sender.send(Action::InsertToArray { entity: array, value: "7".to_string(), index: 0}).unwrap();
+//         }
+//         if keyboard_input.just_pressed(KeyCode::KeyR) {
+//             request_sender.send(Action::RemoveFromArray { entity: array, index: 4}).unwrap();
+//         }
     
-        if keyboard_input.just_pressed(KeyCode::KeyS) {
-            request_sender.send(Action::SwapInArray{entity: array, a_index: 1, b_index: 4}).unwrap();
-        }
+//         if keyboard_input.just_pressed(KeyCode::KeyS) {
+//             request_sender.send(Action::SwapInArray{entity: array, a_index: 1, b_index: 4}).unwrap();
+//         }
 
-        if keyboard_input.just_pressed(KeyCode::KeyE) {
-            request_sender.send(Action::SetInArray {entity: array, index: 0, value: "E".to_string()}).unwrap();
-        }
-    }
-}
+//         if keyboard_input.just_pressed(KeyCode::KeyE) {
+//             request_sender.send(Action::SetInArray {entity: array, index: 0, value: "E".to_string()}).unwrap();
+//         }
+//     }
+// }
 
 #[derive(Component)]
 struct ReplaceTextTimer {
@@ -386,7 +394,7 @@ impl ReplaceTextTimer {
 struct TransformAnchor;
 
 
-type InterpolationFn = fn(Vec3, Vec3, f32) -> Vec3;
+
 enum Path {
     LinearInterpolation
 }
