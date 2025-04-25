@@ -14,7 +14,24 @@ pub enum Action {
     SwapInArray {entity: Entity, a_index: usize, b_index: usize},
     PopFromArray {entity: Entity, index: usize},
     SetInArray {entity: Entity, index: usize, value: String},
-    GetArrayContents {entity: Entity}
+    CreateArrayFromSlice {
+        entity: Entity,
+        begin: usize,
+        end: usize,
+        #[serde(default = "default_copy_slice_from_array_x")]
+        x: f32,
+        #[serde(default = "default_copy_slice_from_array_y")]
+        y: f32,
+    },
+    GetArrayContents {entity: Entity},
+}
+
+fn default_copy_slice_from_array_x() -> f32 {
+    0.0
+}
+
+fn default_copy_slice_from_array_y() -> f32 {
+    -100.0
 }
 
 
