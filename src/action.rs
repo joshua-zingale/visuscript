@@ -1,4 +1,4 @@
-use bevy::prelude::Entity;
+use bevy::prelude::{Entity, Vec3};
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
@@ -7,32 +7,62 @@ use serde_json::Result;
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "action")]
 pub enum Action {
-    None,
-    Clear,
-    CreateArray{array: Vec<String>},
-    InsertToArray {entity: Entity, index: usize, value: String},
+    Destroy {entity: Entity},
+    SetParent {
+        parent: Entity,
+        child: Entity,
+    },
+    SetTarget {
+        entity: Entity,
+        #[serde(default = "default_zero_vec3")]
+        translation: Vec3,
+        #[serde(default = "default_one_f32")]
+        scale: f32,
+        duration: f32,
+    },
+    GetPosition {
+        entity: Entity,
+        reference: Option<Entity>
+    },
+    GetValue {entity: Entity},
+    CreateArray {
+        array: Vec<String>,
+        #[serde(default = "default_zero_vec3")]
+        translation: Vec3,
+        #[serde(default = "default_one_f32")]
+        scale: f32,
+    },
+    InsertToArray {
+        entity: Entity,
+        index: usize,
+        value: String,
+        #[serde(default = "default_zero_vec3")]
+        translation: Vec3,
+    },
     SwapInArray {entity: Entity, a_index: usize, b_index: usize},
     PopFromArray {entity: Entity, index: usize},
-    SetInArray {entity: Entity, index: usize, value: String},
-    CreateArrayFromSlice {
+    SetInArray {
         entity: Entity,
-        begin: usize,
-        end: usize,
-        #[serde(default = "default_copy_slice_from_array_x")]
-        x: f32,
-        #[serde(default = "default_copy_slice_from_array_y")]
-        y: f32,
+        index: usize,
+        value: String,
+        #[serde(default = "default_zero_vec3")]
+        translation: Vec3
     },
     GetArrayContents {entity: Entity},
+    GetArrayContentEntities {entity: Entity},
+    GetArrayContentCoordinates {entity: Entity},
 }
 
-fn default_copy_slice_from_array_x() -> f32 {
-    0.0
+
+fn default_one_f32() -> f32 {
+    1.0
 }
 
-fn default_copy_slice_from_array_y() -> f32 {
-    -100.0
+
+fn default_zero_vec3()-> Vec3 {
+    Vec3::new(0.0, 0.0, 0.0)
 }
+
 
 
 impl Action {

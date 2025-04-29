@@ -10,15 +10,15 @@ use serde_json;
 
 
 pub fn run(
-    data_receiver: mpsc::Receiver<(u64, Data)>,
+    data_receiver: mpsc::Receiver<Data>,
     request_sender: mpsc::Sender<Action>,
 ) {
 
 
     let make_request = |action| {
         request_sender.send(action).expect("The action should have no problem being sent across threads.");
-        let (wait_time, data) = data_receiver.recv().expect("Bevy must respond with some data");
-        std::thread::sleep(std::time::Duration::from_millis(wait_time));
+        let data = data_receiver.recv().expect("Bevy must respond with some data");
+        // std::thread::sleep(std::time::Duration::from_millis(wait_time));
         data
     };
 
@@ -40,10 +40,7 @@ pub fn run(
             }
         };
 
-
         make_response(stream, status_line, contents);
-
-
 
     }
    
@@ -117,5 +114,8 @@ pub enum Data {
     None,
     Value(String),
     Entity(Entity),
-    Vector(Vec<String>),
+    Entities(Vec<Entity>),
+    Values(Vec<String>),
+    Triplets(Vec<Vec3>),
+    Vec3(Vec3)
 }
