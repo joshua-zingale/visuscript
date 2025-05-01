@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Default frame rate if not provided as an argument
+frame_rate="${1:-30}"
+output_file="output.mp4" # You can make this an argument too if needed
+
+# Pipe the standard input (from python main.py) to ffmpeg
+ffmpeg -framerate "$frame_rate" -f image2pipe -i - "$output_file" -y 
+
+echo "Video '$output_file' created with frame rate $frame_rate."
