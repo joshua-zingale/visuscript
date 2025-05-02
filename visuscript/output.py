@@ -1,15 +1,16 @@
 from wand.image import Image
-from .drawings import Drawing
+from .drawings import Canvas
 from io import BytesIO
 import sys
 
-def make_frame(drawing: Drawing) -> Image:
+def make_frame(drawing: Canvas) -> Image:
     img_bytes = BytesIO(drawing.draw().encode('utf-8'))
     img = Image(blob=img_bytes, format='svg')
     img.format = 'png'
-    img.resize(1920, 1080)
+    img.resize(drawing.width, drawing.height)
     return img
 
-
-def print_frame(drawing: Drawing) -> None:
+def save_frame(drawing: Canvas, frame: int) -> None:
+    make_frame(drawing).save(filename=f"./frames/{frame}.png")
+def print_frame(drawing: Canvas) -> None:
     make_frame(drawing).save(file=sys.stdout.buffer)

@@ -113,7 +113,7 @@ class Drawing(metaclass=DrawingMetaclass):
 
         yield from sorted(drawings, key=lambda d: d.global_transform.z)
 
-
+    svg.PathData()
     def draw_self(self, global_transform: Transform) -> str:
         return ""
 
@@ -150,10 +150,8 @@ class OutlineableDrawing(ColorableDrawing):
         self.outline_thickness: int = outline_thickness
 
     def set_outline(self, color: str | Color) -> Self:
-        self._color = Color(color)
+        self._outline= Color(color)
         return self
-    
-
 
     @property
     def outline(self) -> Color:
@@ -166,29 +164,47 @@ class OutlineableDrawing(ColorableDrawing):
 
 
 class Canvas(ColorableDrawing):
-    def __init__(self, *, width=1920, height=1080, anchor: int = Drawing.TOP_LEFT, **kwargs):
-        super().__init__(anchor = anchor, **kwargs)
+    def __init__(self, *, width=1920, height=1080, logical_width = 64, logical_height = 36, color = 'dark_slate', **kwargs):
+        super().__init__(color = color ,**kwargs)
+
+        if self.anchor == Drawing.CENTER:
+            self.transform=Transform(translation=[1920/2,1080/2], )
+
+
+        assert width/height == logical_width/logical_height and width/logical_width == height/logical_height
+
         self.width=width
         self.height=height
+        self._logical_width = logical_height
+        self._logical_height = logical_width
 
+        self._logical_scaling = width/logical_width
+
+
+        self.transform.scale = np.array([self._logical_scaling, self._logical_scaling, 1])
+
+    def zoom(self, transform: Transform):
+        self.transform.scale = transform.scale * self._logical_scaling
+        self.transform.translation = [self.width/2, self.height/2, 0] + -transform.translation*transform.scale*self._logical_scaling
+        return self
 
     def draw_self(self, tfm: Transform) -> str:
 
 
-        width = self.width * tfm.scale_x
-        height = self.height * tfm.scale_y
+        width = self.width# /tfm.scale_x
+        height = self.height# /tfm.scale_y
 
-        if self.anchor == Drawing.CENTER:
-            offset_x = -width/2
-            offset_y = -height/2
-        elif self.anchor == Drawing.TOP_LEFT:
-            offset_x = 0
-            offset_y = 0
+        # if self.anchor == Drawing.CENTER:
+        #     offset_x = -width/2
+        #     offset_y = -height/2
+        # elif self.anchor == Drawing.TOP_LEFT:
+        #     offset_x = 0
+        #     offset_y = 0
 
         background = Rect(width=width, height=height, color = self.color, anchor=Drawing.TOP_LEFT)
 
         return svg.SVG(
-            viewBox=svg.ViewBoxSpec(-(tfm.x + offset_x), -(tfm.y + offset_y), width, height),
+            viewBox=svg.ViewBoxSpec(0, 0, width, height),
             elements= [background] + list(self.iter_components())).as_str()
     
     def iter_components(self):
@@ -205,18 +221,21 @@ class Circle(OutlineableDrawing):
         self.radius = radius
 
     def draw_self(self, tfm: Transform) -> str:
+
+        radius = self.radius * tfm.scale_x
         if self.anchor == Drawing.CENTER:
             offset_x = 0
             offset_y = 0
         elif self.anchor == Drawing.TOP_LEFT:
-            offset_x = -self.radius
-            offset_y = -self.radius 
+            offset_x = -radius
+            offset_y = -radius
         return svg.Circle(
             cx=tfm.x + offset_x,
             cy=tfm.y + offset_y,
-            r=self.radius,
+            r=radius,
             fill=self.color.rgb,
             stroke=self.outline.rgb,
+            stroke_width=self.outline_thickness * tfm.scale_x,
             fill_opacity=self.color.opacity,
             stroke_opacity=self.outline.opacity).as_str()
 
@@ -230,6 +249,9 @@ class Rect(OutlineableDrawing):
 
     def draw_self(self, tfm: Transform) -> str:
 
+        width = self.width*tfm.scale_x
+        height = self.height*tfm.scale_y
+
         if self.anchor == Drawing.CENTER:
             offset_x = -width/2
             offset_y = -height/2
@@ -237,14 +259,14 @@ class Rect(OutlineableDrawing):
             offset_x = 0
             offset_y = 0
 
-        width = self.width*tfm.scale[0]
-        height = self.height*tfm.scale[1]
+
         return svg.Rect(
             x=tfm.x + offset_x,
             y=tfm.y + offset_y,
             width=width, height=height,
             fill=self.color.rgb,
             stroke=self.outline.rgb,
+            stroke_width=self.outline_thickness * tfm.scale_x,
             fill_opacity=self.color.opacity,
             stroke_opacity=self.outline.opacity
             ).as_str()
@@ -257,22 +279,25 @@ class Text(ColorableDrawing):
             self.font_size: int = font_size
             self.font_family: str = font_family
 
-    @property
-    def width(self) -> int:
-        font = ImageFont.truetype(f"fonts/{self.font_family.upper()}.ttf", self.font_size).font
-        size = font.getsize(self.text)
-        return size[0][0]
+    # @property
+    # def width(self) -> int:
+    #     font = ImageFont.truetype(f"fonts/{self.font_family.upper()}.ttf", self.font_size).font
+    #     size = font.getsize(self.text)
+    #     return size[0][0]
     
-    @property
-    def height(self) -> int:
-        font = ImageFont.truetype(f"fonts/{self.font_family.upper()}.ttf", self.font_size).font
-        size = font.getsize(self.text)
-        return size[0][1]
+    # @property
+    # def height(self) -> int:
+    #     font = ImageFont.truetype(f"fonts/{self.font_family.upper()}.ttf", self.font_size).font
+    #     size = font.getsize(self.text)
+    #     return size[0][1]
     
     def draw_self(self, tfm: Transform):
 
-        width = self.width*tfm.scale_x
-        height = self.height*tfm.scale_y
+        font = ImageFont.truetype(f"fonts/{self.font_family.upper()}.ttf", self.font_size*tfm.scale_x).font
+        size = font.getsize(self.text)
+
+        width = size[0][0]
+        height = size[0][1]
 
 
         if self.anchor == Drawing.CENTER:
@@ -282,12 +307,14 @@ class Text(ColorableDrawing):
             offset_x = 0
             offset_y = height
 
+        # print(self.font_size * tfm.scale_x)
+
         return svg.Text(
             text=self.text,
             x=tfm.x + offset_x,
             y=tfm.y + offset_y,
-            font_size=self.font_size,
+            font_size=self.font_size * tfm.scale_x,
             font_family=self.font_family,
-            fill= self.color.rgb,
+            fill=self.color.rgb,
             ).as_str()
 

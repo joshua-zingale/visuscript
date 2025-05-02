@@ -119,18 +119,32 @@ class Transform:
 class Color():
 
     PALETTE: dict = {
-        "red": np.array([255, 0, 0]),
-        "orange": np.array([255, 165, 0]),
-        "yellow": np.array([255, 255, 0]),
-        "green": np.array([0, 128, 0]),
-        "blue": np.array([0, 0, 255]),
-        "indigo": np.array([75, 0, 130]),
-        "violet": np.array([238, 130, 238]),
-        "black": np.array([0, 0, 0]),
-        "white": np.array([255, 255, 255]),
-    }
+    "dark_slate": np.array([28, 28, 28]),
+    "soft_blue": np.array([173, 216, 230]),
+    "vibrant_orange": np.array([255, 165, 0]),
+    "pale_green": np.array([144, 238, 144]),
+    "bright_yellow": np.array([255, 255, 0]),
+    "steel_blue": np.array([70, 130, 180]),
+    "forest_green": np.array([34, 139, 34]),
+    "burnt_orange": np.array([205, 127, 50]),
+    "light_gray": np.array([220, 220, 220]),
+    "off_white": np.array([245, 245, 220]),
+    "medium_gray": np.array([150, 150, 150]),
+    "slate_gray": np.array([112, 128, 144]),
+    "crimson": np.array([220, 20, 60]),
+    "gold": np.array([255, 215, 0]),
+    "sky_blue": np.array([135, 206, 235]),
+    "light_coral": np.array([240, 128, 128]),
+    "red": np.array([255, 99, 71]),
+    "orange": np.array([255, 165, 0]),
+    "yellow": np.array([255, 215, 0]),
+    "green": np.array([124, 252, 0]),
+    "blue": np.array([65, 105, 225]),
+    "purple": np.array([138, 43, 226]),
+    "white": np.array([255,255,255])
+}
 
-    def __init__(self, color: str | np.ndarray | Self = "blue", opacity: float = 1.0):
+    def __init__(self, color: str | np.ndarray | Self = "off_white", opacity: float = 1.0):
 
         self.opacity: float = color.opacity if isinstance(color, Color) else opacity
         self._rgb: np.ndarray
@@ -144,7 +158,7 @@ class Color():
         elif isinstance(color, str) and color[:3] == "rgb":
             self._rgb = np.array(literal_eval(color[4:])).astype(int)
         elif isinstance(color, str):
-            self._rgb = Color.PALETTE.get(color)
+            self._rgb = Color.PALETTE[color]
         else:
             raise TypeError(f"{type(color)} is not accepted.")
 
