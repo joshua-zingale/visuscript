@@ -29,7 +29,7 @@ class Transform:
         return Transform(translation=self.translation.copy(), scale=self.scale, rotation=self.rotation)
 
     def __str__(self):
-        return f"Transform(translation={self.translation}, scale={self.scale}, rotation={self.rotation})"
+        return f"translate({" ".join(self.translation[:2].astype(str))}) scale({" ".join(self.scale[:2].astype(str))}) rotate({self.rotation * 180/np.pi})"
     
     def __repr__(self):
         return str(self)
