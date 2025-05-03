@@ -4,13 +4,14 @@ from io import StringIO
 from typing import Self, Generator
 import numpy as np
 import svg
+from abc import ABC, abstractmethod
 
-class Drawable:
+class Drawable(ABC):
 
+    DEFAULT: int = 0
     TOP_LEFT: int = 1
     CENTER: int = 2
     BEGINNING: int = 3
-
 
     def __init__(self, *, transform: Transform | None = None, anchor: int = CENTER):
 
@@ -20,26 +21,58 @@ class Drawable:
     def set_transform(self, transform: Transform) -> Self:
         self.transform = transform
         return self
-
-    def draw(self) -> str:
-        raise NotImplementedError()
+    
+    def set_anchor(self, anchor: int):
+        self.anchor = anchor
+        return self
     
     @property
     def anchor_transform(self) -> Transform:
-        if self.anchor == Drawable.TOP_LEFT:
+
+        transform = Transform(self.top_left)
+        if self.anchor == Drawable.DEFAULT:
             return Transform()
+        if self.anchor == Drawable.TOP_LEFT:
+            return transform
         if self.anchor == Drawable.CENTER:
-            return Transform(translation=[-self.width/2, -self.height/2])
+            return Transform(translation=[-self.width/2, -self.height/2]) + transform
+        
+
+    @abstractmethod
+    def draw(self) -> str:
+        """
+        Returns the SVG representation of this object.
+        """
+        ...
+    
+    @property
+    @abstractmethod
+    def top_left(self) -> float:
+        """
+        The top left coordinate for this object.
+        """
+        ...
             
     @property
-    def width(self) -> float:
-        raise NotImplementedError()
+    @abstractmethod
+    def width(self) -> np.ndarray:
+        """
+        The width of this object
+        """
+        ...
     @property
+    @abstractmethod
     def height(self) -> float:
-        raise NotImplementedError()
+        """
+        The height of this object
+        """
+        ...
     
     @property
     def svg_transform(self) -> str:
+        """
+        The SVG-formated transform for this object.
+        """
         return f"translate({" ".join(self.transform.translation[:2].astype(str))}) scale({" ".join(self.transform.scale[:2].astype(str))}) rotate({self.transform.rotation} {" ".join(self.transform.translation[:2].astype(str))})"
 
 
@@ -137,6 +170,9 @@ class Element(Drawable):
 
     @property
     def global_transform(self) -> Transform:
+        """
+        The global transform for this object. This transform is the composition of all ancestor transforms and this object's transform.
+        """
         curr = self
 
         transform = self.transform
@@ -149,6 +185,9 @@ class Element(Drawable):
     
     @global_transform.setter
     def global_transform(self, value: Transform):
+        """
+        Sets the global transform for this object.
+        """
         if self._parent is None:
             self.transform = value
         else:
@@ -168,7 +207,7 @@ class Element(Drawable):
 
     def __iter__(self) -> Generator["Element"]:
         """
-        Iterate over self and children in ascending z order, secondarily self before children
+        Iterate over self and children in ascending z order, secondarily ordering parents before children
         """
         elements = [self]
         for child in self._children:
@@ -183,8 +222,12 @@ class Element(Drawable):
 
         return string_builder.getvalue()
     
+    @abstractmethod
     def draw_self(self) -> str:
-        raise NotImplementedError()
+        """
+        Returns the SVG representation for this object but not for its children.
+        """
+        ...
 
 
 class Drawing(Element, Segment):
@@ -194,9 +237,10 @@ class Drawing(Element, Segment):
                  stroke: Color | None = None,
                  stroke_width: float = 1,
                  fill: Color | None = None,
+                 anchor: int = Drawable.DEFAULT,
                  **kwargs):
         
-        super().__init__(**kwargs)
+        super().__init__(anchor = anchor, **kwargs)
 
 
         if fill is not None and stroke is None:
@@ -217,6 +261,10 @@ class Drawing(Element, Segment):
     @Element.globify
     def global_point(self, length: float) -> np.ndarray:
         return self.transform(Transform(self._path.point(length))).translation[:2]
+
+    @property
+    def top_left(self) -> np.ndarray:
+        return self._path.top_left
 
     @property
     def start(self):
@@ -250,19 +298,16 @@ class Drawing(Element, Segment):
 
 class Circle(Drawing):
 
-    @property
-    def anchor_transform(self) -> Transform:
-        if self.anchor == Drawable.TOP_LEFT:
-            Transform(translation=[-self.width/2, -self.height/2])
-        elif self.anchor == Drawable.CENTER:
-            return Transform()
-
     def __init__(self, radius: float, **kwargs):
         # TODO replace path with circle approximate
         path = Path().L(radius, 0).L(radius, radius).Z()
         super().__init__(path = path, **kwargs)
 
         self.radius = radius
+
+    @property
+    def top_left(self) -> np.ndarray:
+        return np.array([self.radius, self.radius], dtype=float)
 
     @property
     def width(self):

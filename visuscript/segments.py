@@ -2,9 +2,6 @@ import numpy as np
 from typing import Self
 
 class Segment:
-
-    
-    
     def point_percentage(self, percentage: float):
         assert 0 <= percentage and percentage <= 1
         return self.point(percentage * self.arc_length)
@@ -36,10 +33,6 @@ class MSegment(Segment):
     @property
     def start(self) -> np.ndarray:
         return np.array([self._x1, self._y1],dtype=float)
-    
-    def point_percentage(self, percentage: float):
-        assert 0 <= percentage and percentage <= 1
-        return self.point(percentage * self.arc_length)
 
     def point(self, length: float) -> np.ndarray:
         assert length == 0
@@ -178,6 +171,10 @@ class Path(Segment):
         self.max_y = 0
 
         self._cursor = np.array([0.0,0.0], dtype=float)
+
+    @property
+    def top_left(self) -> np.ndarray:
+        return np.array([self.min_x, self.min_y])
 
     def __str__(self) -> str:
 

@@ -5,6 +5,15 @@ import numpy as np
 import svg
 
 class Head(Element):
+    @property
+    def top_left(self) -> np.ndarray:
+        return np.array([0,0], dtype=float)
+    @property
+    def width(self) -> float:
+        return 0.0
+    @property
+    def height(self) -> float:
+        return 0.0
     def draw_self(self):
         return ""
     
@@ -51,6 +60,10 @@ class Canvas(Drawable):
             self._logical_width * x_percentage,
             self._logical_height * y_percentage
         )
+    
+    @property
+    def top_left(self) -> np.ndarray:
+        return np.array([0,0], dtype=float)
 
     @property
     def width(self) -> float:

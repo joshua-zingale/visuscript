@@ -5,19 +5,16 @@ import svg
 
 class Text(Element):
 
-    @property
-    def anchor_transform(self) -> Transform:
-        if self.anchor == Element.CENTER:
-            return Transform([-self.width/2, self.height/2])
-        elif self.anchor == Element.TOP_LEFT:
-            return Transform([0, self.height])
-
     def __init__(self, *, text: str, font_size: int, font_family: str = 'arial', fill = None, **kwargs):
             super().__init__(**kwargs)
             self.text: str = text
             self.font_size: int = font_size
             self.font_family: str = font_family
             self.fill: Color = Color(fill) if fill is not None else Color()
+
+    @property
+    def top_left(self) -> np.ndarray:
+         return np.array([0, self.height], dtype=float)
 
     @property
     def width(self) -> float:
