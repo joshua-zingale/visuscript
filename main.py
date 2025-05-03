@@ -6,14 +6,15 @@ from visuscript.output import *
 class AnimatedList(list):
     pass
 
+N = 24*5
+for i in range(0, N, 1):
+    rect = Rect(width=20, height=20, transform=Transform(translation=[32, 16]))
 
-for i in range(0, 24*5, 1):
-    canvas = Canvas(width=640, height=360).with_children([
-        Circle(radius=4, color=Color(opacity=0.0), outline=Color('blue'), outline_thickness=15).with_children([
-            Text(text="-----", font_size=3, anchor=Drawing.CENTER)
-        ]),
-        Rect(width=200, height=400, transform=Transform(translation=[200,100])),
-    ]).zoom(Transform(translation=[0,0], scale=1+ (i/24*5)))
+    circ = Rect(width=5,height=5, transform=Transform(translation=rect.point(i/N * rect.arc_length), rotation=i/N*360))
+
+    canvas = Canvas(width=640, height=360, logical_width=64, logical_height=36, elements=[
+        rect, circ
+    ])
 
 
     print_frame(canvas)

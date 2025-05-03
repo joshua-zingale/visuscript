@@ -1,3 +1,4 @@
+from .utility import ellipse_arc_length
 from .primatives import *
 from PIL import ImageFont
 from io import StringIO
@@ -12,7 +13,7 @@ class Drawable:
 
     def __init__(self, *, transform: Transform | None = None, anchor: int = CENTER):
 
-        self.transform: Transform = transform or Transform()
+        self.transform: Transform = Transform() if transform is None else transform
         self.anchor = anchor
     
     def set_transform(self, transform: Transform) -> Self:
@@ -37,6 +38,27 @@ class Drawable:
 
 
 class Element(Drawable):
+
+    @staticmethod
+    def anchor(method):
+        def anchored_method(self: Element, *args, **kwargs):
+            transform = self.transform
+            self.transform = self.anchor_transform(self.transform)
+            r = method(self, *args, **kwargs)
+            self.transform = transform
+            return r
+        return anchored_method
+    
+    @staticmethod
+    def globify(method):
+        def globified_method(self: Element, *args, **kwargs):
+            transform = self.transform
+            self.transform = self.global_transform
+            r = method(self, *args, **kwargs)
+            self.transform = transform
+            return r
+        return globified_method
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._children: list["Element"] = []
@@ -148,7 +170,7 @@ class Canvas(Drawable):
     def __init__(self, *, elements: list[Element] | None = None, width=1920, height=1080, logical_width = 64, logical_height = 36, color = 'dark_slate', **kwargs):
 
         super().__init__(**kwargs)
-        elements = elements or []
+        elements = [] if elements is None else elements
         self.anchor = Drawable.CENTER
         self.color: Color = Color(color)
         self._head = Head().with_children(elements)
@@ -167,10 +189,10 @@ class Canvas(Drawable):
 
     
     @property
-    def width(self) -> int:
+    def width(self) -> float:
         return self._width
     @property
-    def height(self) -> int:
+    def height(self) -> float:
         return self._height
     
     def zoom(self, transform: Transform):
@@ -186,55 +208,183 @@ class Canvas(Drawable):
 
 
 class Segment:
-    def __str__(self):
+
+    def __init__(self):
+        self._x1: float
+        self._y1: float
+
+
+    @property
+    def start(self) -> np.ndarray:
+        return np.array([self._x1, self._y1],dtype=float)
+    
+    def point_percentage(self, percentage: float):
+        assert 0 <= percentage and percentage <= 1
+        return self.point(percentage * self.arc_length)
+
+    def point(self, length: float) -> np.ndarray:
+        raise NotImplementedError()
+
+    @property
+    def arc_length(self) -> float:
         raise NotImplementedError()
     
     @property
     def end(self) -> np.ndarray:
         raise NotImplementedError()
     
+    def __str__(self) -> str:
+        raise NotImplementedError()
+    
 
     
 class LinearSegment(Segment):
-    def __init__(self, x: int, y: int):
-        self._x = x
-        self._y = y
+    def __init__(self, x1: float, y1: float, x2: float, y2: float):
+        self._x1 = x1
+        self._y1 = y1
+        self._x2 = x2
+        self._y2 = y2
+
+    def point(self, length: float) -> np.ndarray:
+        assert 0 <= length and length <= self.arc_length
+        p = length / self.arc_length
+        return np.array([
+            self._x2 * p + self._x1 * (1 - p),
+            self._y2 * p + self._y1 * (1 - p)
+        ])
 
     @property
-    def end(self):
-        return np.array([self._x, self._y])
-
-class Path:
-    UNRESTRICTED: int = 1
-    NO_ELLIPSE: int = 2
-    NO_SEGMENTS: int = 3
-
-    @staticmethod
-    def verify_call(foo):
-        def verified_method(self: Self, *args, **kwargs):
-            if self._state == Path.UNRESTRICTED:
-                self._state = Path.NO_ELLIPSE
-                return foo(self, *args, **kwargs)
-            elif self._state == Path.NO_ELLIPSE:
-                raise RuntimeError("Cannot add an elliptical loop unless it is the only segment")
-            elif self._state == Path.NO_SEGMENTS:
-                raise RuntimeError("Cannot add segments to a Path after adding an elliptical loop.")
-            return foo(self, *args, **kwargs) # Let function handle check for whether an sllipse is called or not            
-            
-        return verified_method
+    def arc_length(self) -> float:
+        return np.sqrt( (self._x2 - self._x1)**2 + (self._y2 - self._y1)**2)
     
+    @property
+    def end(self) -> np.ndarray:
+        return np.array([self._x2, self._y2])
+    
+    def __str__(self) -> str:
+        return f"L {self._x2} {self._y2}"
+    
+class ZSegment(LinearSegment):
+    def __init__(self, x1: float, y1: float):
+        self._x1 = x1
+        self._y1 = y1
+        self._x2 = 0
+        self._y2 = 0
+
+    def __str__(self) -> str:
+        return f"Z"
+
+
+class ArcSegment(Segment):
+    def __init__(
+            self, x1: float, y1: float, rx: float, ry: float, x_axis_rotation: float,
+            large_arc_flag: bool, sweep_flag: bool, x2: float, y2: float):
+        self._x1 = x1
+        self._y1 = y1
+        self._rx = rx
+        self._ry = ry
+        self._x_axis_rotation = x_axis_rotation
+        self._large_arc_flag = 1 if large_arc_flag else 0
+        self._sweep_flag = 1 if sweep_flag else 0
+        self._x2 = x2
+        self._y2 = y2
+
+    def point(self, length: float) -> np.ndarray:
+        assert 0 <= length and length <= self.arc_length
+        raise NotImplementedError()
+
+
+    @property
+    def arc_length(self) -> float:
+        raise NotImplementedError()
+    
+    @property
+    def end(self) -> np.ndarray:
+        return np.array([self._x2, self._y2])
+    
+    def __str__(self) -> str:
+        return f"A {self._rx} {self._ry} {self._x_axis_rotation} {self._large_arc_flag} {self._sweep_flag} {self._x2} {self._y2}"
+    
+
+# class CircularSegment(Segment):
+#     def __init__(self, x1: float, y1: float, r: float, start_angle: float, end_angle: float):
+#         self._x1 = x1
+#         self._y1 = y1
+#         self._r = r
+#         self._start_angle = start_angle
+#         self._end_angle = end_angle
+
+#         assert abs(start_angle - end_angle) < 360
+
+#     def point(self, length: float) -> np.ndarray:
+#         assert 0 <= length and length <= self.arc_length
+
+#         p = length / self.arc_length
+
+#         delta = np.array([
+#             self._r*np.cos(self._end_angle*np.pi/180 * p + self._start_angle*np.pi/180 * (1-p)),
+#             self._r*np.sin(self._end_angle*np.pi/180 * p + self._start_angle*np.pi/180 * (1-p)),
+#         ]) - np.array([
+#             self._r*np.cos(self._start_angle*np.pi/180),
+#             self._r*np.sin(self._start_angle*np.pi/180),         
+#         ])
+        
+#         return np.array([self._x1, self._y1]) + delta
+
+#     @property
+#     def arc_length(self) -> float:
+#         return 2*np.pi *self._r * abs(self._start_angle - self._end_angle)/360 
+    
+#     @property
+#     def end(self) -> np.ndarray:
+#         return self.point(self.arc_length)
+    
+#     def __str__(self) -> str:
+#         x2, y2 = self.end
+#         large_arc_flag = 1 if abs(self._start_angle - self._end_angle) > 180 else 0
+#         sweep_flag = 1 if self._end_angle > self._start_angle else 0
+#         return f"A {self._r} {self._r} {0} {large_arc_flag} {sweep_flag} {x2} {y2}"
+
+
+class Path(Segment):    
     def __init__(self):
-        self._state = Path.UNRESTRICTED
         self._segments: list[Segment] = []
         self.min_x = 0
         self.max_x = 0
         self.min_y = 0
         self.max_y = 0
 
+        self._cursor = np.array([0.0,0.0], dtype=float)
+        self._start = self._cursor.copy()
+
     def __str__(self) -> str:
         return "M 0 0 " + " ".join(
             map(lambda x: str(x), self._segments)
             )
+    
+    def point(self, length: float) -> np.ndarray:
+        assert length < self.arc_length
+
+        traversed = 0.0
+        i = 0
+        while traversed + self._segments[i].arc_length < length:
+            traversed += self._segments[i].arc_length
+            i += 1
+
+        return self._segments[i].point(length - traversed)
+
+    
+    @property
+    def arc_length(self) -> float:
+        return sum(map(lambda x: x.arc_length, self._segments))
+    
+    @property
+    def start(self) -> np.ndarray:
+        return np.array([0.0,0.0]) if len(self._segments) == 0 else self._segments[0].end()
+    
+    @property
+    def end(self) -> np.ndarray:
+        return np.array([0.0,0.0]) if len(self._segments) == 0 else self._segments[-1].end()
     
     @property
     def width(self) -> float:
@@ -243,83 +393,112 @@ class Path:
     @property
     def height(self) -> float:
         return self.max_y - self.min_y
-
     
-    @verify_call
-    def L(self, x: int, y: int) -> Self:
+    def M(self, x: float, y: float) -> Self:
         self.min_x = min(self.min_x, x)
         self.max_x = max(self.max_x, x)
         self.min_y = min(self.min_y, y)
         self.max_y = max(self.max_y, y)
 
-        self._segments.append(Segment(f"L {x} {y}"))
+        self._cursor[:] = x, y
+        self._start[:] = x, y
+
+        return self
+
+    
+    def L(self, x: float, y: float) -> Self:
+        self.min_x = min(self.min_x, x)
+        self.max_x = max(self.max_x, x)
+        self.min_y = min(self.min_y, y)
+        self.max_y = max(self.max_y, y)
+
+        segment = LinearSegment(self._cursor[0],self._cursor[1], x, y)
+        self._cursor = segment.end
+        self._segments.append(segment)
         return self
     
-    @verify_call
     def Z(self):
-        
+        segment = ZSegment(self._cursor[0],self._cursor[1])
+        self._cursor = segment.end
+        self._segments.append(segment)
         return self
 
 
-class DrawingMetaclass(type):
-    @staticmethod
-    def globify(method):
-        def globified_method(self: Element):
-            transform = self.transform
-            self.transform = self.global_transform
-            r = method(self)
-            self.transform = transform
-            return r
-        return globified_method
+# class DrawingMetaclass(type):
+#     @staticmethod
+#     def globify(method):
+#         def globified_method(self: Element):
+#             transform = self.transform
+#             self.transform = self.global_transform
+#             r = method(self)
+#             self.transform = transform
+#             return r
+#         return globified_method
     
-    @staticmethod
-    def anchor(method):
-        def anchored_method(self: Element):
-            transform = self.transform
-            self.transform = self.anchor_transform(self.transform)
-            r = method(self)
-            self.transform = transform
-            return r
-        return anchored_method
+#     @staticmethod
+#     def anchor(method):
+#         def anchored_method(self: Element):
+#             transform = self.transform
+#             self.transform = self.anchor_transform(self.transform)
+#             r = method(self)
+#             self.transform = transform
+#             return r
+#         return anchored_method
 
 
-    def __new__(cls, name, bases, attrs):
-        method_name_to_globify = "draw_self"
-        if method_name_to_globify in attrs:
-            attrs[method_name_to_globify] = DrawingMetaclass.anchor(DrawingMetaclass.globify(attrs[method_name_to_globify]))
-        return super().__new__(cls, name, bases, attrs)
+#     def __new__(cls, name, bases, attrs):
+#         method_name_to_globify = "draw_self"
+#         if method_name_to_globify in attrs:
+#             attrs[method_name_to_globify] = DrawingMetaclass.anchor(DrawingMetaclass.globify(attrs[method_name_to_globify]))
+#         return super().__new__(cls, name, bases, attrs)
 
 
-class Drawing(Element, metaclass=DrawingMetaclass):
-    def __init__(self,
+class Drawing(Element):
+    def __init__(self, *,
+                 path: Path,
                  stroke: Color | None = None,
                  stroke_width: float = 1,
                  fill: Color | None = None,
                  **kwargs):
+        
         super().__init__(**kwargs)
+
+
         if fill is not None and stroke is None:
             self.stroke: Color = Color(fill)
         else:
-            self.stroke: Color = Color(stroke) if stroke else Color()
-            
-        self.fill: Color = Color(fill) if fill else Color(opacity=0.0)
+            self.stroke: Color = Color(stroke) if stroke is not None else Color()
 
-        self._shape: Path = self.get_shape()
+        self.fill: Color = Color(fill) if fill is not None else Color(opacity=0.0)
         self.stroke_width: float = stroke_width
+
+        self._path: Path = path
+        
+    @Element.anchor
+    def point(self, length: float) -> np.ndarray:
+        return self.transform(Transform(self._path.point(length))).translation
+    
+    @Element.anchor
+    def global_point(self, length: float) -> np.ndarray:
+        return self.global_transform(Transform(self._path.point(length))).translation
+
+
+    @property
+    def arc_length(self):
+        return self._path.arc_length
 
     @property
     def width(self):
-        return self._shape.width
+        return self._path.width
     @property
     def height(self):
-        return self._shape.height
-
-    def get_shape(self) -> Path:
-        raise NotImplementedError()
+        return self._path.height
     
+    @Element.anchor
+    @Element.globify
     def draw_self(self):
         return svg.Path(
-                d=str(self._shape),
+                d=str(self._path),
                 transform=str(self.transform),
                 stroke=self.stroke.rgb,
                 stroke_opacity=self.stroke.opacity,
@@ -328,22 +507,44 @@ class Drawing(Element, metaclass=DrawingMetaclass):
                 stroke_width=self.stroke_width).as_str()
     
 
-class Rect(Drawing):
-    def __init__(self, *, width, height, **kwargs):
-        self._width = width
-        self._height = height
-        super().__init__(**kwargs)
-
-    def get_shape(self) -> Path:
-        return Path().L(self._width, 0).L(self._width, self._height).L(0, self._height).L(0,0)
-    
 class Circle(Drawing):
-    def __init__(self, *, radius, **kwargs):
-        self._radius = radius
-        super().__init__(**kwargs)
 
-    def get_shape(self) -> Path:
-        return Path()
+    def __init__(self, radius: float, **kwargs):
+        path = Path().L(radius, 0).L(radius, radius).Z()
+        super().__init__(path = path, **kwargs)
+
+        self.radius = radius
+
+    @property
+    def width(self):
+        return self.radius * 2
+    @property
+    def height(self):
+        return self.radius * 2
+
+    @Element.globify
+    def draw_self(self):
+
+        if self.anchor == Drawable.TOP_LEFT:
+            anchor_align = Transform(translation=[-self.radius, -self.radius])
+        elif self.anchor == Drawable.CENTER:
+            anchor_align = Transform()
+
+        return svg.Circle(
+            r=self.radius,
+            transform=str(anchor_align(self.transform)),
+            stroke=self.stroke.rgb,
+            stroke_opacity=self.stroke.opacity,
+            fill=self.fill.rgb,
+            fill_opacity=self.fill.opacity,
+            stroke_width=self.stroke_width).as_str()
+
+
+def Rect(width, height, **kwargs):
+
+    path = Path().L(width, 0).L(width, height).L(0, height).Z()
+
+    return Drawing(path=path, **kwargs)
     
 
 
