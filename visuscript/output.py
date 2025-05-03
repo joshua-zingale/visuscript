@@ -1,5 +1,5 @@
 from wand.image import Image
-from .drawings import Canvas
+from .canvas import Canvas
 from io import BytesIO
 import sys
 

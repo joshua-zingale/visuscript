@@ -1,11 +1,18 @@
 import numpy as np
 from typing import Self
 from ast import literal_eval
+from .utility import ellipse_arc_length
 
 class Transform:
 
-    def __init__(self, translation: np.ndarray | list = np.array([0.0,0.0,0.0]), scale: np.ndarray | list | float = np.array([1,1,1]), rotation: np.ndarray | list = 0.0):
+    def __init__(self, translation: np.ndarray | list | Self = [0,0,0], scale: np.ndarray | list | float = [1,1,1], rotation: np.ndarray | list = 0.0):
         
+        if isinstance(translation, Transform):
+            self.translation = translation.translation
+            self.scale = translation.scale
+            self.rotation = translation.rotation
+            return 
+
         translation = list(translation)
         if len(translation) == 2:
             translation.append(0.0)
@@ -24,17 +31,24 @@ class Transform:
         self.scale: np.ndarray = scale
         self.rotation: np.ndarray = rotation
 
+    @property
+    def pivot(self):
+        if self._pivot == None:
+            return self.translation
+        else:
+            return self._pivot
     
     def copy(self):
         return Transform(translation=self.translation.copy(), scale=self.scale, rotation=self.rotation)
 
     def __str__(self):
-        return f"translate({" ".join(self.translation[:2].astype(str))}) scale({" ".join(self.scale[:2].astype(str))}) rotate({self.rotation * 180/np.pi} {" ".join(self.translation[:2].astype(str))})"
+        return f"translate({" ".join(self.translation[:2].astype(str))}) scale({" ".join(self.scale[:2].astype(str))}) rotate({self.rotation} {" ".join(self.translation[:2].astype(str))})"
     
     def __repr__(self):
         return str(self)
 
     def __call__(self, other: Self):
+        #TODO fix rotation. As of 5/3/2025, children of a rotated element spin about their own axes
         return Transform(
             translation = other.translation * self.scale + self.translation,
             scale = self.scale * other.scale,
@@ -56,8 +70,8 @@ class Transform:
         )
     def __rmul__(self, other: float):
         return self * other
-    def __div__(self, other: float):
-        return self * 1/other
+    def __truediv__(self, other: float):
+        return self * (1/other)
     
     def interpolate(self, other: Self, alpha: float):
         np.clip(alpha, 0.0, 1.0)
@@ -186,8 +200,6 @@ class Color():
     def __rmul__(self, other: float) -> Self:
         return self * other
     
-    def __div__(self, other: float) -> Self:
+    def __truediv__(self, other: float) -> Self:
         color = (self._rgb / other).round().astype(int)
         return Color(color=color)
-
-    
