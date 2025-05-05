@@ -73,7 +73,7 @@ class Drawable(ABC):
         """
         The SVG-formated transform for this object.
         """
-        return f"translate({" ".join(self.transform.xy.astype(str))}) scale({" ".join(self.transform.scale[:2].astype(str))}) rotate({self.transform.rotation} {" ".join(self.transform.xy.astype(str))})"
+        return f"translate({" ".join(self.transform.xy.astype(str))}) scale({" ".join(self.transform.scale[:2].astype(str))}) rotate({self.transform.rotation})"
 
 
 
@@ -111,13 +111,6 @@ class Element(Drawable):
         self._children: list["Element"] = []
         self._parent: "Element" | None = None
         self._svg_pivot = None
-
-    @property
-    def svg_transform(self) -> str:
-        if self._svg_pivot:
-            return f"translate({" ".join(self.transform.xy.astype(str))}) scale({" ".join(self.transform.scale[:2].astype(str))}) rotate({self.transform.rotation} {self._svg_pivot})"
-        else:
-            return super().svg_transform
     
     def set_global_transform(self, transform: Transform) -> Self:
         self.global_transform = transform
@@ -282,7 +275,6 @@ class Drawing(Element, Segment):
     def height(self):
         return self._path.height
     
-    @Element.lock_svg_pivot
     @Element.anchor
     @Element.globify
     def draw_self(self):

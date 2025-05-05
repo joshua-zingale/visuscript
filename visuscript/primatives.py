@@ -66,10 +66,18 @@ class Transform:
     def __repr__(self):
         return str(self)
 
-    def __call__(self, other: Self):
-        #TODO fix rotation. As of 5/3/2025, children of a rotated element spin about their own axes
+    def __call__(self, other: Self) -> Self:
+        return self @ other
+    
+    def __matmul__(self, other: Self) -> Self:
+        t = (self.rotation * np.pi/180)
+        r_matrix = np.array([
+            [np.cos(t), -np.sin(t),0],
+            [np.sin(t), np.cos(t), 0],
+            [0, 0, 1]
+        ])
         return Transform(
-            translation = other._translation * self.scale + self._translation,
+            translation = r_matrix@(other._translation * self.scale) + self._translation,
             scale = self.scale * other.scale,
             rotation = self.rotation + other.rotation
             )
