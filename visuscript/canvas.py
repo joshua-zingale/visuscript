@@ -62,15 +62,15 @@ class Canvas(Drawable):
         Returns a percentage of the total logical canvas area.
         """
         return percentage * self._logical_width * self._logical_height
-    def w(self, x_percentage: float) -> float:
-        return self._logical_width * x_percentage
-    def h(self, y_percentage: float) -> float:
-        return self._logical_height * y_percentage
-    def p(self, x_percentage: float, y_percentage: float) -> Tuple[float, float]:
-        return (
-            self._logical_width * x_percentage,
-            self._logical_height * y_percentage
-        )
+    def x(self, x_percentage: float) -> float:
+        return self._logical_width * x_percentage - self._logical_width/2
+    def y(self, y_percentage: float) -> float:
+        return self._logical_height * y_percentage - self._logical_height/2
+    def xy(self, x_percentage: float, y_percentage: float) -> np.ndarray:
+        return np.array([
+            self.x(x_percentage),
+            self.y(y_percentage)
+        ])
     
     @property
     def top_left(self) -> np.ndarray:
@@ -94,7 +94,7 @@ class Canvas(Drawable):
         transform = deepcopy(self.transform)
 
         scale = transform.scale / self._logical_scaling
-        translation = ([self.width/2, self.height/2, 0] - transform.translation)/(scale * self._logical_scaling)
+        translation = ([self.width/2, self.height/2, 0] - transform.translation)/(scale * self._logical_scaling)* self.transform.scale
         # translation = (-transform.translation)/(scale * self._logical_scaling) * self.transform.scale
 
         transform.translation = translation
