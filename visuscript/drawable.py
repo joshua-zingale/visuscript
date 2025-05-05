@@ -29,7 +29,7 @@ class Drawable(ABC):
     @property
     def anchor_transform(self) -> Transform:
 
-        transform = Transform(self.top_left)
+        transform = Transform(-self.top_left)
         if self.anchor == Drawable.DEFAULT:
             return Transform()
         if self.anchor == Drawable.TOP_LEFT:
@@ -47,7 +47,7 @@ class Drawable(ABC):
     
     @property
     @abstractmethod
-    def top_left(self) -> float:
+    def top_left(self) -> np.ndarray:
         """
         The top left coordinate for this object.
         """
@@ -73,7 +73,7 @@ class Drawable(ABC):
         """
         The SVG-formated transform for this object.
         """
-        return f"translate({" ".join(self.transform.translation[:2].astype(str))}) scale({" ".join(self.transform.scale[:2].astype(str))}) rotate({self.transform.rotation} {" ".join(self.transform.translation[:2].astype(str))})"
+        return f"translate({" ".join(self.transform.xy.astype(str))}) scale({" ".join(self.transform.scale[:2].astype(str))}) rotate({self.transform.rotation} {" ".join(self.transform.xy.astype(str))})"
 
 
 
@@ -82,7 +82,7 @@ class Element(Drawable):
     @staticmethod
     def lock_svg_pivot(method):
         def locked_svg_pivot_method(self: Element, *args, **kwargs):
-            self._svg_pivot = " ".join((-self.anchor_transform.translation[:2]).astype(str))
+            self._svg_pivot = " ".join((-self.anchor_transform.xy).astype(str))
             r = method(self, *args, **kwargs)
             self._svg_pivot = None
             return r
@@ -115,7 +115,7 @@ class Element(Drawable):
     @property
     def svg_transform(self) -> str:
         if self._svg_pivot:
-            return f"translate({" ".join(self.transform.translation[:2].astype(str))}) scale({" ".join(self.transform.scale[:2].astype(str))}) rotate({self.transform.rotation} {self._svg_pivot})"
+            return f"translate({" ".join(self.transform.xy.astype(str))}) scale({" ".join(self.transform.scale[:2].astype(str))}) rotate({self.transform.rotation} {self._svg_pivot})"
         else:
             return super().svg_transform
     
@@ -255,12 +255,12 @@ class Drawing(Element, Segment):
         
     @Element.anchor
     def point(self, length: float) -> np.ndarray:
-        return self.transform(Transform(self._path.point(length))).translation[:2]
+        return self.transform(Transform(self._path.point(length))).xy
     
     @Element.anchor
     @Element.globify
     def global_point(self, length: float) -> np.ndarray:
-        return self.transform(Transform(self._path.point(length))).translation[:2]
+        return self.transform(Transform(self._path.point(length))).xy
 
     @property
     def top_left(self) -> np.ndarray:
@@ -320,7 +320,6 @@ class Circle(Drawing):
     @Element.anchor
     @Element.globify
     def draw_self(self):
-
         return svg.Circle(
             r=self.radius,
             transform=self.svg_transform,
@@ -331,8 +330,8 @@ class Circle(Drawing):
             stroke_width=self.stroke_width).as_str()
 
 
-def Rect(width, height, **kwargs):
+def Rect(width, height, anchor: int = Drawable.CENTER, **kwargs):
 
-    path = Path().L(width, 0).L(width, height).L(0, height).Z()
+    path = Path().M(-width/2, -height/2).l(width, 0).l(0, height).l(-width, 0).Z()
 
-    return Drawing(path=path, **kwargs)
+    return Drawing(path=path, anchor=anchor, **kwargs)

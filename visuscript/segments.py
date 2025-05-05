@@ -1,28 +1,41 @@
 import numpy as np
 from typing import Self
+from abc import ABC, abstractmethod
 
-class Segment:
+class Segment(ABC):
     def point_percentage(self, percentage: float):
         assert 0 <= percentage and percentage <= 1
         return self.point(percentage * self.arc_length)
 
+    @abstractmethod
     def point(self, length: float) -> np.ndarray:
-        raise NotImplementedError()
+        ...
+
+    # @property
+    # @abstractmethod
+    # def offset(self) -> np.ndarray:
+    #     ...
+
+    # @offset.setter
+    # @abstractmethod
+    # def offset(self, value: np.ndarray):
+    #     ...
 
     @property
+    @abstractmethod
     def arc_length(self) -> float:
-        raise NotImplementedError()
-    
-    @property
+        ...    
+    @abstractmethod
     def start(self) -> np.ndarray:
-        raise NotImplementedError()
-    
-    @property
+        ...    
+
+    @abstractmethod
     def end(self) -> np.ndarray:
-        raise NotImplementedError()
+        ...
     
+    @abstractmethod
     def __str__(self) -> str:
-        raise NotImplementedError()
+        ...
     
 
 class MSegment(Segment):
@@ -81,11 +94,11 @@ class LinearSegment(Segment):
         return f"L {self._x2} {self._y2}"
     
 class ZSegment(LinearSegment):
-    def __init__(self, x1: float, y1: float):
+    def __init__(self, x1: float, y1: float, x2: float, y2: float):
         self._x1 = x1
         self._y1 = y1
-        self._x2 = 0
-        self._y2 = 0
+        self._x2 = x2
+        self._y2 = y2
 
     def __str__(self) -> str:
         return f"Z"
@@ -189,7 +202,7 @@ class Path(Segment):
             )
     
     def point(self, length: float) -> np.ndarray:
-        assert length < self.arc_length
+        assert length <= self.arc_length
 
         traversed = 0.0
         i = 0
@@ -206,11 +219,11 @@ class Path(Segment):
     
     @property
     def start(self) -> np.ndarray:
-        return np.array([0.0,0.0]) if len(self._segments) == 0 else self._segments[0].start()
+        return np.array([0.0,0.0]) if len(self._segments) == 0 else self._segments[0].start
     
     @property
     def end(self) -> np.ndarray:
-        return np.array([0.0,0.0]) if len(self._segments) == 0 else self._segments[-1].end()
+        return np.array([0.0,0.0]) if len(self._segments) == 0 else self._segments[-1].end
     
     @property
     def width(self) -> float:
@@ -230,6 +243,10 @@ class Path(Segment):
         self._cursor = segment.end
         self._segments.append(segment)
         return self
+    
+    def m(self, dx: float, dy: float) -> Self:
+        x,y = [dx,dy] + self._cursor
+        return self.M(x, y)
 
     
     def L(self, x: float, y: float) -> Self:
@@ -243,8 +260,20 @@ class Path(Segment):
         self._segments.append(segment)
         return self
     
+
+    def l(self, dx: float, dy: float) -> Self:
+        x,y = [dx,dy] + self._cursor
+        return self.L(x, y)
+    
     def Z(self):
-        segment = ZSegment(self._cursor[0],self._cursor[1])
+
+        x2, y2 = 0, 0
+        for segment in reversed(self._segments):
+            if isinstance(segment, MSegment):
+                x2, y2 = segment.start
+                break
+
+        segment = ZSegment(self._cursor[0],self._cursor[1], x2, y2)
         self._cursor = segment.end
         self._segments.append(segment)
         return self

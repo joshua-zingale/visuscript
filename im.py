@@ -1,6 +1,6 @@
 #!.venv/bin/python
 from visuscript.primatives import *
-from visuscript.drawings import *
+from visuscript.drawable import *
 from visuscript.output import *
 from visuscript.canvas import Canvas
 from visuscript.text import Text

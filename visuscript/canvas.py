@@ -1,4 +1,5 @@
-from .drawings import Element, Drawable, Rect
+from .drawable import Element, Drawable, Rect
+from copy import deepcopy
 from .primatives import *
 from typing import Tuple
 import numpy as np
@@ -74,7 +75,7 @@ class Canvas(Drawable):
     
     @property
     def zoom(self) -> Transform:
-        transform = self._head.transform.copy()
+        transform = deepcopy(self._head.transform)
 
         scale = transform.scale / self._logical_scaling
         translation = ([self.width/2, self.height/2, 0] - transform.translation)/(scale * self._logical_scaling)
@@ -91,8 +92,6 @@ class Canvas(Drawable):
     def set_zoom(self, zoom: Transform):
         self.zoom = zoom
         return self
-    
-
 
     def draw(self) -> str:
         background = Rect(width=self.width, height=self.height, fill = self.color, anchor=Drawable.TOP_LEFT)

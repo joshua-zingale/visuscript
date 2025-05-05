@@ -5,7 +5,7 @@ from .utility import ellipse_arc_length
 
 class Transform:
 
-    def __init__(self, translation: np.ndarray | list | Self = [0,0,0], scale: np.ndarray | list | float = [1,1,1], rotation: np.ndarray | list = 0.0):
+    def __init__(self, translation: np.ndarray | list | Self = [0,0,0], scale: np.ndarray | list | float = [1,1,1], rotation: float = 0.0):
         
         if isinstance(translation, Transform):
             self.translation = translation.translation
@@ -13,23 +13,45 @@ class Transform:
             self.rotation = translation.rotation
             return 
 
-        translation = list(translation)
-        if len(translation) == 2:
-            translation.append(0.0)
-        translation = np.array(translation, dtype=float)
-
-
-        if isinstance(scale, float) or isinstance(scale, int):
-            scale = [scale, scale, 1.0]        
-        scale = list(scale)
-        if len(scale) == 2:
-            scale.append(1.0)
-
-        scale = np.array(scale, dtype=float)
         
         self.translation: np.ndarray = translation
         self.scale: np.ndarray = scale
-        self.rotation: np.ndarray = rotation
+        self.rotation: float = rotation
+
+
+
+
+    @property
+    def xy(self) -> np.ndarray:
+        return np.array(self._translation[:2], dtype=float)
+
+    @property
+    def translation(self) -> np.ndarray:
+        return np.array(self._translation, dtype=float)
+    
+    @translation.setter
+    def translation(self, value: np.ndarray | list):
+        assert 2 <= len(value) and len(value) <= 3
+        value = list(value)
+        if len(value) == 2:
+            value.append(0.0)
+        self._translation = np.array(value, dtype=float)
+
+
+    @property
+    def scale(self) -> np.ndarray:
+        return self._scale
+    
+    @scale.setter
+    def scale(self, value):
+        scale = list(value)
+        if len(scale) == 1:
+            scale.append(value)
+        if len(scale) == 2:
+            scale.append(1.0)
+
+        self._scale = np.array(scale, dtype=float)
+        
 
     @property
     def pivot(self):
@@ -37,12 +59,9 @@ class Transform:
             return self.translation
         else:
             return self._pivot
-    
-    def copy(self):
-        return Transform(translation=self.translation.copy(), scale=self.scale, rotation=self.rotation)
 
     def __str__(self):
-        return f"translate({" ".join(self.translation[:2].astype(str))}) scale({" ".join(self.scale[:2].astype(str))}) rotate({self.rotation} {" ".join(self.translation[:2].astype(str))})"
+        return f"translate({" ".join(self.translation[:2].astype(str))}) scale({" ".join(self.scale[:2].astype(str))}) rotate({self.rotation})"
     
     def __repr__(self):
         return str(self)
@@ -50,21 +69,21 @@ class Transform:
     def __call__(self, other: Self):
         #TODO fix rotation. As of 5/3/2025, children of a rotated element spin about their own axes
         return Transform(
-            translation = other.translation * self.scale + self.translation,
+            translation = other._translation * self.scale + self._translation,
             scale = self.scale * other.scale,
             rotation = self.rotation + other.rotation
             )
     
     def __add__(self, other: Self):
         return Transform(
-            translation = self.translation + other.translation,
+            translation = self._translation + other._translation,
             scale = self.scale * other.scale,
             rotation = self.rotation + other.rotation
         )
     
     def __mul__(self, other: float):
         return Transform(
-            translation = self.translation * other,
+            translation = self._translation * other,
             scale = self.scale**other,
             rotation = self.rotation * other
         )
@@ -81,7 +100,7 @@ class Transform:
     def inv(self):
         def inverse_transform(other: Transform):
             return Transform(
-                translation = (other.translation - self.translation)/self.scale,
+                translation = (other._translation - self._translation)/self.scale,
                 scale = other.scale/self.scale,
                 rotation = -self.rotation
                 )
@@ -110,13 +129,13 @@ class Transform:
     
     @property
     def x(self) -> float:
-        return float(self.translation[0])
+        return float(self._translation[0])
     @property
     def y(self) -> float:
-        return float(self.translation[1])
+        return float(self._translation[1])
     @property
     def z(self) -> float:
-        return float(self.translation[2])
+        return float(self._translation[2])
     
     @x.setter
     def x(self, value):
