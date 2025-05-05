@@ -223,7 +223,7 @@ class Element(Drawable):
         ...
 
 
-class Drawing(Element, Segment):
+class Drawing(Element):
 
     def __init__(self, *,
                  path: Path,
@@ -249,6 +249,10 @@ class Drawing(Element, Segment):
     @Element.anchor
     def point(self, length: float) -> np.ndarray:
         return self.transform(Transform(self._path.point(length))).xy
+    
+    @Element.anchor
+    def point_percentage(self, p: float) -> np.ndarray:
+        return self.transform(Transform(self._path.point(p))).xy
     
     @Element.anchor
     @Element.globify

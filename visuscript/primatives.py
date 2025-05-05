@@ -13,13 +13,9 @@ class Transform:
             self.rotation = translation.rotation
             return 
 
-        
         self.translation: np.ndarray = translation
         self.scale: np.ndarray = scale
         self.rotation: float = rotation
-
-
-
 
     @property
     def xy(self) -> np.ndarray:
@@ -43,7 +39,11 @@ class Transform:
         return self._scale
     
     @scale.setter
-    def scale(self, value):
+    def scale(self, value: np.ndarray | list | float):
+        if isinstance(value, float) or isinstance(value, int):
+            self._scale = np.array([value, value, 1], dtype=float)
+            return
+
         scale = list(value)
         if len(scale) == 1:
             scale.append(value)

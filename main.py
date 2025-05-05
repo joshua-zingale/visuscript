@@ -5,30 +5,38 @@ from visuscript.output import *
 from visuscript.canvas import Canvas
 from visuscript.text import Text
 from visuscript.animation import *
-class AnimatedList(list):
-    pass
+from visuscript.scene import Scene
 
-path = Path().L(10,10).L(0,10).L(64,20)
+s = Scene(width=480, height=270)
 
-c = Canvas(width=480, height=270)
-c.with_elements([
-        rect1 := Rect(width=c.w(1/8), height=c.w(1/8)).with_child(Circle(c.w(1/16))),
-        rect2 := Rect(width=c.w(1/8), height=c.w(1/8), transform=[60, 100]).with_children([
-            Circle(c.w(1/16)),
-            Rect(width=c.w(1/16),height=c.w(1/16), transform=[0,c.w(3/32)]).with_child(
-                Rect(width=c.w(1/32), height=c.w(1/32), transform=Transform(rotation=45))
-            )
-            ]),
-        rect3 := Rect(width=c.w(1/8), height=c.w(1/8), transform=[200, 100]).with_child(circ3 := Circle(c.w(1/16)))
-    ])
 
-print_frame(c)
 
-animation1 = PathAnimation(rect2, Path().M(60,200).l(420,0), fps=24, duration=2)
+rect = Rect(width=100, height=100, transform=[0, 0]).with_children([
+    Circle(50),
+    Rect(width=50,height=50, transform=[0, 75]).with_child(
+        Rect(width=25, height=25, transform=Transform(rotation=45))
+    )
+])
 
-animation2 = RotationAnimation(rect2, 360, fps=24, duration=2)
+s << rect
+s << (rect2 := Rect(width=50, height=20, transform=[100, 50]))
 
-animation3 = ScaleAnimation(rect2, 2, fps=24, duration=2)
+s.animations << TransformInterpolation(rect, Transform(translation=[240, 135], scale=0.25, rotation=135), fps = 24, duration = 3)
+s.animations << TransformInterpolation(rect2, Transform(translation=[240, 135], scale=0.25, rotation=135), fps = 24, duration = 1.5)
 
-while animation1.advance() and animation2.advance() and animation3.advance():
-    print_frame(c)
+s.animations << ScaleAnimation(s, 2, fps = 24, duration=3)
+
+
+for frame in s.run():
+    print_frame(frame)
+
+# s.animations << PathAnimation(s, Path().M(*s.transform.xy).l(-200,0), fps = 24, duration=3)
+
+# for frame in s.run():
+#     print_frame(frame)
+
+# s.animations << TransformInterpolation(s, Transform([-100,100], scale = 4), fps = 24, duration=3)
+
+# for frame in s.run():
+#     print_frame(frame)
+

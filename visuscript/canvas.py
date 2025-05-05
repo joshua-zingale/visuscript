@@ -21,31 +21,41 @@ class Head(Element):
 
 class Canvas(Drawable):
     def __init__(self, *, elements: list[Element] | None = None, width=1920, height=1080, logical_width = 480, logical_height = 270, color = 'dark_slate', **kwargs):
-
-        super().__init__(**kwargs)
-        elements = [] if elements is None else elements
-        self.anchor = Drawable.CENTER
-        self.color: Color = Color(color)
-        self._head = Head().with_children(elements)
-
-
         assert width/height == logical_width/logical_height and width/logical_width == height/logical_height
 
+        super().__init__(**kwargs)
         self._width = width
         self._height = height
         self._logical_width = logical_width
         self._logical_height = logical_height
         self._logical_scaling = width/logical_width
 
+        self._elements: set[Element] = set() if elements is None else set(elements)
+        self.anchor = Drawable.CENTER
+        self.color: Color = Color(color)
 
-        self._head.transform.scale = np.array([self._logical_scaling, self._logical_scaling, 1])
-
+        
     
-    def with_elements(self, elements: list[Element]) -> Self:
-        self._head.with_children(elements)
+    def clear(self):
+        self._elements = set()
+
+    def with_element(self, element: Element) -> Self:
+        self._elements.add(element)
         return self
-    
+    add_element = with_element
 
+    def with_elements(self, elements: list[Element]) -> Self:
+        self._elements.union(elements)
+        return self
+    add_elements = with_elements
+
+    def __lshift__(self, other: Element | list[Element]):
+        if isinstance(other, list):
+            self.add_elements(other)
+        elif isinstance(other, Element):
+            self.add_element(other)
+        else:
+            raise TypeError("'<<' is implemented only for types Element and list[Element]")
 
     def a(self, percentage: float) -> float:
         """
@@ -73,21 +83,6 @@ class Canvas(Drawable):
     def height(self) -> float:
         return self._height
     
-    @property
-    def zoom(self) -> Transform:
-        transform = deepcopy(self._head.transform)
-
-        scale = transform.scale / self._logical_scaling
-        translation = ([self.width/2, self.height/2, 0] - transform.translation)/(scale * self._logical_scaling)
-
-        transform.translation = translation
-        transform.scale = scale
-        return transform
-
-    @zoom.setter
-    def zoom(self, zoom: Transform):
-        self._head.transform.scale = zoom.scale * self._logical_scaling
-        self._head.transform.translation = [self.width/2, self.height/2, 0] - zoom.translation*zoom.scale*self._logical_scaling
     
     def set_zoom(self, zoom: Transform):
         self.zoom = zoom
@@ -95,6 +90,19 @@ class Canvas(Drawable):
 
     def draw(self) -> str:
         background = Rect(width=self.width, height=self.height, fill = self.color, anchor=Drawable.TOP_LEFT)
+
+        transform = deepcopy(self.transform)
+
+        scale = transform.scale / self._logical_scaling
+        translation = ([self.width/2, self.height/2, 0] - transform.translation)/(scale * self._logical_scaling)
+        # translation = (-transform.translation)/(scale * self._logical_scaling) * self.transform.scale
+
+        transform.translation = translation
+        transform.scale = scale
+
+        head = Head().set_transform(transform).with_children(self._elements)
         return svg.SVG(
             viewBox=svg.ViewBoxSpec(0, 0, self.width, self.height),
-            elements= [background] + list(self._head)).as_str()
+            elements= [background] + list(head)).as_str()
+    
+

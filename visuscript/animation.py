@@ -19,7 +19,7 @@ class Animation(ABC):
         """
         Makes the changes for one frame of the animation.
 
-        Returns True if there is a next frame for the animation; else returns False.
+        Returns True if there is a next frame for the animation or if the current advance was the last frame; else returns False.
         """
         ...
 
@@ -37,15 +37,17 @@ class TimeDeltaAnimation(Animation):
 
 
     def advance(self) -> bool:
+        # TODO handle edge case of the final advance, where less time may need to be taken
+
+        if self._frame_number > self._num_frames:
+            return False
 
         for _ in range(self._updates_per_frame):
             self.update(self._dt)
 
         self._frame_number += 1
 
-        # TODO handle edge case of the final advance, where less time may need to be taken
-        if self._frame_number > self._num_frames:
-            return False
+        
         return True
             
 
@@ -65,13 +67,13 @@ class AlphaAnimation(Animation):
 
 
     def advance(self) -> bool:
+        if self._frame_number > self._num_frames:
+            return False
 
         self.update(self._easing_function(self._frame_number/self._num_frames))
 
         self._frame_number += 1
         
-        if self._frame_number > self._num_frames:
-            return False
         return True
             
 
@@ -82,6 +84,20 @@ class AlphaAnimation(Animation):
         """
         ...
 
+
+class PathAnimation(AlphaAnimation):
+    def __init__(self, object: Drawable, path: Path, **kwargs):
+        super().__init__(**kwargs)
+        self._object = object
+        self._source_translation = object.transform.translation
+        self._path = path
+
+    def update(self, alpha: float):
+        assert 0 <= alpha <= 1
+        if alpha == 1:
+            self._object.transform.translation = self._path.end
+
+        self._object.transform.translation = self._path.point_percentage(alpha)
 
 class ScaleAnimation(AlphaAnimation):
     def __init__(self, object: Drawable, target_scale: float | np.ndarray | list, **kwargs):
@@ -106,29 +122,36 @@ class RotationAnimation(AlphaAnimation):
         self._object.transform.rotation = self._source_rotation * (1 - alpha) + self._target_rotation * alpha
 
 
-class PathAnimation(AlphaAnimation):
-    def __init__(self, object: Drawable, path: Path, **kwargs):
-        super().__init__(**kwargs)
-        self._object = object
-        self._source_translation = object.transform.translation
-        self._path = path
-
-    def update(self, alpha: float):
-        assert 0 <= alpha <= 1
-        if alpha == 1:
-            self._object.transform.translation = self._path.end
-
-        self._object.transform.translation = self._path.point_percentage(alpha)
-
-
-class AnimateTransform(AlphaAnimation):
-    def __init__(self, object: Drawable, target: Transform, **kwargs):
-        super().__init__(**kwargs)
-        self._object = object
-        self._source_transform = deepcopy(object.transform)
-        self._target_transform = Transform(target)
-
+class AnimationBundle(Animation):
+    def __init__(self, animations: list[Animation] = []):
+        self._animations: list[Animation] = animations
     
-    def update(self, alpha: float) -> None:
-        assert 0 <= alpha <= 1
-        self._object.transform = self._source_transform * (1 - alpha) + self._target_transform * (alpha)
+    def advance(self) -> bool:
+        return sum(map(lambda x: x.advance(), self._animations)) > 0
+    
+    def push(self, animation: Animation):
+        self._animations.append(animation)
+
+    def clear(self):
+        self._animations = []
+    
+    def __lshift__(self, other: Animation):
+        self.push(other)
+
+
+class TransformInterpolation(Animation):
+    def __init__(self, object: Drawable, target: Transform, fps: int, duration: float, easing_function: Callable[[float], float] = sin_easing):
+
+        super().__init__()
+
+        animations = [
+            PathAnimation(object=object, path=Path().M(*object.transform.xy).L(*target.xy), fps = fps, duration = duration, easing_function = easing_function),
+            ScaleAnimation(object=object, target_scale=target.scale, fps = fps, duration = duration, easing_function = easing_function),
+            RotationAnimation(object=object, target_rotation=target.rotation, fps = fps, duration = duration, easing_function = easing_function)
+        ]
+
+        self._animation_bundle = AnimationBundle(animations)
+    
+    def advance(self) -> bool:
+        return self._animation_bundle.advance()
+        

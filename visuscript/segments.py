@@ -3,23 +3,14 @@ from typing import Self
 from abc import ABC, abstractmethod
 
 class Segment(ABC):
-    def point_percentage(self, percentage: float):
-        assert 0 <= percentage and percentage <= 1
-        return self.point(percentage * self.arc_length)
 
     @abstractmethod
-    def point(self, length: float) -> np.ndarray:
+    def point_percentage(self, percentage: float):
         ...
 
-    # @property
-    # @abstractmethod
-    # def offset(self) -> np.ndarray:
-    #     ...
-
-    # @offset.setter
-    # @abstractmethod
-    # def offset(self, value: np.ndarray):
-    #     ...
+    def point(self, length: float) -> np.ndarray:
+        assert 0 <= length and length <= self.arc_length
+        return self.point_percentage(length/self.arc_length)
 
     @property
     @abstractmethod
@@ -47,8 +38,7 @@ class MSegment(Segment):
     def start(self) -> np.ndarray:
         return np.array([self._x1, self._y1],dtype=float)
 
-    def point(self, length: float) -> np.ndarray:
-        assert length == 0
+    def point_percentage(self, p: float) -> np.ndarray:
         return np.array([self._x1, self._y1],dtype=float)
 
     @property
@@ -63,16 +53,15 @@ class MSegment(Segment):
         return f"M {self._x1} {self._y1}"
 
 
-class LinearSegment(Segment):
+class LSegment(Segment):
     def __init__(self, x1: float, y1: float, x2: float, y2: float):
         self._x1 = x1
         self._y1 = y1
         self._x2 = x2
         self._y2 = y2
 
-    def point(self, length: float) -> np.ndarray:
-        assert 0 <= length and length <= self.arc_length
-        p = length / self.arc_length
+    def point_percentage(self, p: float) -> np.ndarray:
+        assert 0 <= p and p <= 1
         return np.array([
             self._x2 * p + self._x1 * (1 - p),
             self._y2 * p + self._y1 * (1 - p)
@@ -93,7 +82,7 @@ class LinearSegment(Segment):
     def __str__(self) -> str:
         return f"L {self._x2} {self._y2}"
     
-class ZSegment(LinearSegment):
+class ZSegment(LSegment):
     def __init__(self, x1: float, y1: float, x2: float, y2: float):
         self._x1 = x1
         self._y1 = y1
@@ -102,6 +91,38 @@ class ZSegment(LinearSegment):
 
     def __str__(self) -> str:
         return f"Z"
+    
+
+class QSegment(Segment):
+    def __init__(self, x1: float, y1: float, x2: float, y2: float, x3: float, y3: float):
+        self._p1 = np.array([x1, y1])
+        self._p2 = np.array([x2, y2])
+        self._p3 = np.array([x3, y3])
+
+    def point_percentage(self, length: float) -> np.ndarray:
+        assert 0 <= p and p <= 1
+
+        p = length / self.arc_length
+
+        l1 = self._p2 * p + self._p1 * (1 - p)
+        l2 = self._p3 * p + self._p2 * (1 - p)
+
+        return l2 * p + l1 * (1 - p)
+
+    @property
+    def arc_length(self) -> float:
+        raise NotImplementedError()
+    
+    @property
+    def start(self) -> np.ndarray:
+        return self._p1.copy()
+    
+    @property
+    def end(self) -> np.ndarray:
+        return self._p3.copy()
+    
+    def __str__(self) -> str:
+        return f"Q {self._p2[0]} {self._p2[1]} {self._p3[0]} {self._p3[1]}"
 
 
 class ArcSegment(Segment):
@@ -133,46 +154,6 @@ class ArcSegment(Segment):
     
     def __str__(self) -> str:
         return f"A {self._rx} {self._ry} {self._x_axis_rotation} {self._large_arc_flag} {self._sweep_flag} {self._x2} {self._y2}"
-    
-
-# class CircularSegment(Segment):
-#     def __init__(self, x1: float, y1: float, r: float, start_angle: float, end_angle: float):
-#         self._x1 = x1
-#         self._y1 = y1
-#         self._r = r
-#         self._start_angle = start_angle
-#         self._end_angle = end_angle
-
-#         assert abs(start_angle - end_angle) < 360
-
-#     def point(self, length: float) -> np.ndarray:
-#         assert 0 <= length and length <= self.arc_length
-
-#         p = length / self.arc_length
-
-#         delta = np.array([
-#             self._r*np.cos(self._end_angle*np.pi/180 * p + self._start_angle*np.pi/180 * (1-p)),
-#             self._r*np.sin(self._end_angle*np.pi/180 * p + self._start_angle*np.pi/180 * (1-p)),
-#         ]) - np.array([
-#             self._r*np.cos(self._start_angle*np.pi/180),
-#             self._r*np.sin(self._start_angle*np.pi/180),         
-#         ])
-        
-#         return np.array([self._x1, self._y1]) + delta
-
-#     @property
-#     def arc_length(self) -> float:
-#         return 2*np.pi *self._r * abs(self._start_angle - self._end_angle)/360 
-    
-#     @property
-#     def end(self) -> np.ndarray:
-#         return self.point(self.arc_length)
-    
-#     def __str__(self) -> str:
-#         x2, y2 = self.end
-#         large_arc_flag = 1 if abs(self._start_angle - self._end_angle) > 180 else 0
-#         sweep_flag = 1 if self._end_angle > self._start_angle else 0
-#         return f"A {self._r} {self._r} {0} {large_arc_flag} {sweep_flag} {x2} {y2}"
 
 
 class Path(Segment):    
@@ -200,6 +181,9 @@ class Path(Segment):
         return string + " ".join(
             map(lambda x: str(x), self._segments)
             )
+    
+    def point_percentage(self, percentage):
+        return self.point(percentage * self.arc_length)
     
     def point(self, length: float) -> np.ndarray:
         assert length <= self.arc_length
@@ -255,7 +239,7 @@ class Path(Segment):
         self.min_y = min(self.min_y, y)
         self.max_y = max(self.max_y, y)
 
-        segment = LinearSegment(self._cursor[0],self._cursor[1], x, y)
+        segment = LSegment(self._cursor[0],self._cursor[1], x, y)
         self._cursor = segment.end
         self._segments.append(segment)
         return self
@@ -277,4 +261,9 @@ class Path(Segment):
         self._cursor = segment.end
         self._segments.append(segment)
         return self
+    
+    z = Z
+
+    def Q(self, x1: float, y1: float, x: float, y: float):
+        raise NotImplementedError()
         
