@@ -1,23 +1,8 @@
-from .drawable import Element, Drawable, Rect
-from copy import deepcopy
+from .drawable import Element, Drawable, Rect, Pivot
 from .primatives import *
 from typing import Tuple
 import numpy as np
-import svg
-
-class Head(Element):
-    @property
-    def top_left(self) -> np.ndarray:
-        return np.array([0,0], dtype=float)
-    @property
-    def width(self) -> float:
-        return 0.0
-    @property
-    def height(self) -> float:
-        return 0.0
-    def draw_self(self):
-        return ""
-    
+import svg    
 
 class Canvas(Drawable):
     def __init__(self, *, elements: list[Element] | None = None, width=1920, height=1080, logical_width = 480, logical_height = 270, color = 'dark_slate', **kwargs):
@@ -91,16 +76,21 @@ class Canvas(Drawable):
     def draw(self) -> str:
         background = Rect(width=self.width, height=self.height, fill = self.color, anchor=Drawable.TOP_LEFT)
 
-        transform = deepcopy(self.transform)
+        transform = Transform(
+            translation= [self.width/2, self.height/2, 0] + self.transform.translation*self._logical_scaling,
+            scale = self.transform.scale * self._logical_scaling,
+            rotation = self.transform.rotation
+        )
 
-        scale = transform.scale / self._logical_scaling
-        translation = ([self.width/2, self.height/2, 0] - transform.translation)/(scale * self._logical_scaling)* self.transform.scale
+        # removed deleted elements
+        self._elements = set(filter(lambda x: not x.deleted, self._elements))
+        
+        # translation = ( - transform.translation * self._logical_scaling) * transform.scale
         # translation = (-transform.translation)/(scale * self._logical_scaling) * self.transform.scale
 
-        transform.translation = translation
-        transform.scale = scale
 
-        head = Head().set_transform(transform).with_children(self._elements)
+
+        head = Pivot().set_transform(transform).with_children(self._elements)
         return svg.SVG(
             viewBox=svg.ViewBoxSpec(0, 0, self.width, self.height),
             elements= [background] + list(head)).as_str()

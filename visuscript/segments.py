@@ -10,16 +10,20 @@ class Segment(ABC):
 
     def point(self, length: float) -> np.ndarray:
         assert 0 <= length and length <= self.arc_length
+        if self.arc_length == 0:
+            return self.start
         return self.point_percentage(length/self.arc_length)
 
     @property
     @abstractmethod
     def arc_length(self) -> float:
-        ...    
+        ...
+    @property
     @abstractmethod
     def start(self) -> np.ndarray:
         ...    
 
+    @property
     @abstractmethod
     def end(self) -> np.ndarray:
         ...
@@ -61,7 +65,9 @@ class LSegment(Segment):
         self._y2 = y2
 
     def point_percentage(self, p: float) -> np.ndarray:
-        assert 0 <= p and p <= 1
+        if self._x1 == self._x2 and self._y1 == self._y2:
+            return self.start
+        assert 0 <= p and p <= 1, f"Got {p}"
         return np.array([
             self._x2 * p + self._x1 * (1 - p),
             self._y2 * p + self._y1 * (1 - p)
@@ -99,10 +105,13 @@ class QSegment(Segment):
         self._p2 = np.array([x2, y2])
         self._p3 = np.array([x3, y3])
 
-    def point_percentage(self, length: float) -> np.ndarray:
-        assert 0 <= p and p <= 1
 
-        p = length / self.arc_length
+    def derivative(self, t: float) -> np.ndarray:
+        """Calculates the derivative of the Bezier curve at parameter t."""
+        return 2 * (1 - t) * (self._p2 - self._p1) + 2 * t * (self._p3 - self._p2)
+
+    def point_percentage(self, p: float) -> np.ndarray:
+        assert 0 <= p and p <= 1
 
         l1 = self._p2 * p + self._p1 * (1 - p)
         l2 = self._p3 * p + self._p2 * (1 - p)
@@ -111,7 +120,22 @@ class QSegment(Segment):
 
     @property
     def arc_length(self) -> float:
-        raise NotImplementedError()
+        num_segments = 1000
+        total_length = 0.0
+        dt = 1.0 / num_segments
+
+        for i in range(num_segments):
+            t1 = i * dt
+            t2 = (i + 1) * dt
+
+            # Approximate the length of the small segment using the magnitude of the derivative
+            derivative1 = self.derivative(t1)
+            derivative2 = self.derivative(t2)
+
+            segment_length = (np.linalg.norm(derivative1) + np.linalg.norm(derivative2)) / 2 * dt
+            total_length += segment_length
+
+        return total_length
     
     @property
     def start(self) -> np.ndarray:
@@ -264,6 +288,23 @@ class Path(Segment):
     
     z = Z
 
-    def Q(self, x1: float, y1: float, x: float, y: float):
-        raise NotImplementedError()
+    def Q(self, x1: float, y1: float, x: float, y: float) -> Self:
+
+        segment = QSegment(self._cursor[0],self._cursor[1], x1, y1, x, y)
+
+        for xi, yi in [segment.point_percentage(alpha) for alpha in np.linspace(0,1,25)]:
+            self.min_x = min(self.min_x, xi)
+            self.max_x = max(self.max_x, xi)
+            self.min_y = min(self.min_y, yi)
+            self.max_y = max(self.max_y, yi)
+
+       
+        self._cursor = segment.end
+        self._segments.append(segment)
+        return self
+    
+    def q(self, dx1: float, dy1: float, dx: float, dy: float) -> Self:
+        x1,y1 = [dx1,dy1] + self._cursor
+        x,y = [dx,dy] + self._cursor
+        return self.Q(x1, y1, x, y)
         

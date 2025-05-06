@@ -1,0 +1,232 @@
+from visuscript.scene import Scene, Canvas
+from visuscript.animation import *
+from visuscript.drawable import *
+from visuscript.text import *
+from visuscript.output import print_frame
+import sys
+def main():
+    s = Scene(width=int(1920/4), height=int(1080/4))
+    s << Rect(width=30,height=30, transform=[-200, -100]).with_child(Text(text="unsorted", font_size = 20, transform=[20, -10], anchor=Drawable.TOP_LEFT))
+    s << Rect(width=30,height=30, fill="blue", stroke="off_white", transform=[-200, -65]).with_child(Text(text="sorted", font_size = 20, transform=[20, -10], anchor=Drawable.TOP_LEFT))
+    arr = TwoPointerArray([6,2,3,5,1], s, auto_print=True)
+    
+    arr.i = 0
+    while arr.i < len(arr):
+        arr.j = arr.i - 1
+        while arr.j >= 0 and arr[arr.j] > arr[arr.j+1]:
+            arr.swap(arr.j, arr.j+1)
+            arr.j -= 1
+
+        arr.i += 1
+
+
+
+class Var:
+    def __init__(self, *, value, _type = int, font_size=50, scene: Scene, **kwargs):
+
+        self.text_element = Text(text=str(_type(value)) if value is not None else "", font_size = font_size, **kwargs)
+        self._type = _type
+        self._scene = scene
+
+    @property
+    def value(self):
+        if self.text_element.text == "" and self._type is not str:
+            return None
+        return self._type(self.text_element.text)
+    
+    @value.setter
+    def value(self, value):
+        if value is None:
+            self.text_element.text = ""
+        else:
+            if isinstance(value, Var):
+                self.text_element.text = str(self._type(value.value))
+
+                source = value.text_element.transform.xy
+                destination = self.text_element.transform.xy
+
+                self._scene.animations << PathAnimation(self.text_element, Path.M(*source).L(*destination), fps=30, duration = 0.5)
+            else:
+                self.text_element.text = str(self._type(value))
+
+    def __str__(self) -> str:
+        return self._type(self.value)
+    
+    def __repr__(self) -> str:
+        return str(self)
+
+    def __eq__(self, other):
+        return self == other
+
+    def __add__(self, other):
+        return self.value + other
+    
+    # def __radd__(self, other):
+    #     return self.value + other
+    
+    def __sub__(self, other):
+        return self.value - other
+    
+    # def __rsub__(self, other):
+    #     return other - self.value
+    
+    def __lt__(self, other: Self):
+        return self.value < other.value
+
+
+class TwoPointerArray:
+
+    def animating(foo):
+        def decorated_animating_function(self: Self, *args, **kwargs):
+            r = foo(self, *args, **kwargs)
+            if self.auto_print:
+                self._scene.print_frames()
+            return r
+        return decorated_animating_function
+
+
+    def __init__(self, array: list, scene: Scene, auto_print = True):
+
+        self._box_size = 50
+        
+        self.auto_print: bool = auto_print
+        
+
+        self._scene: Scene = scene
+        self._ak = {'fps': 30, 'duration': 0.5}
+
+        drawing, boxes, elements = get_array(array, self._box_size, scene)
+        self._it: Text = Text(text="i", font_size=20)
+        self._jt: Text = Text(text="j", font_size=20)
+        
+
+        self._boxes: list[Drawing] = boxes
+        self._elements: list[Var] = elements
+
+        x_start = -(len(self) - 1) * self._box_size/2 #+ ((len(self)+1) % 2) * self._box_size/2
+        self._storage = Var(value=None, scene=scene)
+
+        self._drawing = drawing.with_children([
+            Pivot().set_transform([x_start, -self._box_size * 3/4]).with_child(self._it),
+            Pivot().set_transform([x_start, self._box_size * 3/4]).with_child(self._jt),
+            self._storage.text_element.set_transform([0, 75])
+        ])
+        self._scene << self._drawing
+
+        self.i = 0
+        self.j = 0
+
+        self._selected: int | None = None
+
+        if auto_print:
+            print_frame(self._scene)        
+
+    def __str__(self):
+        return str(list(map(lambda x: x.value, self._elements)))
+    
+    def __repr__(self):
+        return str(self)
+    
+    @property
+    def i(self) -> int:
+        return self._i
+    
+    @i.setter
+    @animating
+    def i(self, value: int):
+        self._i = value
+        self._scene.animations << PathAnimation(self._it, Path().M(*self._it.transform.xy).L(value*self._box_size, 0), **self._ak)
+
+    @property
+    def j(self) -> int:
+        return self._j
+    
+    # def select(self, index: int):
+    #     if self._selected != None:
+    #         self._boxes[self._selected].set_stroke(stroke=Color())
+    #     self._boxes[index].set_stroke(stroke=Color("pale_green"))
+
+
+    
+    @j.setter
+    @animating
+    def j(self, value: int):
+        self._j = value
+        self._scene.animations << PathAnimation(self._jt, Path().M(*self._jt.transform.xy).L(value*self._box_size, 0), **self._ak)
+
+    @property
+    def storage(self) -> Var:
+        return self._storage
+    
+    @storage.setter
+    @animating
+    def storage(self, value: Var):
+        self._storage = value
+
+    @i.setter
+    @animating
+    def i(self, value: int):
+        self._i = value
+        for box in self._boxes[:self._i]:
+            box.set_fill(Color("blue"))
+        self._scene.animations << PathAnimation(self._it, Path().M(*self._it.transform.xy).L(value*self._box_size, 0), **self._ak)
+
+
+    def get_drawing(self):
+        return self._drawing
+
+    @animating
+    def swap(self, a: int, b: int):
+
+        ea = self._elements[a]
+        eb = self._elements[b]
+
+        x_mid = (ea.text_element.transform.x + eb.text_element.transform.x)/2
+        x_delta = abs(ea.text_element.transform.x - eb.text_element.transform.x)
+        lift = x_delta
+        
+        self._scene.animations << [
+            PathAnimation(ea.text_element, Path().M(*ea.text_element.transform.xy).Q(x_mid, ea.text_element.transform.y - lift, *eb.text_element.transform.xy), **self._ak),
+            PathAnimation(eb.text_element, Path().M(*eb.text_element.transform.xy).Q(x_mid, eb.text_element.transform.y + lift, *ea.text_element.transform.xy), **self._ak)
+        ]
+
+        self._elements[a] = eb
+        self._elements[b] = ea
+    
+    def __getitem__(self, index: int) -> Var:
+        return self._elements[index]
+    
+    @animating
+    def __setitem__(self, index: int, value: Var):
+
+        source = value.text_element.transform.xy
+        destination = self[index].text_element.transform.xy
+
+        self[index].value = value
+        self[index].text_element.set_transform(source)
+
+        self._scene.animations << PathAnimation(self[index].text_element, Path().M(*source).L(*destination), **self._ak)
+
+    
+    def __len__(self):
+        return len(self._elements)
+    
+
+
+def get_array(arr, box_size: float, scene: Scene):
+
+    leftmost = -(box_size*(len(arr)-1))/2
+
+    boxes: list[Drawing] = []
+    elements: list[Var] = []
+
+    for i,e in enumerate(arr):
+        tfm=Transform([leftmost + i*box_size, 0])
+        boxes.append(Rect(box_size, box_size, transform=tfm))
+        elements.append(Var(value=e, font_size=box_size, transform=tfm, scene=scene))
+
+
+    return Pivot().with_children(boxes + list(map(lambda x: x.text_element, elements))), boxes, elements
+
+if __name__ == "__main__":
+    main()

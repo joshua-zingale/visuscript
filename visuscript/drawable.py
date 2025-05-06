@@ -19,7 +19,7 @@ class Drawable(ABC):
         self.anchor = anchor
     
     def set_transform(self, transform: Transform) -> Self:
-        self.transform = transform
+        self.transform = Transform(transform)
         return self
     
     def set_anchor(self, anchor: int):
@@ -111,6 +111,7 @@ class Element(Drawable):
         self._children: list["Element"] = []
         self._parent: "Element" | None = None
         self._svg_pivot = None
+        self._deleted = False
     
     def set_global_transform(self, transform: Transform) -> Self:
         self.global_transform = transform
@@ -211,8 +212,8 @@ class Element(Drawable):
     def draw(self) -> str:
         string_builder = StringIO()
         for element in self:
+            assert element.deleted == False
             string_builder.write(element.draw_self())
-
         return string_builder.getvalue()
     
     @abstractmethod
@@ -222,6 +223,28 @@ class Element(Drawable):
         """
         ...
 
+    @property
+    def deleted(self) -> bool:
+        return self._deleted
+    
+    def delete(self):
+        for element in self:
+            element._deleted = True
+
+
+
+class Pivot(Element):
+    @property
+    def top_left(self) -> np.ndarray:
+        return np.array([0,0], dtype=float)
+    @property
+    def width(self) -> float:
+        return 0.0
+    @property
+    def height(self) -> float:
+        return 0.0
+    def draw_self(self):
+        return ""
 
 class Drawing(Element):
 
@@ -245,6 +268,15 @@ class Drawing(Element):
         self.stroke_width: float = stroke_width
 
         self._path: Path = path
+
+
+    def set_fill(self, color: Color) -> Self:
+        self.fill = Color(color)
+        return self
+    
+    def set_stroke(self, color: Color) -> Self:
+        self.stroke = Color(color)
+        return self
         
     @Element.anchor
     def point(self, length: float) -> np.ndarray:

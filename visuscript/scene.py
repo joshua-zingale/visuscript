@@ -1,4 +1,3 @@
-from visuscript.drawable import Element
 from visuscript.canvas import Canvas
 from visuscript.animation import AnimationBundle
 from visuscript.output import print_frame
@@ -14,8 +13,14 @@ class Scene(Canvas):
         #TODO check if the elements to be animated are elements of this scene and not already being animated
         return self._animation_bundle
     
+    def print_frames(self):
+        for frame in self.frames:
+            print_frame(frame)
+
+    pf = print_frames
     
-    def run(self) -> Generator[Self]:
+    @property
+    def frames(self) -> Generator[Self]:
         while self._animation_bundle.advance():
             yield self
 

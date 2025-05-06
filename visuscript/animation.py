@@ -1,5 +1,4 @@
 from typing import Callable
-from copy import deepcopy
 from abc import ABC, abstractmethod
 from visuscript.drawable import Drawable
 from visuscript.primatives import Transform
@@ -22,6 +21,14 @@ class Animation(ABC):
         Returns True if there is a next frame for the animation or if the current advance was the last frame; else returns False.
         """
         ...
+
+    def finish(self):
+        """
+        Brings the animation to a finish instantly, leaving everything controlled by the animation in the state in which they would have been had the animation completed naturally.
+        """
+        while self.advance():
+            pass
+        
 
 
 class TimeDeltaAnimation(Animation):
@@ -129,13 +136,19 @@ class AnimationBundle(Animation):
     def advance(self) -> bool:
         return sum(map(lambda x: x.advance(), self._animations)) > 0
     
-    def push(self, animation: Animation):
-        self._animations.append(animation)
+    def push(self, animation: Animation | list[Animation]):
+        if isinstance(animation, Animation):
+            self._animations.append(animation)
+        elif isinstance(animation, list):
+            self._animations.extend(animation)
+        else:
+            raise TypeError(f"'<<' is only implemented for types Animation and list[Animation], not for '{type(animation)}'")
+
 
     def clear(self):
         self._animations = []
     
-    def __lshift__(self, other: Animation):
+    def __lshift__(self, other: Animation | list[Animation]):
         self.push(other)
 
 
