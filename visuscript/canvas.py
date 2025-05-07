@@ -1,11 +1,12 @@
 from .drawable import Element, Drawable, Rect, Pivot
+from visuscript.config import *
 from .primatives import *
 from typing import Tuple
 import numpy as np
 import svg    
 
 class Canvas(Drawable):
-    def __init__(self, *, elements: list[Element] | None = None, width=1920, height=1080, logical_width = 480, logical_height = 270, color = 'dark_slate', **kwargs):
+    def __init__(self, *, elements: list[Element] | None = None, width=CANVAS_WIDTH, height=CANVAS_HEIGHT, logical_width = CANVAS_LOGICAL_WIDTH, logical_height = CANVAS_LOGICAL_HEIGHT, color = 'dark_slate', **kwargs):
         assert width/height == logical_width/logical_height and width/logical_width == height/logical_height
 
         super().__init__(**kwargs)

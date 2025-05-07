@@ -6,13 +6,13 @@ from visuscript.output import print_frame
 import sys
 from copy import deepcopy
 def main():
-    s = Scene(width=int(1920/4), height=int(1080/4))
+    s = Scene()
     s << Rect(width=30,height=30, transform=[-200, -100]).with_child(Text(text="unsorted", font_size = 20, transform=[20, -10], anchor=Drawable.TOP_LEFT))
     s << Rect(width=30,height=30, fill="blue", stroke="off_white", transform=[-200, -65]).with_child(Text(text="sorted", font_size = 20, transform=[20, -10], anchor=Drawable.TOP_LEFT))
 
     # print_frame(s)
     # return
-    arr = TwoPointerArray([6,3], s, auto_print=True)
+    arr = TwoPointerArray([6,3,1,5,7,0], s, auto_print=True)
     
     arr.i = 1
     while arr.i < len(arr):
@@ -83,15 +83,43 @@ class Var:
     
     def __lt__(self, other: Self):
         og_transform = deepcopy(self.text_element.transform)
-        comparison = Text(text=f"&lt; {other.value}", transform=[24,0], font_size=self.text_element.font_size)
-        self._scene.animations << AnimationSequence([
-            TransformInterpolation(object=self.text_element, target=Transform([-1,0]), fps=30, duration=0.5),
-            TransformInterpolation(object=self.text_element, target=og_transform, fps=30, duration=0.5)
-            ])
+        width = self.text_element.width
+        comparison = Text(text=f" < {other.value}", transform=Transform([width/2,0], scale=0), font_size=self.text_element.font_size, anchor=Drawable.LEFT).set_parent(self.text_element)
+        total_width = width + comparison.width
+
+        scale = width/total_width
+
+        xy = self.text_element.transform.xy
+
+        self._scene.animations << AnimationSequence(
+            AnimationBundle(TransformInterpolation(drawable=self.text_element, target=Transform(xy + [-comparison.width/2*scale, 0], scale=scale)),ScaleAnimation(comparison, 1)),
+            NoAnimation(),
+            AnimationBundle(TransformInterpolation(drawable=self.text_element, target=og_transform), ScaleAnimation(comparison, 0.0)),
+            RF(lambda : comparison.set_parent(None))
+            )
 
         self._scene.pf()
         return self.value < other.value
+    
+    def __gt__(self, other: Self):
+        og_transform = deepcopy(self.text_element.transform)
+        width = self.text_element.width
+        comparison = Text(text=f" > {other.value}", transform=Transform([width/2,0], scale=0), font_size=self.text_element.font_size, anchor=Drawable.LEFT).set_parent(self.text_element)
+        total_width = width + comparison.width
 
+        scale = width/total_width
+
+        xy = self.text_element.transform.xy
+
+        self._scene.animations << AnimationSequence(
+            AnimationBundle(TransformInterpolation(drawable=self.text_element, target=Transform(xy + [-comparison.width/2*scale, 0], scale=scale)),ScaleAnimation(comparison, 1)),
+            NoAnimation(),
+            AnimationBundle(TransformInterpolation(drawable=self.text_element, target=og_transform), ScaleAnimation(comparison, 0.0)),
+            RF(lambda : comparison.set_parent(None))
+            )
+
+        self._scene.pf()
+        return self.value > other.value
 
 class TwoPointerArray:
 
@@ -112,7 +140,6 @@ class TwoPointerArray:
         
 
         self._scene: Scene = scene
-        self._ak = {'fps': 30, 'duration': 0.5}
 
         drawing, boxes, elements = get_array(array, self._box_size, scene)
         self._it: Text = Text(text="i", font_size=20)
@@ -154,7 +181,7 @@ class TwoPointerArray:
     @animating
     def i(self, value: int):
         self._i = value
-        self._scene.animations << PathAnimation(self._it, Path().M(*self._it.transform.xy).L(value*self._box_size, 0), **self._ak)
+        self._scene.animations << PathAnimation(self._it, Path().M(*self._it.transform.xy).L(value*self._box_size, 0))
 
     @property
     def j(self) -> int:
@@ -171,7 +198,7 @@ class TwoPointerArray:
     @animating
     def j(self, value: int):
         self._j = value
-        self._scene.animations << PathAnimation(self._jt, Path().M(*self._jt.transform.xy).L(value*self._box_size, 0), **self._ak)
+        self._scene.animations << PathAnimation(self._jt, Path().M(*self._jt.transform.xy).L(value*self._box_size, 0))
 
     @property
     def storage(self) -> Var:
@@ -188,7 +215,7 @@ class TwoPointerArray:
         self._i = value
         for box in self._boxes[:self._i]:
             box.set_fill(Color("blue"))
-        self._scene.animations << PathAnimation(self._it, Path().M(*self._it.transform.xy).L(value*self._box_size, 0), **self._ak)
+        self._scene.animations << PathAnimation(self._it, Path().M(*self._it.transform.xy).L(value*self._box_size, 0))
 
 
     def get_drawing(self):
@@ -205,8 +232,8 @@ class TwoPointerArray:
         lift = x_delta
         
         self._scene.animations << [
-            PathAnimation(ea.text_element, Path().M(*ea.text_element.transform.xy).Q(x_mid, ea.text_element.transform.y - lift, *eb.text_element.transform.xy), **self._ak),
-            PathAnimation(eb.text_element, Path().M(*eb.text_element.transform.xy).Q(x_mid, eb.text_element.transform.y + lift, *ea.text_element.transform.xy), **self._ak)
+            PathAnimation(ea.text_element, Path().M(*ea.text_element.transform.xy).Q(x_mid, ea.text_element.transform.y - lift, *eb.text_element.transform.xy)),
+            PathAnimation(eb.text_element, Path().M(*eb.text_element.transform.xy).Q(x_mid, eb.text_element.transform.y + lift, *ea.text_element.transform.xy))
         ]
 
         self._elements[a] = eb
@@ -224,7 +251,7 @@ class TwoPointerArray:
         # self[index].value = value
         # self[index].text_element.set_transform(source)
 
-        # self._scene.animations << PathAnimation(self[index].text_element, Path().M(*source).L(*destination), **self._ak)
+        # self._scene.animations << PathAnimation(self[index].text_element, Path().M(*source).L(*destination))
 
     
     def __len__(self):

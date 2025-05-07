@@ -12,8 +12,9 @@ class Drawable(ABC):
 
     DEFAULT: int = 0
     TOP_LEFT: int = 1
-    CENTER: int = 2
-    BEGINNING: int = 3
+    LEFT: int = 8
+    CENTER: int = 9
+    BEGINNING: int = 10
 
     def __init__(self, *, transform: Transform | None = None, anchor: int = CENTER):
 
@@ -32,6 +33,8 @@ class Drawable(ABC):
     def anchor_offset(self) -> np.ndarray[float]:
         if self.anchor == Drawable.DEFAULT:
             return np.array([0.0,0.0], dtype=float)
+        if self.anchor == Drawable.LEFT:
+            return -(self.top_left + [0, self.height/2])
         if self.anchor == Drawable.TOP_LEFT:
             return -self.top_left
         if self.anchor == Drawable.CENTER:

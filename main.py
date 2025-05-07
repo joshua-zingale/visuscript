@@ -10,18 +10,15 @@ from visuscript.scene import Scene
 s = Scene(width=480, height=270)
 
 
-s << Rect(width=50, height=50, anchor=Drawing.CENTER).with_child(c := Circle(5, anchor=Drawing.TOP_LEFT))
-s << Rect(width=50, height=50, anchor=Drawing.CENTER).with_child(c := Circle(5, anchor=Drawing.TOP_LEFT))
+s << (rect := Rect(width=50, height=50, anchor=Drawing.CENTER).with_child(c := Circle(5, anchor=Drawing.CENTER)))
 
 
-print_frame(s)
 
-exit()
-s.animations << AnimationSequence([
-    PathAnimation(rect, path=Path().L(100,0), fps=30, duration=1),
+s.animations << AnimationBundle(
+    PathAnimation(rect, path=Path().L(115,0), fps=30, duration=1),
     NoAnimation(fps=30, duration=1),
-    AnimationBundle([ScaleAnimation(rect, 2, fps=30, duration=1)]),
-    ])
+    AnimationBundle([ScaleAnimation(rect, 1, fps=30, duration=1)]),
+    )
 
 s.pf()
 

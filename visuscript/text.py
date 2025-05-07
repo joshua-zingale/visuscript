@@ -1,8 +1,28 @@
 from .drawable import Element
+from xml.sax.saxutils import escape as xml_escape
 from .primatives import *
 from PIL import ImageFont
 import svg
 import sys
+
+def escape_with_leading_spaces(data):
+    """
+    Escapes a string for XML while preserving leading spaces.
+
+    Args:
+        data: The input string.
+
+    Returns:
+        The XML-escaped string with leading spaces preserved.
+    """
+    leading_spaces = ""
+    for char in data:
+        if char == " ":
+            leading_spaces += "&#160;"
+        else:
+            break
+    return leading_spaces + xml_escape(data.lstrip(" "))
+
 class Text(Element):
      @staticmethod
      def update_size(foo):
@@ -77,7 +97,7 @@ class Text(Element):
           return svg.Text(
                x=x,
                y=y,
-               text=self.text,
+               text=escape_with_leading_spaces(self.text),
                transform=str(self.global_transform),
                font_size=self.font_size,
                font_family=self.font_family,

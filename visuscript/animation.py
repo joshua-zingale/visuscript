@@ -1,5 +1,6 @@
-from typing import Callable
+from typing import Callable, Tuple
 from abc import ABC, abstractmethod
+from visuscript.config import *
 from visuscript.drawable import *
 from visuscript.primatives import *
 from visuscript.segments import Path
@@ -31,7 +32,7 @@ class Animation(ABC):
         
 class NoAnimation(Animation):
 
-    def __init__(self, *, fps: int, duration: float):
+    def __init__(self, *, fps: int = FPS, duration: float = ANIMATION_DURATION):
         self._num_frames = round(fps*duration)
 
     def advance(self) -> bool:
@@ -51,7 +52,7 @@ class RF(Animation):
     
 class AnimationSequence(Animation):
 
-    def __init__(self, animations: list[Animation]):
+    def __init__(self, *animations: Tuple[Animation, ...]):
         self._animations = animations
         self._animation_index = 0
 
@@ -66,7 +67,7 @@ class AnimationSequence(Animation):
 
 
 class TimeDeltaAnimation(Animation):
-    def __init__(self, *, fps: int, duration: float, updates_per_frame: int = 1):
+    def __init__(self, *, fps: int = FPS, duration: float = ANIMATION_DURATION, updates_per_frame: int = 1):
         assert updates_per_frame >= 0
 
         self._frame_number: int = 1
@@ -101,13 +102,24 @@ class TimeDeltaAnimation(Animation):
 
 
 class AlphaAnimation(Animation):
-    def __init__(self, *, fps: int, duration: float, easing_function: Callable[[float], float] = sin_easing):
+    def __init__(self, *, fps: int = FPS, duration: float = ANIMATION_DURATION, easing_function: Callable[[float], float] = sin_easing):
         self._frame_number: int = 1
         self._num_frames: int = round(fps * duration)
         self._easing_function = easing_function
 
 
+    def first_advance_initializer(self):
+        """
+        This function is run the first time advance is called. This can be useful for setting the source value of interpolation.
+        """
+        pass
+
+
     def advance(self) -> bool:
+
+        if self._frame_number == 1:
+            self.first_advance_initializer()
+
         if self._frame_number > self._num_frames:
             return False
 
@@ -127,45 +139,73 @@ class AlphaAnimation(Animation):
 
 
 class PathAnimation(AlphaAnimation):
-    def __init__(self, object: Drawable, path: Path, **kwargs):
+    def __init__(self, drawable: Drawable, path: Path, **kwargs):
         super().__init__(**kwargs)
-        self._object = object
-        self._source_translation = object.transform.translation
+        self._drawable = drawable
         self._path = path
+
+    def first_advance_initializer(self):
+        self._source_translation = self._drawable.transform.translation
+
 
     def update(self, alpha: float):
         assert 0 <= alpha <= 1
         if alpha == 1:
-            self._object.transform.translation = self._path.end
+            self._drawable.transform.translation = self._path.end
 
-        self._object.transform.translation = self._path.point_percentage(alpha)
+        self._drawable.transform.translation = self._path.point_percentage(alpha)
+
+class TranslationAnimation(AlphaAnimation):
+    def __init__(self, drawable: Drawable, target_translation: np.ndarray | list, **kwargs):
+        super().__init__(**kwargs)
+        self._drawable = drawable
+
+
+        self._target_translation = Transform(target_translation).translation
+
+    def first_advance_initializer(self):
+        self._source_translation = self._drawable.transform.translation
+
+
+    def update(self, alpha: float):
+        assert 0 <= alpha <= 1
+
+        self._drawable.transform.translation = self._source_translation * (1 - alpha) + self._target_translation * alpha
 
 class ScaleAnimation(AlphaAnimation):
-    def __init__(self, object: Drawable, target_scale: float | np.ndarray | list, **kwargs):
+    def __init__(self, drawable: Drawable, target_scale: float | np.ndarray | list, **kwargs):
         super().__init__(**kwargs)
-        self._object = object
-        self._source_scale = object.transform.scale
+        self._drawable = drawable
+        
         self._target_scale = target_scale
 
+    def first_advance_initializer(self):
+        self._source_scale = self._drawable.transform.scale
+
     def update(self, alpha: float):
         assert 0 <= alpha <= 1
-        self._object.transform.scale = self._source_scale * (1 - alpha) + self._target_scale * alpha
+        self._drawable.transform.scale = self._source_scale * (1 - alpha) + self._target_scale * alpha
 
 class RotationAnimation(AlphaAnimation):
-    def __init__(self, object: Drawable, target_rotation: float, **kwargs):
+    def __init__(self, drawable: Drawable, target_rotation: float, **kwargs):
         super().__init__(**kwargs)
-        self._object = object
-        self._source_rotation = object.transform.rotation
+        self._drawable = drawable
         self._target_rotation = target_rotation
+
+    def first_advance_initializer(self):
+        self._source_rotation = self._drawable.transform.rotation
 
     def update(self, alpha: float):
         assert 0 <= alpha <= 1
-        self._object.transform.rotation = self._source_rotation * (1 - alpha) + self._target_rotation * alpha
+        self._drawable.transform.rotation = self._source_rotation * (1 - alpha) + self._target_rotation * alpha
 
 
 class AnimationBundle(Animation):
-    def __init__(self, animations: list[Animation] = []):
-        self._animations: list[Animation] = animations
+    def __init__(self, *animations: Tuple[Animation, ...]):
+        self._animations: list[Animation] = []
+
+        for animation in animations:
+            self.push(animation)
     
     def advance(self) -> bool:
         return sum(map(lambda x: x.advance(), self._animations)) > 0
@@ -187,14 +227,14 @@ class AnimationBundle(Animation):
 
 
 class TransformInterpolation(Animation):
-    def __init__(self, object: Drawable, target: Transform, fps: int, duration: float, easing_function: Callable[[float], float] = sin_easing):
+    def __init__(self, drawable: Drawable, target: Transform, fps: int = FPS, duration: float = ANIMATION_DURATION, easing_function: Callable[[float], float] = sin_easing):
 
         super().__init__()
 
         animations = [
-            PathAnimation(object=object, path=Path().M(*object.transform.xy).L(*target.xy), fps = fps, duration = duration, easing_function = easing_function),
-            ScaleAnimation(object=object, target_scale=target.scale, fps = fps, duration = duration, easing_function = easing_function),
-            RotationAnimation(object=object, target_rotation=target.rotation, fps = fps, duration = duration, easing_function = easing_function)
+            TranslationAnimation(drawable=drawable, target_translation=target.translation, fps=fps, duration=duration, easing_function=easing_function),
+            ScaleAnimation(drawable=drawable, target_scale=target.scale, fps = fps, duration = duration, easing_function = easing_function),
+            RotationAnimation(drawable=drawable, target_rotation=target.rotation, fps = fps, duration = duration, easing_function = easing_function)
         ]
 
         self._animation_bundle = AnimationBundle(animations)
@@ -204,12 +244,12 @@ class TransformInterpolation(Animation):
         
 
 class FillAnimation(AlphaAnimation):
-    def __init__(self, object: Drawing, target_fill: Color, **kwargs):
+    def __init__(self, drawable: Drawing, target_fill: Color, **kwargs):
         super().__init__(**kwargs)
-        self._object = object
-        self._source_color = Color(object.fill)
+        self._drawable = drawable
+        self._source_color = Color(drawable.fill)
         self._target_color = Color(target_fill)
 
     def update(self, alpha: float):
         assert 0 <= alpha <= 1
-        self._object.fill = self._source_color * (1 - alpha) + self._target_color * alpha
+        self._drawable.fill = self._source_color * (1 - alpha) + self._target_color * alpha
