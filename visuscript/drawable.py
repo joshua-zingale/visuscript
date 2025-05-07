@@ -6,6 +6,7 @@ import numpy as np
 import svg
 from abc import ABC, abstractmethod
 
+
 class Drawable(ABC):
 
     DEFAULT: int = 0
@@ -25,6 +26,15 @@ class Drawable(ABC):
     def set_anchor(self, anchor: int):
         self.anchor = anchor
         return self
+    
+    @property
+    def anchor_offset(self) -> np.ndarray[float]:
+        if self.anchor == Drawable.DEFAULT:
+            return np.array([0.0,0.0], dtype=float)
+        if self.anchor == Drawable.TOP_LEFT:
+            return -self.top_left
+        if self.anchor == Drawable.CENTER:
+            return -(self.top_left + [self.width/2, self.height/2])
     
     @property
     def anchor_transform(self) -> Transform:
@@ -108,7 +118,7 @@ class Element(Drawable):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._children: set["Element"] = set()
+        self._children: list["Element"] = []
         self._parent: "Element" | None = None
         self._svg_pivot = None
         self._deleted = False
@@ -119,7 +129,7 @@ class Element(Drawable):
 
     def has_ancestor(self, other: "Element"):
         ancestor = self
-        while (ancestor := self._parent) is not None:
+        while (ancestor := ancestor._parent) is not None:            
             if ancestor == other:
                 return True
         return False
@@ -127,9 +137,10 @@ class Element(Drawable):
 
     def set_parent(self, parent: "Element", preserve_global_transform: bool = False) -> Self:
         """        
-        An Element is placed, scaled, and rotated relative to its parent.
+        Each Element is placed, scaled, and rotated relative to its parent.
         """
-        if parent == None:
+        assert self is not parent
+        if parent is None:
             self._parent._children.remove(self)
             self._parent = None
         else:
@@ -140,7 +151,7 @@ class Element(Drawable):
             if preserve_global_transform:
                 global_transform = self.global_transform
 
-            parent._children.add(self)
+            parent._children.append(self)
             self._parent = parent
 
             if preserve_global_transform:
@@ -150,6 +161,11 @@ class Element(Drawable):
         
     def add_child(self, child: "Element", preserve_global_transform: bool = False) -> Self:
         child.set_parent(self, preserve_global_transform=preserve_global_transform)
+        return self
+    
+    def remove_child(self, child: "Element", preserve_global_transform: bool = True) -> Self:
+        assert child in self._children
+        child.set_parent(None, preserve_global_transform=preserve_global_transform)
         return self
 
     def add_children(self, children: list["Element"], preserve_global_transform: bool = False) -> Self:
@@ -280,18 +296,15 @@ class Drawing(Element):
         self.stroke = Color(color)
         return self
         
-    @Element.anchor
     def point(self, length: float) -> np.ndarray:
-        return self.transform(Transform(self._path.point(length))).xy
+        return self.transform(Transform(self._path.set_offset(*self.anchor_offset).point(length))).xy
     
-    @Element.anchor
     def point_percentage(self, p: float) -> np.ndarray:
-        return self.transform(Transform(self._path.point(p))).xy
+        return self.transform(Transform(self._path.set_offset(*self.anchor_offset).point_percentage(p))).xy
     
-    @Element.anchor
-    @Element.globify
     def global_point(self, length: float) -> np.ndarray:
-        return self.transform(Transform(self._path.point(length))).xy
+
+        return self.global_transform(Transform(self._path.set_offset(*self.anchor_offset).point(length))).xy
 
     @property
     def top_left(self) -> np.ndarray:
@@ -313,9 +326,9 @@ class Drawing(Element):
     def height(self):
         return self._path.height
     
-    @Element.anchor
     @Element.globify
     def draw_self(self):
+        self._path.set_offset(*self.anchor_offset)
         return svg.Path(
                 d=str(self._path),
                 transform=self.svg_transform,
@@ -337,7 +350,7 @@ class Circle(Drawing):
 
     @property
     def top_left(self) -> np.ndarray:
-        return np.array([self.radius, self.radius], dtype=float)
+        return np.array([-self.radius, -self.radius], dtype=float)
 
     @property
     def width(self):
@@ -346,11 +359,12 @@ class Circle(Drawing):
     def height(self):
         return self.radius * 2
 
-    @Element.lock_svg_pivot
-    @Element.anchor
     @Element.globify
     def draw_self(self):
+        x, y = self.anchor_offset
         return svg.Circle(
+            cx = x,
+            cy = y,
             r=self.radius,
             transform=self.svg_transform,
             stroke=self.stroke.rgb,

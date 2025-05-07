@@ -27,16 +27,27 @@ class Segment(ABC):
     @abstractmethod
     def end(self) -> np.ndarray:
         ...
+
+    @abstractmethod
+    def set_offset(self, x_offset: float, y_offset: float) -> Self:
+        ...
     
     @abstractmethod
     def __str__(self) -> str:
         ...
-    
+
 
 class MSegment(Segment):
     def __init__(self, x1: float, y1: float):
         self._x1 = x1
         self._y1 = y1
+        self._x1_og = x1
+        self._y1_og = y1
+
+    def set_offset(self, x_offset: float, y_offset: float) -> Self:
+        self._x1 = self._x1_og + x_offset
+        self._y1 = self._y1_og + y_offset
+        return self
         
     @property
     def start(self) -> np.ndarray:
@@ -64,6 +75,19 @@ class LSegment(Segment):
         self._x2 = x2
         self._y2 = y2
 
+        self._x1_og = x1
+        self._y1_og = y1
+        self._x2_og = x2
+        self._y2_og = y2
+
+
+    def set_offset(self, x_offset: float, y_offset: float) -> Self:
+        self._x1 = self._x1_og + x_offset
+        self._y1 = self._y1_og + y_offset
+        self._x2 = self._x2_og + x_offset
+        self._y2 = self._y2_og + y_offset
+        return self
+
     def point_percentage(self, p: float) -> np.ndarray:
         if self._x1 == self._x2 and self._y1 == self._y2:
             return self.start
@@ -89,12 +113,6 @@ class LSegment(Segment):
         return f"L {self._x2} {self._y2}"
     
 class ZSegment(LSegment):
-    def __init__(self, x1: float, y1: float, x2: float, y2: float):
-        self._x1 = x1
-        self._y1 = y1
-        self._x2 = x2
-        self._y2 = y2
-
     def __str__(self) -> str:
         return f"Z"
     
@@ -104,6 +122,17 @@ class QSegment(Segment):
         self._p1 = np.array([x1, y1])
         self._p2 = np.array([x2, y2])
         self._p3 = np.array([x3, y3])
+        self._p1_og = np.array([x1, y1])
+        self._p2_og = np.array([x2, y2])
+        self._p3_og = np.array([x3, y3])
+
+
+    def set_offset(self, x_offset: float, y_offset: float) -> Self:
+        offset = np.array([x_offset, y_offset], dtype=float)
+        self._p1 = self._p1_og + offset
+        self._p2 = self._p2_og + offset
+        self._p3 = self._p3_og + offset
+        return self
 
 
     def derivative(self, t: float) -> np.ndarray:
@@ -189,6 +218,12 @@ class Path(Segment):
         self.max_y = 0
 
         self._cursor = np.array([0.0,0.0], dtype=float)
+
+    def set_offset(self, x_offset: float, y_offset: float) -> Self:
+        for segment in self._segments:
+            segment.set_offset(x_offset, y_offset)
+
+        return self
 
     @property
     def top_left(self) -> np.ndarray:

@@ -9,7 +9,7 @@ def main():
     s = Scene(width=int(1920/4), height=int(1080/4))
     s << Rect(width=30,height=30, transform=[-200, -100]).with_child(Text(text="unsorted", font_size = 20, transform=[20, -10], anchor=Drawable.TOP_LEFT))
     s << Rect(width=30,height=30, fill="blue", stroke="off_white", transform=[-200, -65]).with_child(Text(text="sorted", font_size = 20, transform=[20, -10], anchor=Drawable.TOP_LEFT))
-    arr = TwoPointerArray([6,3,2], s, auto_print=True)
+    arr = TwoPointerArray([6,3], s, auto_print=True)
     
     arr.i = 1
     while arr.i < len(arr):
@@ -80,12 +80,12 @@ class Var:
     
     def __lt__(self, other: Self):
         og_transform = deepcopy(self.text_element.transform)
-        self._scene.animations << TransformInterpolation(object=self.text_element, target=Transform(
-            translation = self.text_element.transform.xy - [20, 0],
-            scale = 0.5
-        ), fps=30, duration=0.5)
-        self._scene.pf()
-        self._scene.animations << TransformInterpolation(object=self.text_element, target=og_transform, fps=30, duration=0.5)
+        comparison = Text(text=f"&lt; {other.value}", transform=[24,0], font_size=self.text_element.font_size)
+        self._scene.animations << AnimationSequence([
+            TransformInterpolation(object=self.text_element, target=Transform([-1,0]), fps=30, duration=0.5),
+            TransformInterpolation(object=self.text_element, target=og_transform, fps=30, duration=0.5)
+            ])
+
         self._scene.pf()
         return self.value < other.value
 

@@ -40,6 +40,15 @@ class NoAnimation(Animation):
             return True
         return False
     
+class RF(Animation):
+
+    def __init__(self, function: Callable[[], None]):
+        self._function = function
+
+    def advance(self) -> bool:
+        self._function()
+        return False
+    
 class AnimationSequence(Animation):
 
     def __init__(self, animations: list[Animation]):

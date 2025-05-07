@@ -15,7 +15,7 @@ class Canvas(Drawable):
         self._logical_height = logical_height
         self._logical_scaling = width/logical_width
 
-        self._elements: set[Element] = set() if elements is None else set(elements)
+        self._elements: list[Element] = [] if elements is None else list(elements)
         self.anchor = Drawable.CENTER
         self.color: Color = Color(color)
 
@@ -25,12 +25,12 @@ class Canvas(Drawable):
         self._elements = set()
 
     def with_element(self, element: Element) -> Self:
-        self._elements.add(element)
+        self._elements.append(element)
         return self
     add_element = with_element
 
     def with_elements(self, elements: list[Element]) -> Self:
-        self._elements.union(elements)
+        self._elements.extend(elements)
         return self
     add_elements = with_elements
 
@@ -103,7 +103,7 @@ class Canvas(Drawable):
         )
 
         # removed deleted elements
-        self._elements = set(filter(lambda x: not x.deleted, self._elements))
+        self._elements = list(filter(lambda x: not x.deleted, self._elements))
         
         # translation = ( - transform.translation * self._logical_scaling) * transform.scale
         # translation = (-transform.translation)/(scale * self._logical_scaling) * self.transform.scale
