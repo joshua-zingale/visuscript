@@ -34,6 +34,17 @@ class Canvas(Drawable):
         return self
     add_elements = with_elements
 
+    def without_element(self, element: Element) -> Self:
+        self._elements.remove(element)
+        return self
+    remove_element = without_element
+
+    def without_elements(self, elements: list[Element]) -> Self:
+        for element in elements:
+            self._elements.remove(element)
+        return self
+    remove_elements = without_elements
+
     def __lshift__(self, other: Element | list[Element]):
         if isinstance(other, list):
             self.add_elements(other)
@@ -41,6 +52,15 @@ class Canvas(Drawable):
             self.add_element(other)
         else:
             raise TypeError("'<<' is implemented only for types Element and list[Element]")
+        
+
+    # def __rshift__(self, other: Element | list[Element]):
+    #     if isinstance(other, list):
+    #         self.remove_elements(other)
+    #     elif isinstance(other, Element):
+    #         self.remove_element(other)
+    #     else:
+    #         raise TypeError("'<<' is implemented only for types Element and list[Element]")
 
     def a(self, percentage: float) -> float:
         """

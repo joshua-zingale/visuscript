@@ -1,7 +1,7 @@
 from typing import Callable
 from abc import ABC, abstractmethod
-from visuscript.drawable import Drawable
-from visuscript.primatives import Transform
+from visuscript.drawable import *
+from visuscript.primatives import *
 from visuscript.segments import Path
 import numpy as np
 
@@ -29,6 +29,31 @@ class Animation(ABC):
         while self.advance():
             pass
         
+class NoAnimation(Animation):
+
+    def __init__(self, *, fps: int, duration: float):
+        self._num_frames = round(fps*duration)
+
+    def advance(self) -> bool:
+        if self._num_frames > 0:
+            self._num_frames -= 1
+            return True
+        return False
+    
+class AnimationSequence(Animation):
+
+    def __init__(self, animations: list[Animation]):
+        self._animations = animations
+        self._animation_index = 0
+
+    def advance(self) -> bool:
+        while self._animation_index < len(self._animations) and self._animations[self._animation_index].advance() == False:
+            self._animation_index += 1
+
+        if self._animation_index == len(self._animations):
+            return False
+        return True
+
 
 
 class TimeDeltaAnimation(Animation):
@@ -168,3 +193,14 @@ class TransformInterpolation(Animation):
     def advance(self) -> bool:
         return self._animation_bundle.advance()
         
+
+class FillAnimation(AlphaAnimation):
+    def __init__(self, object: Drawing, target_fill: Color, **kwargs):
+        super().__init__(**kwargs)
+        self._object = object
+        self._source_color = Color(object.fill)
+        self._target_color = Color(target_fill)
+
+    def update(self, alpha: float):
+        assert 0 <= alpha <= 1
+        self._object.fill = self._source_color * (1 - alpha) + self._target_color * alpha

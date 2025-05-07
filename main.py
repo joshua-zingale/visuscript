@@ -10,30 +10,16 @@ from visuscript.scene import Scene
 s = Scene(width=480, height=270)
 
 
-
-rect = Rect(width=100, height=100, transform=s.xy(0,0)).with_children([
-    Circle(50),
-    Rect(width=50,height=50, transform=[0, 75]).with_child(
-        Rect(width=25, height=25, transform=Transform(rotation=45))
-    )
-])
+rect = Rect(width=50, height=50)
 
 s << rect
-s << (rect2 := Rect(width=50, height=20, transform=[100, 50]))
 
-s.animations << TransformInterpolation(rect, Transform(translation=s.xy(0.5,0.5), scale=0.25, rotation=135), fps = 24, duration = 3)
-s.animations << TransformInterpolation(rect2, Transform(translation=s.xy(0.5,0.5), scale=0.25, rotation=135), fps = 24, duration = 1.5)
-
-s.animations << ScaleAnimation(s, 3, fps = 24, duration=3)
-
-
-for frame in s.run():
-    print_frame(frame)
-
-s.animations << ScaleAnimation(s, 0.5, fps = 24, duration=1)
-
-for frame in s.run():
-    print_frame(frame)
+s.animations << AnimationSequence([
+    PathAnimation(rect, path=Path().L(100,0), fps=30, duration=1),
+    NoAnimation(fps=30, duration=1),
+    AnimationBundle([ScaleAnimation(rect, 2, fps=30, duration=1), RotationAnimation(rect, 225, fps=30,duration=2)]),
+    ])
+s.pf()
 
 # s.animations << PathAnimation(s, Path().M(*s.transform.xy).l(-200,0), fps = 24, duration=3)
 

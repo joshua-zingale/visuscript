@@ -108,7 +108,7 @@ class Element(Drawable):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._children: list["Element"] = []
+        self._children: set["Element"] = set()
         self._parent: "Element" | None = None
         self._svg_pivot = None
         self._deleted = False
@@ -130,6 +130,7 @@ class Element(Drawable):
         An Element is placed, scaled, and rotated relative to its parent.
         """
         if parent == None:
+            self._parent._children.remove(self)
             self._parent = None
         else:
 
@@ -139,7 +140,7 @@ class Element(Drawable):
             if preserve_global_transform:
                 global_transform = self.global_transform
 
-            parent._children.append(self)
+            parent._children.add(self)
             self._parent = parent
 
             if preserve_global_transform:
@@ -230,6 +231,7 @@ class Element(Drawable):
     def delete(self):
         for element in self:
             element._deleted = True
+            element.set_parent(None)
 
 
 
