@@ -219,7 +219,12 @@ class Path(Segment):
 
         self._cursor = np.array([0.0,0.0], dtype=float)
 
+        self._x_offset = 0
+        self._y_offset = 0
+
     def set_offset(self, x_offset: float, y_offset: float) -> Self:
+        self._x_offset, self._y_offset = x_offset, y_offset
+
         for segment in self._segments:
             segment.set_offset(x_offset, y_offset)
 
@@ -232,7 +237,7 @@ class Path(Segment):
     def __str__(self) -> str:
 
         if len(self._segments) == 0 or str(self._segments[0])[0] != "M":
-            string = "M 0 0"
+            string = f"M {self._x_offset} {self._y_offset}"
         else:
             string = ""
 

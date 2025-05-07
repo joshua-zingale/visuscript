@@ -88,7 +88,6 @@ class Canvas(Drawable):
     def height(self) -> float:
         return self._height
     
-    
     def set_zoom(self, zoom: Transform):
         self.zoom = zoom
         return self

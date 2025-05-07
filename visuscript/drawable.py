@@ -5,6 +5,7 @@ from typing import Self, Generator
 import numpy as np
 import svg
 from abc import ABC, abstractmethod
+import sys
 
 
 class Drawable(ABC):
@@ -326,12 +327,11 @@ class Drawing(Element):
     def height(self):
         return self._path.height
     
-    @Element.globify
     def draw_self(self):
         self._path.set_offset(*self.anchor_offset)
         return svg.Path(
                 d=str(self._path),
-                transform=self.svg_transform,
+                transform=str(self.global_transform),
                 stroke=self.stroke.rgb,
                 stroke_opacity=self.stroke.opacity,
                 fill=self.fill.rgb,
@@ -376,6 +376,6 @@ class Circle(Drawing):
 
 def Rect(width, height, anchor: int = Drawable.CENTER, **kwargs):
 
-    path = Path().M(-width/2, -height/2).l(width, 0).l(0, height).l(-width, 0).Z()
+    path = Path().l(width, 0).l(0, height).l(-width, 0).Z()
 
     return Drawing(path=path, anchor=anchor, **kwargs)

@@ -2,7 +2,7 @@ from .drawable import Element
 from .primatives import *
 from PIL import ImageFont
 import svg
-
+import sys
 class Text(Element):
      @staticmethod
      def update_size(foo):
@@ -18,7 +18,7 @@ class Text(Element):
           return size_updating_method
 
      @update_size
-     def __init__(self, *, text: str, font_size: float, font_family: str = 'arial', fill = None, **kwargs):
+     def __init__(self, *, text: str, font_size: float, font_family: str = 'arial', fill: Color | None = None, **kwargs):
                super().__init__(**kwargs)
                self._text: str = text
                self._font_size: float = font_size
@@ -70,20 +70,19 @@ class Text(Element):
           return self._height
 
 
-     @Element.anchor
-     @Element.globify
+     # @Element.anchor
+     # @Element.globify
      def draw_self(self):
           x, y = self.anchor_offset
-
           return svg.Text(
-               # x=x,
-               # y=y,
+               x=x,
+               y=y,
                text=self.text,
-               transform=self.svg_transform,
+               transform=str(self.global_transform),
                font_size=self.font_size,
                font_family=self.font_family,
                fill=self.fill.rgb,
                fill_opacity=self.fill.opacity
-               ).as_str()
+               ).as_str() + "<text/>" # The extra tag is to skirt a bug in the rendering of the SVG
 
 
