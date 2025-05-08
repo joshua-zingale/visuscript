@@ -275,10 +275,9 @@ class Drawing(Element):
                  stroke: Color | None = None,
                  stroke_width: float = 1,
                  fill: Color | None = None,
-                 anchor: int = Drawable.DEFAULT,
                  **kwargs):
         
-        super().__init__(anchor = anchor, **kwargs)
+        super().__init__(**kwargs)
 
 
         if fill is not None and stroke is None:

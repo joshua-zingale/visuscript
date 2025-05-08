@@ -1,27 +1,15 @@
 from .drawable import Element
-from xml.sax.saxutils import escape as xml_escape
+from xml.sax.saxutils import escape
 from .primatives import *
 from PIL import ImageFont
 import svg
-import sys
+from io import StringIO
 
-def escape_with_leading_spaces(data):
-    """
-    Escapes a string for XML while preserving leading spaces.
+def xml_escape(data):
+     return escape(data, entities={
+        " ": "&#160;",
+    })
 
-    Args:
-        data: The input string.
-
-    Returns:
-        The XML-escaped string with leading spaces preserved.
-    """
-    leading_spaces = ""
-    for char in data:
-        if char == " ":
-            leading_spaces += "&#160;"
-        else:
-            break
-    return leading_spaces + xml_escape(data.lstrip(" "))
 
 class Text(Element):
      @staticmethod
@@ -97,7 +85,7 @@ class Text(Element):
           return svg.Text(
                x=x,
                y=y,
-               text=escape_with_leading_spaces(self.text),
+               text=xml_escape(self.text),
                transform=str(self.global_transform),
                font_size=self.font_size,
                font_family=self.font_family,
@@ -106,3 +94,17 @@ class Text(Element):
                ).as_str() + "<text/>" # The extra tag is to skirt a bug in the rendering of the SVG
 
 
+
+def get_multiline_texts(text: str, font_size: float, **kwargs) -> Text:
+
+     head = None
+     for i, line in enumerate(text.split("\n")):
+          text_obj = Text(text=line, font_size=font_size, **kwargs).set_transform([0,i*font_size])
+          if i == 0:
+               head = text_obj
+          else:
+               text_obj.set_parent(head)
+
+     return head
+
+     

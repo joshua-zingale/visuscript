@@ -10,7 +10,10 @@ def make_frame(drawing: Canvas) -> Image:
     img.resize(drawing.width, drawing.height)
     return img
 
-def save_frame(drawing: Canvas, frame: int) -> None:
-    make_frame(drawing).save(filename=f"./frames/{frame}.png")
+def save_svg(drawing: Canvas, filename: str) -> None:
+    with open(filename, 'w') as f:
+        f.write(drawing.draw())
+def save_frame(drawing: Canvas, filename: str) -> None:
+    make_frame(drawing).save(filename=f"{filename}")
 def print_frame(drawing: Canvas) -> None:
     make_frame(drawing).save(file=sys.stdout.buffer)
