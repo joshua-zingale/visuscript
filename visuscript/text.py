@@ -5,8 +5,16 @@ from PIL import ImageFont
 import svg
 from io import StringIO
 
-def xml_escape(data):
-     return escape(data, entities={
+# TODO Figure out why league mono is not centered properly
+fonts: dict[str, str] =  {
+    "league mono": "LeagueMono-2.300/static/TTF/LeagueMono-WideLight.ttf",
+    "arimo": "Arimo/Arimo-VariableFont_wght.ttf"
+}
+
+def xml_escape(data: str) -> str:
+     # Trailing spaces lead to odd display behavior where A's with circumflexes appear wherever there should be a space.
+     # Therefore is the input string right-stripped.
+     return escape(data.rstrip(), entities={
         " ": "&#160;",
     })
 
@@ -14,19 +22,18 @@ def xml_escape(data):
 class Text(Element):
      @staticmethod
      def update_size(foo):
-          
           def size_updating_method(self, *args, **kwargs):
+               global fonts
                r = foo(self, *args, **kwargs)
-               font = ImageFont.truetype(f"fonts/{self.font_family.upper()}.ttf", self.font_size).font
+               font = ImageFont.truetype(f"fonts/{fonts[self.font_family]}", self.font_size).font
                size = font.getsize(self.text)
                self._width = size[0][0]
                self._height = size[0][1]
-
                return r
           return size_updating_method
 
      @update_size
-     def __init__(self, *, text: str, font_size: float, font_family: str = 'arial', fill: Color | None = None, **kwargs):
+     def __init__(self, *, text: str, font_size: float, font_family: str = 'arimo', fill: Color | None = None, **kwargs):
                super().__init__(**kwargs)
                self._text: str = text
                self._font_size: float = font_size
@@ -77,16 +84,13 @@ class Text(Element):
      def height(self) -> float:
           return self._height
 
-
-     # @Element.anchor
-     # @Element.globify
      def draw_self(self):
           x, y = self.anchor_offset
           return svg.Text(
                x=x,
                y=y,
                text=xml_escape(self.text),
-               transform=str(self.global_transform),
+               transform=self.global_transform.svg_transform,
                font_size=self.font_size,
                font_family=self.font_family,
                fill=self.fill.rgb,

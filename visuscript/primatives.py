@@ -60,7 +60,11 @@ class Transform:
         else:
             return self._pivot
 
-    def __str__(self):
+    @property
+    def svg_transform(self) -> str:
+        """
+        The SVG representation of this Transform, as can be specified with "transfrom="
+        """
         return f"translate({" ".join(self.translation[:2].astype(str))}) scale({" ".join(self.scale[:2].astype(str))}) rotate({self.rotation})"
     
     def __repr__(self):

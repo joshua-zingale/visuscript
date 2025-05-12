@@ -110,9 +110,9 @@ class Canvas(Drawable):
 
 
 
-        head = Pivot().set_transform(transform).with_children(self._elements)
+        head = Pivot().set_transform(transform).add_children(self._elements)
         return svg.SVG(
             viewBox=svg.ViewBoxSpec(0, 0, self.width, self.height),
-            elements= [background] + list(head)).as_str()
+            elements= [background.draw(), head.draw()]).as_str()
     
 

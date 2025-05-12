@@ -6,9 +6,15 @@ class Segment(ABC):
 
     @abstractmethod
     def point_percentage(self, percentage: float):
+        """
+        The (x,y) point that is `percentage` along this segment, where `percentage` is between 0 and 1.
+        """
         ...
 
     def point(self, length: float) -> np.ndarray:
+        """
+        The (x,y) point along this segment at `length` from the start.
+        """
         assert 0 <= length and length <= self.arc_length
         if self.arc_length == 0:
             return self.start
@@ -17,23 +23,42 @@ class Segment(ABC):
     @property
     @abstractmethod
     def arc_length(self) -> float:
+        """
+        The length in pixels of this segment.
+        """
         ...
     @property
     @abstractmethod
     def start(self) -> np.ndarray:
+        """
+        The first (x,y) point in this segment.
+        """
         ...    
 
     @property
     @abstractmethod
     def end(self) -> np.ndarray:
+        """
+        The last (x,y) point in this segment.
+        """
         ...
 
     @abstractmethod
     def set_offset(self, x_offset: float, y_offset: float) -> Self:
+        """
+        Offsets the x and y coordinates of all points along this segment.
+
+        The offset is always relative to the original segment without any offset applied.
+        Thus, `segment.set_offset(0,0)` will always reset the segment to its initial state.
+        """
         ...
     
+    @property
     @abstractmethod
-    def __str__(self) -> str:
+    def path_str(self) -> str:
+        """
+        The SVG encoding for this segment. This is what goes in the "d" property in a <path> element.
+        """
         ...
 
 
@@ -64,7 +89,8 @@ class MSegment(Segment):
     def end(self) -> np.ndarray:
         return np.array([self._x1, self._y1],dtype=float)
     
-    def __str__(self) -> str:
+    @property
+    def path_str(self) -> str:
         return f"M {self._x1} {self._y1}"
 
 
@@ -109,11 +135,13 @@ class LSegment(Segment):
     def end(self) -> np.ndarray:
         return np.array([self._x2, self._y2])
     
-    def __str__(self) -> str:
+    @property
+    def path_str(self) -> str:
         return f"L {self._x2} {self._y2}"
     
 class ZSegment(LSegment):
-    def __str__(self) -> str:
+    @property
+    def path_str(self) -> str:
         return f"Z"
     
 
@@ -174,7 +202,8 @@ class QSegment(Segment):
     def end(self) -> np.ndarray:
         return self._p3.copy()
     
-    def __str__(self) -> str:
+    @property
+    def path_str(self) -> str:
         return f"Q {self._p2[0]} {self._p2[1]} {self._p3[0]} {self._p3[1]}"
 
 
@@ -205,7 +234,8 @@ class ArcSegment(Segment):
     def end(self) -> np.ndarray:
         return np.array([self._x2, self._y2])
     
-    def __str__(self) -> str:
+    @property
+    def path_str(self) -> str:
         return f"A {self._rx} {self._ry} {self._x_axis_rotation} {self._large_arc_flag} {self._sweep_flag} {self._x2} {self._y2}"
 
 
@@ -234,7 +264,8 @@ class Path(Segment):
     def top_left(self) -> np.ndarray:
         return np.array([self.min_x, self.min_y])
 
-    def __str__(self) -> str:
+    @property
+    def path_str(self) -> str:
 
         if len(self._segments) == 0 or str(self._segments[0])[0] != "M":
             string = f"M {self._x_offset} {self._y_offset}"
@@ -243,7 +274,7 @@ class Path(Segment):
 
 
         return string + " ".join(
-            map(lambda x: str(x), self._segments)
+            map(lambda x: x.path_str, self._segments)
             )
     
     def point_percentage(self, percentage):

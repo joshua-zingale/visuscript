@@ -1,7 +1,7 @@
 from .primatives import *
 from .segments import Path, Segment
 from io import StringIO
-from typing import Self, Generator
+from typing import Self, Generator, Tuple
 import numpy as np
 import svg
 from abc import ABC, abstractmethod
@@ -31,6 +31,9 @@ class Drawable(ABC):
     
     @property
     def anchor_offset(self) -> np.ndarray[float]:
+        """
+        The (x,y) offset of this drawable for it to be anchored properly.
+        """
         if self.anchor == Drawable.DEFAULT:
             return np.array([0.0,0.0], dtype=float)
         if self.anchor == Drawable.LEFT:
@@ -38,24 +41,12 @@ class Drawable(ABC):
         if self.anchor == Drawable.TOP_LEFT:
             return -self.top_left
         if self.anchor == Drawable.CENTER:
-            return -(self.top_left + [self.width/2, self.height/2])
-    
-    @property
-    def anchor_transform(self) -> Transform:
-
-        transform = Transform(-self.top_left)
-        if self.anchor == Drawable.DEFAULT:
-            return Transform()
-        if self.anchor == Drawable.TOP_LEFT:
-            return transform
-        if self.anchor == Drawable.CENTER:
-            return Transform(translation=[-self.width/2, -self.height/2]) + transform
-        
+            return -(self.top_left + [self.width/2, self.height/2])    
 
     @abstractmethod
     def draw(self) -> str:
         """
-        Returns the SVG representation of this object.
+        Returns the SVG representation of this drawable.
         """
         ...
     
@@ -63,7 +54,7 @@ class Drawable(ABC):
     @abstractmethod
     def top_left(self) -> np.ndarray:
         """
-        The top left coordinate for this object.
+        The top left coordinate for this drawable.
         """
         ...
             
@@ -71,55 +62,19 @@ class Drawable(ABC):
     @abstractmethod
     def width(self) -> np.ndarray:
         """
-        The width of this object
+        The width of this drawable.
         """
         ...
     @property
     @abstractmethod
     def height(self) -> float:
         """
-        The height of this object
+        The height of this drawable.
         """
         ...
-    
-    @property
-    def svg_transform(self) -> str:
-        """
-        The SVG-formated transform for this object.
-        """
-        return f"translate({" ".join(self.transform.xy.astype(str))}) scale({" ".join(self.transform.scale[:2].astype(str))}) rotate({self.transform.rotation})"
-
 
 
 class Element(Drawable):
-
-    @staticmethod
-    def lock_svg_pivot(method):
-        def locked_svg_pivot_method(self: Element, *args, **kwargs):
-            self._svg_pivot = " ".join((-self.anchor_transform.xy).astype(str))
-            r = method(self, *args, **kwargs)
-            self._svg_pivot = None
-            return r
-        return locked_svg_pivot_method
-    @staticmethod
-    def anchor(method):
-        def anchored_method(self: Element, *args, **kwargs):
-            transform = self.transform
-            self.transform = self.anchor_transform(self.transform)
-            r = method(self, *args, **kwargs)
-            self.transform = transform
-            return r
-        return anchored_method
-    @staticmethod
-    def globify(method):
-        def globified_method(self: Element, *args, **kwargs):
-            transform = self.transform
-            self.transform = self.global_transform
-            r = method(self, *args, **kwargs)
-            self.transform = transform
-            return r
-        return globified_method
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._children: list["Element"] = []
@@ -128,29 +83,40 @@ class Element(Drawable):
         self._deleted = False
     
     def set_global_transform(self, transform: Transform) -> Self:
+        """
+        The global transform on this Element.
+        
+        Returns the composition of all transforms, including that on this Element, up this Element's hierarchy.
+        """
         self.global_transform = transform
         return self
 
-    def has_ancestor(self, other: "Element"):
+    def has_ancestor(self, element: "Element") -> bool:
+        """
+        Returns True if `element` is an ancestor of this Element.
+        """
         ancestor = self
         while (ancestor := ancestor._parent) is not None:            
-            if ancestor == other:
+            if ancestor == element:
                 return True
         return False
     
-
     def set_parent(self, parent: "Element", preserve_global_transform: bool = False) -> Self:
         """        
-        Each Element is placed, scaled, and rotated relative to its parent.
+        Sets this Element's parent, replacing any that may have already existed.
+        
+        Also adds this Element as a child of the new parent and removes it as a child of any previous parent.
         """
-        assert self is not parent
         if parent is None:
             self._parent._children.remove(self)
             self._parent = None
         else:
 
             if parent.has_ancestor(self):
-                raise ValueError("Cannot set the parent to a descendant.")
+                raise ValueError("Cannot set an Element's descendant as its parent")
+            
+            if parent is self:
+                raise ValueError("Cannot set an Element to be its own parent.")
 
             if preserve_global_transform:
                 global_transform = self.global_transform
@@ -164,29 +130,44 @@ class Element(Drawable):
         return self
         
     def add_child(self, child: "Element", preserve_global_transform: bool = False) -> Self:
+        """
+        Adds `child` as a child to this Element. If `preserve_global_transform` is True, then the
+        transform on `child` is set such that its global transform not change.
+        """
         child.set_parent(self, preserve_global_transform=preserve_global_transform)
         return self
     
     def remove_child(self, child: "Element", preserve_global_transform: bool = True) -> Self:
-        assert child in self._children
+        """
+        Removes `child` as a child to this Element. If `preserve_global_transform` is True, then the
+        transform on `child` is set such that its global transform not change.
+        """
+        if child not in self._children:
+            raise ValueError("Attempted to remove a child from an Element that is not a child of the Element.")
         child.set_parent(None, preserve_global_transform=preserve_global_transform)
         return self
 
-    def add_children(self, children: list["Element"], preserve_global_transform: bool = False) -> Self:
+    def add_children(self, children: Tuple["Element", ...], preserve_global_transform: bool = False) -> Self:
+        """
+        Adds each input child as a child of this Element. If `preserve_global_transform` is True, then the
+        transform on each child is set such that its global transform not change.
+        """
         for child in children:
             self.add_child(child, preserve_global_transform=preserve_global_transform)
         return self
     
-    def with_child(self, child: "Element"):
-        return self.add_child(child)
+    # def with_child(self, child: "Element"):
+    #     return self.add_child(child)
     
-    def with_children(self, children: list["Element"], preserve_global_transform: bool = False) -> Self:
-        return self.add_children(children, preserve_global_transform=preserve_global_transform)
+    # def with_children(self, children: list["Element"], preserve_global_transform: bool = False) -> Self:
+    #     return self.add_children(children, preserve_global_transform=preserve_global_transform)
 
     @property
     def global_transform(self) -> Transform:
         """
-        The global transform for this object. This transform is the composition of all ancestor transforms and this object's transform.
+        The global transform of this Element.
+        
+        Returns the composition of all ancestor transforms and this Element's transform.
         """
         curr = self
 
@@ -201,7 +182,7 @@ class Element(Drawable):
     @global_transform.setter
     def global_transform(self, value: Transform):
         """
-        Sets the global transform for this object.
+        Sets the global transform of this Element.
         """
         if self._parent is None:
             self.transform = value
@@ -216,13 +197,9 @@ class Element(Drawable):
     # def global_height(self) -> float:
     #     return self.height * self.global_transform.scale_y
 
-    
-    def __str__(self) -> str:
-        return self.draw_self()
-
     def __iter__(self) -> Generator["Element"]:
         """
-        Iterate over self and children in ascending z order, secondarily ordering parents before children
+        Iterate over this Element and its children in ascending z order, secondarily ordering parents before children.
         """
         elements = [self]
         for child in self._children:
@@ -240,7 +217,7 @@ class Element(Drawable):
     @abstractmethod
     def draw_self(self) -> str:
         """
-        Returns the SVG representation for this object but not for its children.
+        Returns the SVG representation for this Element but not for its children.
         """
         ...
 
@@ -268,7 +245,7 @@ class Pivot(Element):
     def draw_self(self):
         return ""
 
-class Drawing(Element):
+class Drawing(Element, Segment):
 
     def __init__(self, *,
                  path: Path,
@@ -323,6 +300,13 @@ class Drawing(Element):
     def arc_length(self):
         return self._path.arc_length
     @property
+    def path_str(self):
+        return self._path.path_str
+    @property
+    def set_offset(self, x_offset, y_offset):
+        return self._path.set_offset(x_offset, y_offset)
+    
+    @property
     def width(self):
         return self._path.width
     @property
@@ -332,8 +316,8 @@ class Drawing(Element):
     def draw_self(self):
         self._path.set_offset(*self.anchor_offset)
         return svg.Path(
-                d=str(self._path),
-                transform=str(self.global_transform),
+                d=self._path.path_str,
+                transform=self.global_transform.svg_transform,
                 stroke=self.stroke.rgb,
                 stroke_opacity=self.stroke.opacity,
                 fill=self.fill.rgb,
@@ -361,14 +345,13 @@ class Circle(Drawing):
     def height(self):
         return self.radius * 2
 
-    @Element.globify
     def draw_self(self):
         x, y = self.anchor_offset
         return svg.Circle(
             cx = x,
             cy = y,
             r=self.radius,
-            transform=self.svg_transform,
+            transform=self.global_transform.svg_transform,
             stroke=self.stroke.rgb,
             stroke_opacity=self.stroke.opacity,
             fill=self.fill.rgb,
@@ -381,3 +364,20 @@ def Rect(width, height, anchor: int = Drawable.CENTER, **kwargs):
     path = Path().l(width, 0).l(0, height).l(-width, 0).Z()
 
     return Drawing(path=path, anchor=anchor, **kwargs)
+
+
+# TODO Finish this
+class Box(Drawing):
+
+    def __init__(self, element: Element):
+        super().__init__(path=None)
+
+        self._element = element
+
+    @property
+    def _path(self) -> Path:
+        return Path().l(self._element.width, 0).l(0,self._element.height).l(-self._element.width,0).Z()
+
+    @_path.setter
+    def _path(self, value):
+        pass

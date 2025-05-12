@@ -1,4 +1,5 @@
 import numpy as np
+
 def ellipse_arc_length(a, b, start_angle_deg, end_angle_deg, num_segments=1000):
     """
     Approximates the arc length of an ellipse between two angles.
