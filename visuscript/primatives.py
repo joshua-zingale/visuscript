@@ -32,6 +32,34 @@ class Vec2(np.ndarray):
     def y(self, value: float):
         self[1] = value
 
+
+    def __matmul__(self, other):
+        return self.view(np.ndarray).__matmul__(other.view(np.ndarray))
+    def __rmatmul__(self, other):
+        return self.view(np.ndarray).__rmatmul__(other.view(np.ndarray))
+
+    # These are added to help intellisense
+    def __mul__(self, other) -> Self:
+        return super().__mul__(other)
+    def __rmul__(self, other) -> Self:
+        return super().__rmul__(other)
+    def __truediv__(self, other) -> Self:
+        return super().__truediv__(other)
+    def __rtruediv__(self, other) -> Self:
+        return super().__rtruediv__(other)
+    def __floordiv__(self, other) -> Self:
+        return super().__floordiv__(other)
+    def __rfloordiv__(self, other) -> Self:
+        return super().__rfloordiv__(other)
+    def __sub__(self, other) -> Self:
+        return super().__sub__(other)
+    def __rsub__(self, other) -> Self:
+        return super().__rsub__(other)
+    def __add__(self, other) -> Self:
+        return super().__add__(other)
+    def __radd__(self, other) -> Self:
+        return super().__radd__(other)
+
 class Vec3(np.ndarray):
 
     def __new__(cls, x: float, y: float, z: float):
@@ -74,6 +102,33 @@ class Vec3(np.ndarray):
     def xy(self, other: Collection):
         assert len(other) == 2
         self[:2] = other
+
+    def __matmul__(self, other):
+        return self.view(np.ndarray).__matmul__(other.view(np.ndarray))
+    def __rmatmul__(self, other):
+        return self.view(np.ndarray).__rmatmul__(other.view(np.ndarray))
+
+    # These are added to help intellisense
+    def __mul__(self, other) -> Self:
+        return super().__mul__(other)
+    def __rmul__(self, other) -> Self:
+        return super().__rmul__(other)
+    def __truediv__(self, other) -> Self:
+        return super().__truediv__(other)
+    def __rtruediv__(self, other) -> Self:
+        return super().__rtruediv__(other)
+    def __floordiv__(self, other) -> Self:
+        return super().__floordiv__(other)
+    def __rfloordiv__(self, other) -> Self:
+        return super().__rfloordiv__(other)
+    def __sub__(self, other) -> Self:
+        return super().__sub__(other)
+    def __rsub__(self, other) -> Self:
+        return super().__rsub__(other)
+    def __add__(self, other) -> Self:
+        return super().__add__(other)
+    def __radd__(self, other) -> Self:
+        return super().__radd__(other)
         
 
 def get_vec3(values: int | float | Collection, z_fill: float = 0.0) -> Vec3:
@@ -168,6 +223,7 @@ class Transform:
             )
     
     def __add__(self, other: Self):
+        assert isinstance(other, Transform)
         return Transform(
             translation = self._translation + other._translation,
             scale = self.scale * other.scale,

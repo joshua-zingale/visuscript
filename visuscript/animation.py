@@ -23,6 +23,30 @@ class Animation(ABC):
         """
         ...
 
+    @property
+    def properties(self) -> dict[object, list[str]]:
+        """
+        Returns a dictionary maping objects that are animated by this Animation to the properties on those objects being animated.
+
+        If no properties are listed for an object, it is assumed that all properties are being used by this Animation.
+        """
+        return dict()
+    
+
+    def contradicts(self, other: "Animation") -> bool:
+        """
+        Returns True if this Animation and `other` animate same property on the same object.
+        """
+        for obj in self.properties:
+            if obj in other:
+                if len(self.properties[obj]) * len(other.properties[obj]) == 0:
+                    return True
+                for property in self.properties[obj]:
+                    if property in other.properties[obj]:
+                        return True
+        return False
+                
+
     def finish(self):
         """
         Brings the animation to a finish instantly, leaving everything controlled by the animation in the state in which they would have been had the animation completed naturally.

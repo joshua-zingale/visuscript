@@ -174,7 +174,7 @@ class QSegment(Segment):
         l1 = self._p2 * p + self._p1 * (1 - p)
         l2 = self._p3 * p + self._p2 * (1 - p)
 
-        return Vec2(*(l2 * p + l1 * (1 - p)))
+        return l2 * p + l1 * (1 - p)
 
     @property
     def arc_length(self) -> float:
