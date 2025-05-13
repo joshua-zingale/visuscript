@@ -1,64 +1,142 @@
 import numpy as np
-from typing import Self
+from typing import Self, Collection
+from copy import deepcopy
 from ast import literal_eval
-from .utility import ellipse_arc_length
+
+class Vec2(np.ndarray):
+
+    def __new__(cls, x: float, y: float):
+        obj = super().__new__(cls, (2,), dtype=float)
+        obj[:] = x, y
+        return obj
+
+    def extend(self, z: float) -> "Vec3":
+        """
+        Get a Vec3 with the same first and second values and input `z` as the third value.
+        """
+        return Vec3(*self, z)
+    
+    @property
+    def x(self) -> float:
+        return self[0]
+
+    @x.setter
+    def x(self, value: float):
+        self[0] = value
+
+    @property
+    def y(self) -> float:
+        return self[1]
+
+    @y.setter
+    def y(self, value: float):
+        self[1] = value
+
+class Vec3(np.ndarray):
+
+    def __new__(cls, x: float, y: float, z: float):
+        obj = super().__new__(cls, (3,), dtype=float)
+        obj[:] = x,y,z
+        return obj
+    
+    @property
+    def x(self) -> float:
+        return self[0]
+
+    @x.setter
+    def x(self, value: float):
+        self[0] = value
+
+    @property
+    def y(self) -> float:
+        return self[1]
+
+    @y.setter
+    def y(self, value: float):
+        self[1] = value
+
+    @property
+    def z(self) -> float:
+        return self[2]
+
+    @z.setter
+    def z(self, value: float):
+        self[2] = value
+
+    @property
+    def xy(self) -> Vec2:
+        """
+        Get a Vec2 with the same first and second value as this Vec3.
+        """
+        return Vec2(*self[:2])
+    
+    @xy.setter
+    def xy(self, other: Collection):
+        assert len(other) == 2
+        self[:2] = other
+        
+
+def get_vec3(values: int | float | Collection, z_fill: float = 0.0) -> Vec3:
+    if not isinstance(values, (int, float, Collection)):
+        raise TypeError(f"Cannot make Vec3 out of {type(values)}")
+    
+    if len(values) == 2:
+        return Vec3(*values, z_fill)
+    elif len(values) == 3:
+        return Vec3(*values)
+    else:
+        raise ValueError(f"Cannot make Vec3 out of collection of length {len(values)}. Must be of length 1 or 2 or 3.")
+
 
 class Transform:
 
-    def __init__(self, translation: np.ndarray | list | Self = [0,0,0], scale: np.ndarray | list | float = [1,1,1], rotation: float = 0.0):
+    def __init__(self, translation: Vec2 | Vec3 | list | Self = [0,0,0], scale: Vec2 | Vec3 | list | float = [1,1,1], rotation: float = 0.0):
         
         if isinstance(translation, Transform):
             self.translation = translation.translation
             self.scale = translation.scale
             self.rotation = translation.rotation
             return 
+        
+        if isinstance(scale, (int, float)):
+            scale = [scale, scale, 1]
 
-        self.translation: np.ndarray = translation
-        self.scale: np.ndarray = scale
+        self._translation: Vec3 = get_vec3(translation, 0)
+        self._scale: Vec3 = get_vec3(scale, 1)
         self.rotation: float = rotation
 
-    @property
-    def xy(self) -> np.ndarray:
-        return np.array(self._translation[:2], dtype=float)
 
     @property
-    def translation(self) -> np.ndarray:
-        return np.array(self._translation, dtype=float)
+    def translation(self) -> Vec3:
+        return deepcopy(self._translation)
     
     @translation.setter
-    def translation(self, value: np.ndarray | list):
+    def translation(self, value: Collection):
         assert 2 <= len(value) and len(value) <= 3
-        value = list(value)
+
         if len(value) == 2:
-            value.append(0.0)
-        self._translation = np.array(value, dtype=float)
+            self._translation.xy = value
+        else:
+            self._translation = value
 
 
     @property
-    def scale(self) -> np.ndarray:
+    def scale(self) -> Vec3:
         return self._scale
     
     @scale.setter
-    def scale(self, value: np.ndarray | list | float):
-        if isinstance(value, float) or isinstance(value, int):
-            self._scale = np.array([value, value, 1], dtype=float)
-            return
+    def scale(self, value: int | float | Collection):
+        if not isinstance(value, Collection):
+            self._scale = get_vec3(value, 1)
 
-        scale = list(value)
-        if len(scale) == 1:
-            scale.append(value)
-        if len(scale) == 2:
-            scale.append(1.0)
+        assert 1 <= len(value) and len(value) <= 3
 
-        self._scale = np.array(scale, dtype=float)
-        
 
-    @property
-    def pivot(self):
-        if self._pivot == None:
-            return self.translation
+        if len(value) == 2:
+            self._scale.xy = value
         else:
-            return self._pivot
+            self._scale = value
+    
 
     @property
     def svg_transform(self) -> str:
@@ -66,6 +144,9 @@ class Transform:
         The SVG representation of this Transform, as can be specified with "transfrom="
         """
         return f"translate({" ".join(self.translation[:2].astype(str))}) scale({" ".join(self.scale[:2].astype(str))}) rotate({self.rotation})"
+    
+    def __str__(self):
+        return self.svg_transform
     
     def __repr__(self):
         return str(self)
@@ -118,46 +199,6 @@ class Transform:
                 )
         return inverse_transform
     
-
-    @property
-    def scale_x(self) -> float:
-        return float(self.scale[0])
-    @property
-    def scale_y(self) -> float:
-        return float(self.scale[1])
-    @property
-    def scale_z(self) -> float:
-        return float(self.scale[2])
-    
-    @scale_x.setter
-    def scale_x(self, value):
-        self.scale[0] = value
-    @scale_y.setter
-    def scale_y(self, value):
-        self.scale[1] = value
-    @scale_z.setter
-    def scale_z(self, value):
-        self.scale[2] = value
-    
-    @property
-    def x(self) -> float:
-        return float(self._translation[0])
-    @property
-    def y(self) -> float:
-        return float(self._translation[1])
-    @property
-    def z(self) -> float:
-        return float(self._translation[2])
-    
-    @x.setter
-    def x(self, value):
-        self.translation[0] = value
-    @y.setter
-    def y(self, value):
-        self.translation[1] = value
-    @z.setter
-    def z(self, value):
-        self.translation[2] = value
 
 
 

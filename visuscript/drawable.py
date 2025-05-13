@@ -30,12 +30,12 @@ class Drawable(ABC):
         return self
     
     @property
-    def anchor_offset(self) -> np.ndarray[float]:
+    def anchor_offset(self) -> Vec2:
         """
         The (x,y) offset of this drawable for it to be anchored properly.
         """
         if self.anchor == Drawable.DEFAULT:
-            return np.array([0.0,0.0], dtype=float)
+            return Vec2(0,0)
         if self.anchor == Drawable.LEFT:
             return -(self.top_left + [0, self.height/2])
         if self.anchor == Drawable.TOP_LEFT:
@@ -52,7 +52,7 @@ class Drawable(ABC):
     
     @property
     @abstractmethod
-    def top_left(self) -> np.ndarray:
+    def top_left(self) -> Vec2:
         """
         The top left coordinate for this drawable.
         """
@@ -60,7 +60,7 @@ class Drawable(ABC):
             
     @property
     @abstractmethod
-    def width(self) -> np.ndarray:
+    def width(self) -> float:
         """
         The width of this drawable.
         """
@@ -205,7 +205,7 @@ class Element(Drawable):
         for child in self._children:
             elements.extend(child.__iter__())
 
-        yield from sorted(elements, key=lambda d: d.global_transform.z)
+        yield from sorted(elements, key=lambda d: d.global_transform.translation.z)
 
     def draw(self) -> str:
         string_builder = StringIO()
@@ -234,8 +234,8 @@ class Element(Drawable):
 
 class Pivot(Element):
     @property
-    def top_left(self) -> np.ndarray:
-        return np.array([0,0], dtype=float)
+    def top_left(self):
+        return Vec2(0,0)
     @property
     def width(self) -> float:
         return 0.0
@@ -246,7 +246,6 @@ class Pivot(Element):
         return ""
 
 class Drawing(Element, Segment):
-
     def __init__(self, *,
                  path: Path,
                  stroke: Color | None = None,
@@ -287,7 +286,7 @@ class Drawing(Element, Segment):
         return self.global_transform(Transform(self._path.set_offset(*self.anchor_offset).point(length))).xy
 
     @property
-    def top_left(self) -> np.ndarray:
+    def top_left(self) -> Vec2:
         return self._path.top_left
 
     @property
@@ -335,8 +334,8 @@ class Circle(Drawing):
         self.radius = radius
 
     @property
-    def top_left(self) -> np.ndarray:
-        return np.array([-self.radius, -self.radius], dtype=float)
+    def top_left(self):
+        return Vec2(-self.radius, -self.radius)
 
     @property
     def width(self):

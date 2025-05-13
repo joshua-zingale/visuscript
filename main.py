@@ -10,8 +10,8 @@ from visuscript.scene import Scene
 s = Scene(width=480, height=270)
 
 
-s << (rect := Rect(width=50, height=50, anchor=Drawing.CENTER).add_child(c := Circle(5, anchor=Drawing.CENTER)))
-
+s << (rect := Rect(width=50, height=50, anchor=Drawing.CENTER).add_child(c := Circle(5, anchor=Drawing.CENTER).set_fill("blue")))
+s << Text(text="Hello, World!", font_size=20).set_transform([-50,-30])
 
 
 s.animations << AnimationBundle(
@@ -21,7 +21,12 @@ s.animations << AnimationBundle(
     RotationAnimation(rect, 45)
     )
 
+s.animations
+
+# print_frame(s)
+
 s.pf()
+# print_frame(s)
 
 # s.animations << PathAnimation(s, Path().M(*s.transform.xy).l(-200,0), fps = 24, duration=3)
 

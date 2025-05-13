@@ -1,17 +1,18 @@
 import numpy as np
 from typing import Self
 from abc import ABC, abstractmethod
+from visuscript.primatives import Vec2
 
 class Segment(ABC):
 
     @abstractmethod
-    def point_percentage(self, percentage: float):
+    def point_percentage(self, percentage: float) -> Vec2:
         """
         The (x,y) point that is `percentage` along this segment, where `percentage` is between 0 and 1.
         """
         ...
 
-    def point(self, length: float) -> np.ndarray:
+    def point(self, length: float) -> Vec2:
         """
         The (x,y) point along this segment at `length` from the start.
         """
@@ -29,7 +30,7 @@ class Segment(ABC):
         ...
     @property
     @abstractmethod
-    def start(self) -> np.ndarray:
+    def start(self) -> Vec2:
         """
         The first (x,y) point in this segment.
         """
@@ -37,7 +38,7 @@ class Segment(ABC):
 
     @property
     @abstractmethod
-    def end(self) -> np.ndarray:
+    def end(self) -> Vec2:
         """
         The last (x,y) point in this segment.
         """
@@ -75,19 +76,19 @@ class MSegment(Segment):
         return self
         
     @property
-    def start(self) -> np.ndarray:
-        return np.array([self._x1, self._y1],dtype=float)
+    def start(self):
+        return Vec2(self._x1, self._y1)
 
-    def point_percentage(self, p: float) -> np.ndarray:
-        return np.array([self._x1, self._y1],dtype=float)
+    def point_percentage(self, p: float):
+        return Vec2(self._x1, self._y1)
 
     @property
     def arc_length(self) -> float:
         return 0.0
     
     @property
-    def end(self) -> np.ndarray:
-        return np.array([self._x1, self._y1],dtype=float)
+    def end(self) -> Vec2:
+        return Vec2(self._x1, self._y1)
     
     @property
     def path_str(self) -> str:
@@ -114,26 +115,26 @@ class LSegment(Segment):
         self._y2 = self._y2_og + y_offset
         return self
 
-    def point_percentage(self, p: float) -> np.ndarray:
+    def point_percentage(self, p: float):
         if self._x1 == self._x2 and self._y1 == self._y2:
             return self.start
         assert 0 <= p and p <= 1, f"Got {p}"
-        return np.array([
+        return Vec2(
             self._x2 * p + self._x1 * (1 - p),
             self._y2 * p + self._y1 * (1 - p)
-        ])
+        )
 
     @property
     def arc_length(self) -> float:
         return np.sqrt( (self._x2 - self._x1)**2 + (self._y2 - self._y1)**2)
     
     @property
-    def start(self) -> np.ndarray:
-        return np.array([self._x1, self._y1],dtype=float)
+    def start(self):
+        return Vec2(self._x1, self._y1)
     
     @property
-    def end(self) -> np.ndarray:
-        return np.array([self._x2, self._y2])
+    def end(self):
+        return Vec2(self._x2, self._y2)
     
     @property
     def path_str(self) -> str:
@@ -147,33 +148,33 @@ class ZSegment(LSegment):
 
 class QSegment(Segment):
     def __init__(self, x1: float, y1: float, x2: float, y2: float, x3: float, y3: float):
-        self._p1 = np.array([x1, y1])
-        self._p2 = np.array([x2, y2])
-        self._p3 = np.array([x3, y3])
-        self._p1_og = np.array([x1, y1])
-        self._p2_og = np.array([x2, y2])
-        self._p3_og = np.array([x3, y3])
+        self._p1 = Vec2(x1, y1)
+        self._p2 = Vec2(x2, y2)
+        self._p3 = Vec2(x3, y3)
+        self._p1_og = Vec2(x1, y1)
+        self._p2_og = Vec2(x2, y2)
+        self._p3_og = Vec2(x3, y3)
 
 
     def set_offset(self, x_offset: float, y_offset: float) -> Self:
-        offset = np.array([x_offset, y_offset], dtype=float)
+        offset = Vec2(x_offset, y_offset)
         self._p1 = self._p1_og + offset
         self._p2 = self._p2_og + offset
         self._p3 = self._p3_og + offset
         return self
 
 
-    def derivative(self, t: float) -> np.ndarray:
+    def derivative(self, t: float):
         """Calculates the derivative of the Bezier curve at parameter t."""
         return 2 * (1 - t) * (self._p2 - self._p1) + 2 * t * (self._p3 - self._p2)
 
-    def point_percentage(self, p: float) -> np.ndarray:
+    def point_percentage(self, p: float) -> Vec2:
         assert 0 <= p and p <= 1
 
         l1 = self._p2 * p + self._p1 * (1 - p)
         l2 = self._p3 * p + self._p2 * (1 - p)
 
-        return l2 * p + l1 * (1 - p)
+        return Vec2(*(l2 * p + l1 * (1 - p)))
 
     @property
     def arc_length(self) -> float:
@@ -192,51 +193,51 @@ class QSegment(Segment):
             segment_length = (np.linalg.norm(derivative1) + np.linalg.norm(derivative2)) / 2 * dt
             total_length += segment_length
 
-        return total_length
+        return float(total_length)
     
     @property
-    def start(self) -> np.ndarray:
-        return self._p1.copy()
+    def start(self) -> Vec2:
+        return Vec2(*self._p1)
     
     @property
-    def end(self) -> np.ndarray:
-        return self._p3.copy()
+    def end(self) -> Vec2:
+        return Vec2(*self._p3)
     
     @property
     def path_str(self) -> str:
         return f"Q {self._p2[0]} {self._p2[1]} {self._p3[0]} {self._p3[1]}"
 
 
-class ArcSegment(Segment):
-    def __init__(
-            self, x1: float, y1: float, rx: float, ry: float, x_axis_rotation: float,
-            large_arc_flag: bool, sweep_flag: bool, x2: float, y2: float):
-        self._x1 = x1
-        self._y1 = y1
-        self._rx = rx
-        self._ry = ry
-        self._x_axis_rotation = x_axis_rotation
-        self._large_arc_flag = 1 if large_arc_flag else 0
-        self._sweep_flag = 1 if sweep_flag else 0
-        self._x2 = x2
-        self._y2 = y2
+# class ArcSegment(Segment):
+#     def __init__(
+#             self, x1: float, y1: float, rx: float, ry: float, x_axis_rotation: float,
+#             large_arc_flag: bool, sweep_flag: bool, x2: float, y2: float):
+#         self._x1 = x1
+#         self._y1 = y1
+#         self._rx = rx
+#         self._ry = ry
+#         self._x_axis_rotation = x_axis_rotation
+#         self._large_arc_flag = 1 if large_arc_flag else 0
+#         self._sweep_flag = 1 if sweep_flag else 0
+#         self._x2 = x2
+#         self._y2 = y2
 
-    def point(self, length: float) -> np.ndarray:
-        assert 0 <= length and length <= self.arc_length
-        raise NotImplementedError()
+#     def point(self, length: float) -> np.ndarray:
+#         assert 0 <= length and length <= self.arc_length
+#         raise NotImplementedError()
 
 
-    @property
-    def arc_length(self) -> float:
-        raise NotImplementedError()
+#     @property
+#     def arc_length(self) -> float:
+#         raise NotImplementedError()
     
-    @property
-    def end(self) -> np.ndarray:
-        return np.array([self._x2, self._y2])
+#     @property
+#     def end(self) -> np.ndarray:
+#         return np.array([self._x2, self._y2])
     
-    @property
-    def path_str(self) -> str:
-        return f"A {self._rx} {self._ry} {self._x_axis_rotation} {self._large_arc_flag} {self._sweep_flag} {self._x2} {self._y2}"
+#     @property
+#     def path_str(self) -> str:
+#         return f"A {self._rx} {self._ry} {self._x_axis_rotation} {self._large_arc_flag} {self._sweep_flag} {self._x2} {self._y2}"
 
 
 class Path(Segment):    
@@ -247,7 +248,7 @@ class Path(Segment):
         self.min_y = 0
         self.max_y = 0
 
-        self._cursor = np.array([0.0,0.0], dtype=float)
+        self._cursor = Vec2(0,0)
 
         self._x_offset = 0
         self._y_offset = 0
@@ -261,8 +262,8 @@ class Path(Segment):
         return self
 
     @property
-    def top_left(self) -> np.ndarray:
-        return np.array([self.min_x, self.min_y])
+    def top_left(self):
+        return Vec2(self.min_x, self.min_y)
 
     @property
     def path_str(self) -> str:
@@ -280,7 +281,7 @@ class Path(Segment):
     def point_percentage(self, percentage):
         return self.point(percentage * self.arc_length)
     
-    def point(self, length: float) -> np.ndarray:
+    def point(self, length: float):
         assert length <= self.arc_length
 
         traversed = 0.0
@@ -297,12 +298,12 @@ class Path(Segment):
         return sum(map(lambda x: x.arc_length, self._segments))
     
     @property
-    def start(self) -> np.ndarray:
-        return np.array([0.0,0.0]) if len(self._segments) == 0 else self._segments[0].start
+    def start(self) -> Vec2:
+        return Vec2(0.0,0.0) if len(self._segments) == 0 else self._segments[0].start
     
     @property
-    def end(self) -> np.ndarray:
-        return np.array([0.0,0.0]) if len(self._segments) == 0 else self._segments[-1].end
+    def end(self) -> Vec2:
+        return Vec2(0.0,0.0) if len(self._segments) == 0 else self._segments[-1].end
     
     @property
     def width(self) -> float:

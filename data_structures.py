@@ -1,4 +1,4 @@
-from visuscript.scene import Scene, Canvas
+from visuscript.scene import Scene
 from visuscript.animation import *
 from visuscript.drawable import *
 from visuscript.text import *
@@ -26,8 +26,8 @@ class Var:
             if isinstance(value, Var):
                 self.text_element.text = str(self._type(value.value))
 
-                source = value.text_element.transform.xy
-                destination = self.text_element.transform.xy
+                source = value.text_element.transform.translation.xy
+                destination = self.text_element.transform.translation.xy
 
                 self._scene.animations << PathAnimation(self.text_element, Path().M(*source).L(*destination), fps=30, duration = 0.5)
             else:
@@ -56,7 +56,7 @@ class Var:
 
         scale = width/total_width
 
-        xy = self.text_element.transform.xy
+        xy = self.text_element.transform.translation.xy
 
         self._scene.animations << AnimationSequence(
             AnimationBundle(TransformInterpolation(drawable=self.text_element, target=Transform(xy + [-comparison.width/2*scale, 0], scale=scale)),ScaleAnimation(comparison, 1)),
@@ -76,7 +76,7 @@ class Var:
 
         scale = width/total_width
 
-        xy = self.text_element.transform.xy
+        xy = self.text_element.transform.translation.xy
 
         self._scene.animations << AnimationSequence(
             AnimationBundle(TransformInterpolation(drawable=self.text_element, target=Transform(xy + [-comparison.width/2*scale, 0], scale=scale)),ScaleAnimation(comparison, 1)),
@@ -119,9 +119,9 @@ class TwoPointerArray:
         x_start = -(len(self) - 1) * self._box_size/2 #+ ((len(self)+1) % 2) * self._box_size/2
         self._storage = Var(value=None, scene=scene)
 
-        self._drawing = drawing.with_children([
-            Pivot().set_transform([x_start, -self._box_size * 3/4]).with_child(self._it),
-            Pivot().set_transform([x_start, self._box_size * 3/4]).with_child(self._jt),
+        self._drawing = drawing.add_children([
+            Pivot().set_transform([x_start, -self._box_size * 3/4]).add_child(self._it),
+            Pivot().set_transform([x_start, self._box_size * 3/4]).add_child(self._jt),
             self._storage.text_element.set_transform([0, 100])
         ])
         self._scene << self._drawing
@@ -148,7 +148,7 @@ class TwoPointerArray:
     @animating
     def i(self, value: int):
         self._i = value
-        self._scene.animations << PathAnimation(self._it, Path().M(*self._it.transform.xy).L(value*self._box_size, 0))
+        self._scene.animations << PathAnimation(self._it, Path().M(*self._it.transform.translation.xy).L(value*self._box_size, 0))
 
     @property
     def j(self) -> int:
@@ -165,7 +165,7 @@ class TwoPointerArray:
     @animating
     def j(self, value: int):
         self._j = value
-        self._scene.animations << PathAnimation(self._jt, Path().M(*self._jt.transform.xy).L(value*self._box_size, 0))
+        self._scene.animations << PathAnimation(self._jt, Path().M(*self._jt.transform.translation.xy).L(value*self._box_size, 0))
 
     @property
     def storage(self) -> Var:
@@ -184,7 +184,7 @@ class TwoPointerArray:
         if self._mark_i_visited:
             for box in self._boxes[:self._i]:
                 box.set_fill(Color("blue"))
-        self._scene.animations << PathAnimation(self._it, Path().M(*self._it.transform.xy).L(value*self._box_size, 0))
+        self._scene.animations << PathAnimation(self._it, Path().M(*self._it.transform.translation.xy).L(value*self._box_size, 0))
 
 
     def get_drawing(self):
@@ -201,8 +201,8 @@ class TwoPointerArray:
         lift = x_delta
         
         self._scene.animations << [
-            PathAnimation(ea.text_element, Path().M(*ea.text_element.transform.xy).Q(x_mid, ea.text_element.transform.y - lift, *eb.text_element.transform.xy)),
-            PathAnimation(eb.text_element, Path().M(*eb.text_element.transform.xy).Q(x_mid, eb.text_element.transform.y + lift, *ea.text_element.transform.xy))
+            PathAnimation(ea.text_element, Path().M(*ea.text_element.transform.translation.xy).Q(x_mid, ea.text_element.transform.y - lift, *eb.text_element.transform.translation.xy)),
+            PathAnimation(eb.text_element, Path().M(*eb.text_element.transform.translation.xy).Q(x_mid, eb.text_element.transform.y + lift, *ea.text_element.transform.translation.xy))
         ]
 
         self._elements[a] = eb
@@ -233,4 +233,4 @@ def get_array(arr, box_size: float, scene: Scene):
         elements.append(Var(value=e, font_size=box_size, transform=tfm, scene=scene))
 
 
-    return Pivot().with_children(boxes + list(map(lambda x: x.text_element, elements))), boxes, elements
+    return Pivot().add_children(boxes + list(map(lambda x: x.text_element, elements))), boxes, elements

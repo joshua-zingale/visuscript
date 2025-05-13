@@ -8,7 +8,8 @@ from io import StringIO
 # TODO Figure out why league mono is not centered properly
 fonts: dict[str, str] =  {
     "league mono": "LeagueMono-2.300/static/TTF/LeagueMono-WideLight.ttf",
-    "arimo": "Arimo/Arimo-VariableFont_wght.ttf"
+    "arimo": "Arimo/Arimo-VariableFont_wght.ttf",
+    "arial": "Arimo/Arimo-VariableFont_wght.ttf"
 }
 
 def xml_escape(data: str) -> str:
@@ -33,7 +34,7 @@ class Text(Element):
           return size_updating_method
 
      @update_size
-     def __init__(self, *, text: str, font_size: float, font_family: str = 'arimo', fill: Color | None = None, **kwargs):
+     def __init__(self, *, text: str, font_size: float, font_family: str = 'arial', fill: Color | None = None, **kwargs):
                super().__init__(**kwargs)
                self._text: str = text
                self._font_size: float = font_size
@@ -93,6 +94,7 @@ class Text(Element):
                transform=self.global_transform.svg_transform,
                font_size=self.font_size,
                font_family=self.font_family,
+               font_style="normal",
                fill=self.fill.rgb,
                fill_opacity=self.fill.opacity
                ).as_str() + "<text/>" # The extra tag is to skirt a bug in the rendering of the SVG
