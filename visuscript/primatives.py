@@ -127,10 +127,10 @@ class Transform:
     @scale.setter
     def scale(self, value: int | float | Collection):
         if not isinstance(value, Collection):
-            self._scale = get_vec3(value, 1)
+            self._scale = Vec3(value, value, 1.0)
+            return
 
         assert 1 <= len(value) and len(value) <= 3
-
 
         if len(value) == 2:
             self._scale.xy = value
