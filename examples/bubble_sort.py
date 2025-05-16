@@ -2,7 +2,7 @@ from visuscript.text import Text, get_multiline_texts
 from data_structures import TwoPointerArray
 from visuscript.primatives import Transform
 from visuscript.drawable import Drawable
-from visuscript.scene import Scene
+from visuscript.canvas import Scene
 from utility import self_string
 
 s = Scene()

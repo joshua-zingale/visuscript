@@ -3,6 +3,8 @@ __pycache__/
 *.mp4
 *.svg
 *.png
+*.pdf
 **/arial/
 .DS_Store
 *.profile
+visuscript.egg-info

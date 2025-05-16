@@ -6,6 +6,8 @@ from visuscript.primatives import *
 from visuscript.segments import Path
 import numpy as np
 
+from visuscript.config import config
+
 def quintic_easing(x: float) -> float:
     return 6 * x**5 - 15 * x**4 + 10 * x**3
 
@@ -56,7 +58,7 @@ class Animation(ABC):
         
 class NoAnimation(Animation):
 
-    def __init__(self, *, fps: int = FPS, duration: float = ANIMATION_DURATION):
+    def __init__(self, *, fps: int = config.fps, duration: float = config.animation_duration):
         self._num_frames = round(fps*duration)
 
     def advance(self) -> bool:
@@ -91,7 +93,7 @@ class AnimationSequence(Animation):
 
 
 class TimeDeltaAnimation(Animation):
-    def __init__(self, *, fps: int = FPS, duration: float = ANIMATION_DURATION, updates_per_frame: int = 1):
+    def __init__(self, *, fps: int = config.fps, duration: float = config.animation_duration, updates_per_frame: int = 1):
         assert updates_per_frame >= 0
 
         self._frame_number: int = 1
@@ -126,7 +128,7 @@ class TimeDeltaAnimation(Animation):
 
 
 class AlphaAnimation(Animation):
-    def __init__(self, *, fps: int = FPS, duration: float = ANIMATION_DURATION, easing_function: Callable[[float], float] = sin_easing):
+    def __init__(self, *, fps: int = config.fps, duration: float = config.animation_duration, easing_function: Callable[[float], float] = sin_easing):
         self._frame_number: int = 1
         self._num_frames: int = round(fps * duration)
         self._easing_function = easing_function
@@ -251,7 +253,7 @@ class AnimationBundle(Animation):
 
 
 class TransformInterpolation(Animation):
-    def __init__(self, drawable: Drawable, target: Transform, fps: int = FPS, duration: float = ANIMATION_DURATION, easing_function: Callable[[float], float] = sin_easing):
+    def __init__(self, drawable: Drawable, target: Transform, fps: int = config.fps, duration: float = config.animation_duration, easing_function: Callable[[float], float] = sin_easing):
 
         super().__init__()
 

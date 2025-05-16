@@ -2,7 +2,7 @@ from visuscript.scene import Scene, Canvas
 from visuscript.animation import *
 from visuscript.drawable import *
 from visuscript.text import *
-from visuscript.output import print_frame
+from visuscript.output import print_png
 import sys
 def main():
     s = Scene(width=int(1920/4), height=int(1080/4))
@@ -119,7 +119,7 @@ class TwoPointerArray:
         self._selected: int | None = None
 
         if auto_print:
-            print_frame(self._scene)        
+            print_png(self._scene)        
 
     def __str__(self):
         return str(list(map(lambda x: x.value, self._elements)))

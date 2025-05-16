@@ -1,12 +1,30 @@
-from .drawable import Element, Drawable, Rect, Pivot
+from visuscript.drawable import Element, Drawable, Rect, Pivot
 from visuscript.config import *
-from .primatives import *
-from typing import Tuple
+from visuscript.primatives import *
+from visuscript.config import config
+from typing import Iterable, Generator
+from copy import copy
+from visuscript.output import print_svg, print_png
 import numpy as np
-import svg    
+import svg
+
+from visuscript.animation import AnimationBundle
+
 
 class Canvas(Drawable):
-    def __init__(self, *, elements: list[Element] | None = None, width=CANVAS_WIDTH, height=CANVAS_HEIGHT, logical_width = CANVAS_LOGICAL_WIDTH, logical_height = CANVAS_LOGICAL_HEIGHT, color = 'dark_slate', **kwargs):
+
+    SVG: int = 0
+    PNG: int = 1
+
+    def __init__(self, *,
+                 elements: list[Element] | None = None,
+                 width=config.canvas_width,
+                 height=config.canvas_height,
+                 logical_width=config.canvas_logical_width,
+                 logical_height = config.canvas_logical_height,
+                 color = 'dark_slate',
+                 output = SVG,
+                 **kwargs):
         assert width/height == logical_width/logical_height and width/logical_width == height/logical_height
 
         super().__init__(**kwargs)
@@ -19,6 +37,7 @@ class Canvas(Drawable):
         self._elements: list[Element] = [] if elements is None else list(elements)
         self.anchor = Drawable.CENTER
         self.color: Color = Color(color)
+        self._output = output
 
         
     
@@ -30,7 +49,7 @@ class Canvas(Drawable):
         return self
     add_element = with_element
 
-    def with_elements(self, elements: list[Element]) -> Self:
+    def with_elements(self, elements: Iterable[Element]) -> Self:
         self._elements.extend(elements)
         return self
     add_elements = with_elements
@@ -46,11 +65,11 @@ class Canvas(Drawable):
         return self
     remove_elements = without_elements
 
-    def __lshift__(self, other: Element | list[Element]):
-        if isinstance(other, list):
-            self.add_elements(other)
-        elif isinstance(other, Element):
+    def __lshift__(self, other: Element | Iterable[Element]):
+        if isinstance(other, Element):
             self.add_element(other)
+        elif isinstance(other, Iterable):
+            self.add_elements(other)
         else:
             raise TypeError("'<<' is implemented only for types Element and list[Element]")
         
@@ -105,14 +124,47 @@ class Canvas(Drawable):
         # removed deleted elements
         self._elements = list(filter(lambda x: not x.deleted, self._elements))
         
-        # translation = ( - transform.translation * self._logical_scaling) * transform.scale
-        # translation = (-transform.translation)/(scale * self._logical_scaling) * self.transform.scale
-
-
-
         head = Pivot().set_transform(transform).add_children(self._elements)
         return svg.SVG(
             viewBox=svg.ViewBoxSpec(0, 0, self.width, self.height),
             elements= [background.draw(), head.draw()]).as_str()
-    
 
+    def print(self):
+        if self._output == Canvas.SVG:
+            print_svg(self)
+        elif self._output == Canvas.PNG:
+            print_png(self)
+
+    def __enter__(self) -> Self:
+        self._original_elements = copy(self._elements)
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.print()
+        self._elements = self._original_elements
+        del self._original_elements
+
+
+class Scene(Canvas):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._animation_bundle: AnimationBundle = AnimationBundle()
+    
+    @property
+    def animations(self):
+        #TODO check if the elements to be animated are elements of this scene and not already being animated
+        return self._animation_bundle
+        
+    @property
+    def frames(self) -> Generator[Self]:
+        while self._animation_bundle.advance():
+            yield self
+
+        self._animation_bundle.clear()
+
+
+    def print_frames(self):
+        for frame in self.frames:
+            print_png(frame)
+
+    pf = print_frames

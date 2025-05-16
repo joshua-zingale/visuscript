@@ -1,8 +1,8 @@
-from visuscript.scene import Scene
+from visuscript.canvas import Scene
 from visuscript.animation import *
 from visuscript.drawable import *
 from visuscript.text import *
-from visuscript.output import print_frame
+from visuscript.output import print_png
 from copy import deepcopy
 
 class Var:
@@ -132,7 +132,7 @@ class TwoPointerArray:
         self._selected: int | None = None
 
         if auto_print:
-            print_frame(self._scene)        
+            print_png(self._scene)        
 
     def __str__(self):
         return str(list(map(lambda x: x.value, self._elements)))
@@ -196,13 +196,13 @@ class TwoPointerArray:
         ea = self._elements[a]
         eb = self._elements[b]
 
-        x_mid = (ea.text_element.transform.x + eb.text_element.transform.x)/2
-        x_delta = abs(ea.text_element.transform.x - eb.text_element.transform.x)
+        x_mid = (ea.text_element.transform.translation.x + eb.text_element.transform.translation.x)/2
+        x_delta = abs(ea.text_element.transform.translation.x - eb.text_element.transform.translation.x)
         lift = x_delta
         
         self._scene.animations << [
-            PathAnimation(ea.text_element, Path().M(*ea.text_element.transform.translation.xy).Q(x_mid, ea.text_element.transform.y - lift, *eb.text_element.transform.translation.xy)),
-            PathAnimation(eb.text_element, Path().M(*eb.text_element.transform.translation.xy).Q(x_mid, eb.text_element.transform.y + lift, *ea.text_element.transform.translation.xy))
+            PathAnimation(ea.text_element, Path().M(*ea.text_element.transform.translation.xy).Q(x_mid, ea.text_element.transform.translation.y - lift, *eb.text_element.transform.translation.xy)),
+            PathAnimation(eb.text_element, Path().M(*eb.text_element.transform.translation.xy).Q(x_mid, eb.text_element.transform.translation.y + lift, *ea.text_element.transform.translation.xy))
         ]
 
         self._elements[a] = eb

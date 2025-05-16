@@ -6,12 +6,27 @@ import numpy as np
 import svg
 from abc import ABC, abstractmethod
 import sys
+from PIL import Image as PILImage
+from io import BytesIO
+import base64
+
+def get_base64_from_pil_image(pil_image: PILImage) -> str:
+    """
+    Converts a PIL Image object to a base64 encoded string.
+    """
+    buffered = BytesIO()
+    image_format = pil_image.format if pil_image.format else "PNG"  # Default to PNG if format is None
+    pil_image.save(buffered, format=image_format)
+    img_byte = buffered.getvalue()
+    img_str = base64.b64encode(img_byte).decode('utf-8')
+    return img_str
 
 
 class Drawable(ABC):
 
     DEFAULT: int = 0
     TOP_LEFT: int = 1
+    RIGHT: int = 4
     LEFT: int = 8
     CENTER: int = 9
     BEGINNING: int = 10
@@ -36,6 +51,8 @@ class Drawable(ABC):
         """
         if self.anchor == Drawable.DEFAULT:
             return Vec2(0,0)
+        if self.anchor == Drawable.RIGHT:
+            return -(self.top_left + [self.width, self.height/2])
         if self.anchor == Drawable.LEFT:
             return -(self.top_left + [0, self.height/2])
         if self.anchor == Drawable.TOP_LEFT:
@@ -231,6 +248,34 @@ class Element(Drawable):
             element.set_parent(None)
 
 
+class Image(Element):
+
+    def __init__(self, *, filename: str, **kwargs):
+        super().__init__(**kwargs)
+
+        with PILImage.open(filename) as img:
+            self._width, self._height = img.size
+            self._file_data = get_base64_from_pil_image(img)
+    @property
+    def top_left(self):
+        return Vec2(0,0)
+    
+    @property
+    def width(self) -> float:
+        return self._width
+    @property
+    def height(self) -> float:
+        return self._height
+
+    def draw_self(self):
+        x, y = self.anchor_offset
+        return svg.Image(
+            x=x,
+            y=y,
+            transform=self.global_transform,
+            href=f"data:image/png;base64,{self._file_data}"
+        ).as_str()
+
 
 class Pivot(Element):
     @property
@@ -251,9 +296,10 @@ class Drawing(Element, Segment):
                  stroke: Color | None = None,
                  stroke_width: float = 1,
                  fill: Color | None = None,
+                 anchor = Drawable.DEFAULT,
                  **kwargs):
         
-        super().__init__(**kwargs)
+        super().__init__(anchor=anchor, **kwargs)
 
 
         if fill is not None and stroke is None:

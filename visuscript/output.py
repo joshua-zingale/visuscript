@@ -1,19 +1,32 @@
 from wand.image import Image
-from .canvas import Canvas
-from io import BytesIO
+from .drawable import Drawable
+from io import BytesIO, RawIOBase
+from ctypes import c_char_p
 import sys
 
-def make_frame(drawing: Canvas) -> Image:
-    img_bytes = BytesIO(drawing.draw().encode('utf-8'))
+def get_image(drawable: Drawable) -> Image:
+    img_bytes = BytesIO(drawable.draw().encode('utf-8'))
     img = Image(blob=img_bytes, format='svg')
     img.format = 'png'
-    img.resize(drawing.width, drawing.height)
+    img.resize(drawable.width, drawable.height)
     return img
 
-def save_svg(drawing: Canvas, filename: str) -> None:
+
+def print_png(drawable: Drawable) -> None:
+    """
+    Prints `drawable` to the standard output as a png blob.
+    """
+    sys.stdout.buffer.write(get_image(drawable).make_blob())
+
+def save_png(drawable: Drawable, filename: str) -> None:
+    get_image(drawable).save(filename=f"{filename}")
+
+
+def print_svg(drawable: Drawable) -> None:
+    """
+    Prints `drawable` to the standard output as an SVG file.
+    """
+    print(drawable.draw())
+def save_svg(drawable: Drawable, filename: str) -> None:
     with open(filename, 'w') as f:
-        f.write(drawing.draw())
-def save_frame(drawing: Canvas, filename: str) -> None:
-    make_frame(drawing).save(filename=f"{filename}")
-def print_frame(drawing: Canvas) -> None:
-    make_frame(drawing).save(file=sys.stdout.buffer)
+        f.write(drawable.draw())

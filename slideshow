@@ -1,0 +1,14 @@
+#!/bin/bash
+
+rm -f output.pdf
+temp_dir=$(mktemp -d)
+counter=1
+
+while IFS= read -r svg_blob; do
+  echo "$svg_blob" > "$temp_dir/temp_$counter.svg"
+  counter=$((counter + 1))
+done
+
+rsvg-convert -f pdf "$temp_dir"/temp_*.svg
+
+rm -rf "$temp_dir"
