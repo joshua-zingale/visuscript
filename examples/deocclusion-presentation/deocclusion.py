@@ -1,7 +1,5 @@
-from visuscript.canvas import Canvas
-from visuscript.drawable import *
-from visuscript.text import *
-from visuscript.organizer import Grid
+from visuscript import *
+from typing import Tuple
 canvas = Canvas()
 # print(canvas.xy(0,.5))
 
@@ -30,8 +28,8 @@ bullet_grid = Grid((10,1),(18,18), canvas.xy(0.075, 0.30))
 
 def bullet(text: str, num: int = 0, font_size=15):
     global bullet_grid
-    return Circle(2).add_child(
-        Text(text=text, font_size=font_size, anchor=Drawable.LEFT).set_transform([6, 0])
+    return Circle(2, anchor=Drawable.CENTER).add_child(
+        Text(text=text, font_size=font_size, anchor=Drawable.LEFT).set_transform([6, -1])
     ).set_transform(bullet_grid[num])
 
 def bullets(*args: Tuple[str, ...], font_size=15):

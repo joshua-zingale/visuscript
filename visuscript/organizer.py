@@ -1,7 +1,29 @@
 from visuscript.drawable import Drawable
 from visuscript.primatives import Transform, Vec3, get_vec3
 from typing import Collection, Tuple, Generator
+from abc import ABC, abstractmethod
 import sys
+
+class Organizer(ABC):
+
+
+    @abstractmethod
+    def __len__(self) -> int:
+        ...
+    
+    @abstractmethod
+    def __getitem__(self, index: int) -> Transform:
+        ...
+
+    def __iter__(self) -> Generator[Transform]:
+        for i in range(len(self)):
+            yield self[i]
+
+    def organize(self, drawables: Collection[Drawable]):
+        for drawable, transform in zip(drawables, self):
+            drawable.set_transform(transform)
+
+
 class Grid:
     def __init__(self, shape: Collection[int], sizes: Collection[int], anchor: Vec3 = None):
         if len(shape) == 2:
@@ -22,6 +44,9 @@ class Grid:
 
         self._shape = shape
         self._sizes = sizes
+
+    def __len__(self):
+        return self._shape[0] * self._shape[1] * self._shape[2]
 
     def __getitem__(self, indices: int | Tuple[int, int] | Tuple[int, int, int]) -> Transform:
         if isinstance(indices, int):
@@ -46,6 +71,3 @@ class Grid:
 
         return Transform(translation=translation)
 
-    def __iter__(self) -> Generator[Transform]:
-        for i in range(self._shape[0] * self._shape[1] * self._shape[2]):
-            yield self[i]

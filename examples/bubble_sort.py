@@ -1,9 +1,7 @@
-from visuscript.text import Text, get_multiline_texts
+from visuscript import *
 from data_structures import TwoPointerArray
-from visuscript.primatives import Transform
-from visuscript.drawable import Drawable
-from visuscript.canvas import Scene
 from utility import self_string
+from visuscript.text import Text, get_multiline_texts
 
 s = Scene()
 

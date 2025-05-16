@@ -1,9 +1,8 @@
-from .drawable import Element
+from visuscript.element import Element
 from xml.sax.saxutils import escape
 from .primatives import *
 from PIL import ImageFont
 import svg
-from io import StringIO
 
 # TODO Figure out why league mono is not centered properly
 fonts: dict[str, str] =  {
@@ -23,13 +22,18 @@ def xml_escape(data: str) -> str:
 class Text(Element):
      @staticmethod
      def update_size(foo):
-          def size_updating_method(self, *args, **kwargs):
+          def size_updating_method(self: "Text", *args, **kwargs):
                global fonts
                r = foo(self, *args, **kwargs)
-               font = ImageFont.truetype(f"fonts/{fonts[self.font_family]}", self.font_size).font
-               size = font.getsize(self.text)
-               self._width = size[0][0]
-               self._height = size[0][1]
+
+               # Hack to get bounding box from https://stackoverflow.com/a/46220683
+               # TODO Use an appropriate public API from PIL to get these metrics
+               font = ImageFont.truetype(f"fonts/{fonts[self.font_family]}", self.font_size)
+               ascent, descent = font.getmetrics()
+               (width, height), (offset_x, offset_y) = font.font.getsize(self.text)
+               self._width = width
+               self._height = ascent - offset_y
+
                return r
           return size_updating_method
 

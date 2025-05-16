@@ -1,7 +1,5 @@
-from visuscript.canvas import Scene
+from visuscript import *
 from visuscript.animation import *
-from visuscript.drawable import *
-from visuscript.text import *
 from visuscript.output import print_png
 from copy import deepcopy
 

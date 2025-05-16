@@ -1,5 +1,6 @@
-from visuscript.drawable import Element, Drawable, Rect, Pivot
-from visuscript.config import *
+from visuscript.drawable import Drawable
+from visuscript.element import Element
+from visuscript import Rect, Pivot
 from visuscript.primatives import *
 from visuscript.config import config
 from typing import Iterable, Generator

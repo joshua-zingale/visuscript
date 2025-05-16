@@ -3,7 +3,7 @@ from visuscript.scene import Scene
 from visuscript.text import *
 from visuscript.drawable import *
 from visuscript.primatives import *
-from visuscript.segments import *
+from visuscript.segment import *
 from visuscript.animation import *
 from visuscript.output import save_svg, save_png
 from utility import *

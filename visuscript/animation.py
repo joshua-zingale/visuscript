@@ -1,9 +1,10 @@
 from typing import Callable, Tuple
 from abc import ABC, abstractmethod
 from visuscript.config import *
-from visuscript.drawable import *
+from visuscript.drawable import Drawable
+from visuscript.element import Drawing
 from visuscript.primatives import *
-from visuscript.segments import Path
+from visuscript.segment import Path
 import numpy as np
 
 from visuscript.config import config

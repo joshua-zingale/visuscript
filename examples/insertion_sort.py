@@ -1,7 +1,5 @@
 from data_structures import TwoPointerArray
-from visuscript.text import *
-from visuscript.drawable import Rect, Drawable
-from visuscript.canvas import Scene
+from visuscript import *
 
 def main():
     s = Scene()
