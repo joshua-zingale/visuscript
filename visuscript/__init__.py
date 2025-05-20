@@ -1,4 +1,4 @@
-from .element import Circle, Rect, Image, Pivot, Drawing
+from .element import Circle, Rect, Image, Pivot, Drawing, VectorImage
 from .drawable import Drawable
 from .primatives import Transform
 from .canvas import Canvas, Scene

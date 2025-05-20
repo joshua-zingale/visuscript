@@ -5,8 +5,6 @@ from abc import ABC, abstractmethod
 import sys
 
 class Organizer(ABC):
-
-
     @abstractmethod
     def __len__(self) -> int:
         ...
@@ -24,8 +22,8 @@ class Organizer(ABC):
             drawable.set_transform(transform)
 
 
-class Grid:
-    def __init__(self, shape: Collection[int], sizes: Collection[int], anchor: Vec3 = None):
+class Grid(Organizer):
+    def __init__(self, shape: Collection[int], sizes: Collection[int], offset: Vec3 = None):
         if len(shape) == 2:
             shape = tuple(shape) + (1,)
         elif len(shape) == 3:
@@ -39,8 +37,8 @@ class Grid:
         else:
             raise ValueError("`sizes` must be of length 2 or 3")
 
-        self._anchor = get_vec3(anchor) if anchor is not None else Vec3(0,0,0)
-        self._anchor[0], self._anchor[1] = self._anchor[1], self._anchor[0]
+        self._offset = get_vec3(offset) if offset is not None else Vec3(0,0,0)
+        self._offset[0], self._offset[1] = self._offset[1], self._offset[0]
 
         self._shape = shape
         self._sizes = sizes
@@ -51,7 +49,7 @@ class Grid:
     def __getitem__(self, indices: int | Tuple[int, int] | Tuple[int, int, int]) -> Transform:
         if isinstance(indices, int):
             y = (indices // (self._shape[2] * self._shape[1]))
-            x = (indices // self._shape[1]) % self._shape[1]
+            x = (indices // self._shape[2]) % self._shape[1]
             z = indices % self._shape[2]
             indices = (y,x,z)
         elif len(indices) == 2:
@@ -65,7 +63,7 @@ class Grid:
             if index >= size:
                 raise IndexError(f"index {index} is out of bounds for axis {i} with size {size}")
         
-        translation = [i * size + self._anchor[axis] for axis, (i, size) in enumerate(zip(indices, self._sizes))]
+        translation = [i * size + self._offset[axis] for axis, (i, size) in enumerate(zip(indices, self._sizes))]
 
         translation = [translation[1], translation[0], translation[2]]
 

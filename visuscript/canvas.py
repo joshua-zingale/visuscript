@@ -24,7 +24,7 @@ class Canvas(Drawable):
                  logical_width=config.canvas_logical_width,
                  logical_height = config.canvas_logical_height,
                  color = 'dark_slate',
-                 output = SVG,
+                 output = config.canvas_output,
                  **kwargs):
         assert width/height == logical_width/logical_height and width/logical_width == height/logical_height
 
@@ -125,7 +125,7 @@ class Canvas(Drawable):
         # removed deleted elements
         self._elements = list(filter(lambda x: not x.deleted, self._elements))
         
-        head = Pivot().set_transform(transform).add_children(self._elements)
+        head = Pivot().set_transform(transform).add_children(*self._elements)
         return svg.SVG(
             viewBox=svg.ViewBoxSpec(0, 0, self.width, self.height),
             elements= [background.draw(), head.draw()]).as_str()

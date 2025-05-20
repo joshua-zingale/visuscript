@@ -140,7 +140,7 @@ def get_vec3(values: int | float | Collection, z_fill: float = 0.0) -> Vec3:
     elif len(values) == 3:
         return Vec3(*values)
     else:
-        raise ValueError(f"Cannot make Vec3 out of collection of length {len(values)}. Must be of length 1 or 2 or 3.")
+        raise ValueError(f"Cannot make Vec3 out of collection of length {len(values)}. Must be of length 2 or 3.")
 
 
 class Transform:
@@ -209,13 +209,23 @@ class Transform:
     def __call__(self, other: Self) -> Self:
         return self @ other
     
-    def __matmul__(self, other: Self) -> Self:
+    def __matmul__(self, other: Self | Vec2 | Vec3) -> Self | Vec2 | Vec3:
         t = (self.rotation * np.pi/180)
         r_matrix = np.array([
             [np.cos(t), -np.sin(t),0],
             [np.sin(t), np.cos(t), 0],
             [0, 0, 1]
         ])
+
+        if isinstance(other, np.ndarray):
+            vec3 = get_vec3(other)
+            result = ((r_matrix@(vec3*self.scale)) + self._translation)
+
+            if len(other) == 2:
+                return result[:2].view(Vec2)
+            if len(other) == 3:
+                return result.view(Vec3)       
+
         return Transform(
             translation = r_matrix@(other._translation * self.scale) + self._translation,
             scale = self.scale * other.scale,
@@ -286,21 +296,20 @@ class Color():
     "white": np.array([255,255,255])
 }
 
-    def __init__(self, color: str | np.ndarray | Self = "off_white", opacity: float = 1.0):
+    def __init__(self, color: str | Collection[int] | Self = "off_white", opacity: float = 1.0):
 
         self.opacity: float = color.opacity if isinstance(color, Color) else opacity
         self._rgb: np.ndarray
 
-        if isinstance(color, np.ndarray):
-            assert len(color) == 3
-            assert color.dtype == int
-            self._rgb = color
-        elif isinstance(color, Color):
+        if isinstance(color, Color):
             self._rgb = color._rgb
         elif isinstance(color, str) and color[:3] == "rgb":
             self._rgb = np.array(literal_eval(color[4:])).astype(int)
         elif isinstance(color, str):
             self._rgb = Color.PALETTE[color]
+        elif isinstance(color, Collection):
+            assert len(color) == 3, f"length was {len(color)}"
+            self._rgb = np.array(color, dtype=int)
         else:
             raise TypeError(f"{type(color)} is not accepted.")
 

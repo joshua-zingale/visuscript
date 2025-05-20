@@ -3,7 +3,17 @@ from typing import Self
 from abc import ABC, abstractmethod
 
 
+class Shape:
+    def __init__(self, drawable: "Drawable", external_transform: Transform = Transform()):
+        transform = external_transform(drawable.transform)
 
+
+        self.top_left: Vec2 = transform @ (drawable.top_left + drawable.anchor_offset)
+        self.width: float = drawable.width * transform.scale.x
+        self.height: float = drawable.height * transform.scale.y
+        self.circumscribed_radius: float = drawable.circumscribed_radius * transform.scale.xy.max()
+
+        self.center: Vec2 = self.top_left + [self.width/2, self.height/2]
 class Drawable(ABC):
 
     DEFAULT: int = 0
@@ -43,7 +53,12 @@ class Drawable(ABC):
         if self.anchor == Drawable.TOP_LEFT:
             return -self.top_left
         if self.anchor == Drawable.CENTER:
-            return -(self.top_left + [self.width/2, self.height/2])    
+            return -(self.top_left + [self.width/2, self.height/2])
+        
+
+    @property
+    def center(self) -> Vec2:
+        return self.top_left + [self.width/2, self.height/2]
 
     @abstractmethod
     def draw(self) -> str:
@@ -74,3 +89,11 @@ class Drawable(ABC):
         The height of this drawable.
         """
         ...
+
+    @property
+    def circumscribed_radius(self):
+        return (self.width**2 + self.height**2)**0.5/2
+    
+    @property
+    def shape(self):
+        return Shape(self)

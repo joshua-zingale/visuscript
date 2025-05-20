@@ -1,4 +1,5 @@
-from visuscript.drawable import Drawable
+from visuscript.drawable import Drawable, Shape
+from visuscript.organizer import Grid
 from .primatives import *
 from .segment import Path, Segment
 from io import StringIO
@@ -106,7 +107,7 @@ class Element(Drawable):
         child.set_parent(None, preserve_global_transform=preserve_global_transform)
         return self
 
-    def add_children(self, children: Tuple["Element", ...], preserve_global_transform: bool = False) -> Self:
+    def add_children(self, *children: Tuple["Element", ...], preserve_global_transform: bool = False) -> Self:
         """
         Adds each input child as a child of this Element. If `preserve_global_transform` is True, then the
         transform on each child is set such that its global transform not change.
@@ -176,15 +177,39 @@ class Element(Drawable):
             element._deleted = True
             element.set_parent(None)
 
+    # # TODO Fix how canvas 
+    # @property
+    # def global_shape(self):
+    #     if self._parent is not None:
+    #         return Shape(self, external_transform=self._parent.global_transform)
+    #     else:
+    #         return self.shape
+
 
 class Image(Element):
 
-    def __init__(self, *, filename: str, **kwargs):
+    def __init__(self, *, filename: str | Collection[Collection[int]], width: float | None = None, **kwargs):
         super().__init__(**kwargs)
 
-        with PILImage.open(filename) as img:
-            self._width, self._height = img.size
-            self._file_data = get_base64_from_pil_image(img)
+        if isinstance(filename, str):
+            img =  PILImage.open(filename)
+        else:
+            filename = np.array(filename, dtype=np.uint8)
+            assert len(filename.shape) == 3
+
+            img = PILImage.fromarray(filename, mode="RGB")
+
+        
+        self._width, self._height = img.size
+        self.resolution = (self._width, self._height)
+        if width is not None:
+            ratio = self._height/self._width
+            self._width = width
+            self._height = ratio * width
+        
+        self._file_data = get_base64_from_pil_image(img)
+
+        img.close()
     @property
     def top_left(self):
         return Vec2(0,0)
@@ -202,9 +227,51 @@ class Image(Element):
             x=x,
             y=y,
             transform=self.global_transform,
-            href=f"data:image/png;base64,{self._file_data}"
+            href=f"data:image/png;base64,{self._file_data}",
+            width=self.width
         ).as_str()
 
+class VectorImage(Element):
+    def __init__(self, *, filename: str, width: float, **kwargs):
+        super().__init__(**kwargs)
+        
+        data = np.array(PILImage.open(filename))
+
+        assert len(data.shape) == 3
+        assert data.shape[-1] == 4
+
+        resolution = (data.shape[0], data.shape[1])
+        pixel_width = width / data.shape[1]
+
+        self._width = data.shape[1] * pixel_width
+        self._height = data.shape[0] * pixel_width
+
+        grid = Grid(resolution, sizes=[pixel_width, pixel_width])
+
+        self._pixels: list[Element] = []
+        for (r,g,b,o), transform in zip(data.reshape(-1,4), grid):
+            self._pixels.append(Rect(pixel_width, pixel_width, anchor=Drawable.TOP_LEFT, fill=Color([r,g,b], opacity=o))
+                          .set_transform(transform))
+            
+        self.add_children(*self._pixels)
+
+    @property
+    def top_left(self):
+        return Vec2(0,0)
+    @property
+    def width(self) -> float:
+        return self._width
+    @property
+    def height(self) -> float:
+        return self._height
+
+    def draw_self(self):
+        return ""
+    
+            
+
+
+                
 
 class Pivot(Element):
     @property
