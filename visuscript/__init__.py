@@ -5,3 +5,4 @@ from .canvas import Canvas, Scene
 from .organizer import Grid
 from .text import Text
 from .segment import Path
+from .constants import Anchor

@@ -131,8 +131,8 @@ class Vec3(np.ndarray):
         return super().__radd__(other)
         
 
-def get_vec3(values: int | float | Collection, z_fill: float = 0.0) -> Vec3:
-    if not isinstance(values, (int, float, Collection)):
+def get_vec3(values: Collection[float], z_fill: float = 0.0) -> Vec3:
+    if not isinstance(values, Collection):
         raise TypeError(f"Cannot make Vec3 out of {type(values)}")
     
     if len(values) == 2:
@@ -166,7 +166,7 @@ class Transform:
         return deepcopy(self._translation)
     
     @translation.setter
-    def translation(self, value: Collection):
+    def translation(self, value: Vec2 | Vec3 | Collection[float]):
         assert 2 <= len(value) and len(value) <= 3
 
         if len(value) == 2:
@@ -180,12 +180,12 @@ class Transform:
         return self._scale
     
     @scale.setter
-    def scale(self, value: int | float | Collection):
+    def scale(self, value: int | float | Collection[float]):
         if not isinstance(value, Collection):
             self._scale = Vec3(value, value, 1.0)
             return
 
-        assert 1 <= len(value) and len(value) <= 3
+        assert 2 <= len(value) and len(value) <= 3
 
         if len(value) == 2:
             self._scale.xy = value

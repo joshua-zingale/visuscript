@@ -3,8 +3,8 @@ from visuscript import *
 
 def main():
     s = Scene()
-    s << Rect(width=30,height=30, transform=[-200, -100]).add_child(Text(text="unsorted", font_size = 20, transform=[20, -10], anchor=Drawable.TOP_LEFT))
-    s << Rect(width=30,height=30, fill="blue", stroke="off_white", transform=[-200, -65]).add_child(Text(text="sorted", font_size = 20, transform=[20, -10], anchor=Drawable.TOP_LEFT))
+    s << Rect(width=30,height=30, transform=[-200, -100]).add_child(Text(text="unsorted", font_size = 20, transform=[20, -10], anchor=Anchor.TOP_LEFT))
+    s << Rect(width=30,height=30, fill="blue", stroke="off_white", transform=[-200, -65]).add_child(Text(text="sorted", font_size = 20, transform=[20, -10], anchor=Anchor.TOP_LEFT))
 
     arr = TwoPointerArray([6,3,1,5,7,0], s, auto_print=True, mark_i_visited=True)
     

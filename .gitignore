@@ -4,6 +4,7 @@ __pycache__/
 *.svg
 *.png
 *.pdf
+*.jpg
 **/arial/
 .DS_Store
 *.profile

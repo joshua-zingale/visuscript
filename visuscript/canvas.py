@@ -1,4 +1,5 @@
 from visuscript.drawable import Drawable
+from visuscript.constants import Anchor
 from visuscript.element import Element
 from visuscript import Rect, Pivot
 from visuscript.primatives import *
@@ -36,7 +37,7 @@ class Canvas(Drawable):
         self._logical_scaling = width/logical_width
 
         self._elements: list[Element] = [] if elements is None else list(elements)
-        self.anchor = Drawable.CENTER
+        self.anchor = Anchor.CENTER
         self.color: Color = Color(color)
         self._output = output
 
@@ -114,7 +115,7 @@ class Canvas(Drawable):
         return self
 
     def draw(self) -> str:
-        background = Rect(width=self.width, height=self.height, fill = self.color, anchor=Drawable.TOP_LEFT)
+        background = Rect(width=self.width, height=self.height, fill = self.color, anchor=Anchor.TOP_LEFT)
 
         transform = Transform(
             translation= [self.width/2, self.height/2, 0] + self.transform.translation*self._logical_scaling,

@@ -6,8 +6,8 @@ from visuscript.output import print_png
 import sys
 def main():
     s = Scene(width=int(1920/4), height=int(1080/4))
-    s << Rect(width=30,height=30, transform=[-200, -100]).with_child(Text(text="unsorted", font_size = 20, transform=[20, -10], anchor=Drawable.TOP_LEFT))
-    s << Rect(width=30,height=30, fill="blue", stroke="off_white", transform=[-200, -65]).with_child(Text(text="sorted", font_size = 20, transform=[20, -10], anchor=Drawable.TOP_LEFT))
+    s << Rect(width=30,height=30, transform=[-200, -100]).with_child(Text(text="unsorted", font_size = 20, transform=[20, -10], anchor=Anchor.TOP_LEFT))
+    s << Rect(width=30,height=30, fill="blue", stroke="off_white", transform=[-200, -65]).with_child(Text(text="sorted", font_size = 20, transform=[20, -10], anchor=Anchor.TOP_LEFT))
     arr = TwoPointerArray([6,2,3,5,1], s, auto_print=True)
     
     arr.i = 0

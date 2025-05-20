@@ -1,4 +1,5 @@
-from visuscript.drawable import Drawable, Shape
+from visuscript.drawable import Drawable
+from visuscript.constants import Anchor
 from visuscript.organizer import Grid
 from .primatives import *
 from .segment import Path, Segment
@@ -250,7 +251,7 @@ class VectorImage(Element):
 
         self._pixels: list[Element] = []
         for (r,g,b,o), transform in zip(data.reshape(-1,4), grid):
-            self._pixels.append(Rect(pixel_width, pixel_width, anchor=Drawable.TOP_LEFT, fill=Color([r,g,b], opacity=o))
+            self._pixels.append(Rect(pixel_width, pixel_width, anchor=Anchor.TOP_LEFT, fill=Color([r,g,b], opacity=o))
                           .set_transform(transform))
             
         self.add_children(*self._pixels)
@@ -292,7 +293,7 @@ class Drawing(Element, Segment):
                  stroke: Color | None = None,
                  stroke_width: float = 1,
                  fill: Color | None = None,
-                 anchor = Drawable.DEFAULT,
+                 anchor = Anchor.DEFAULT,
                  **kwargs):
         
         super().__init__(anchor=anchor, **kwargs)
@@ -400,7 +401,7 @@ class Circle(Drawing):
             stroke_width=self.stroke_width).as_str()
 
 
-def Rect(width, height, anchor: int = Drawable.CENTER, **kwargs):
+def Rect(width, height, anchor: Anchor = Anchor.CENTER, **kwargs):
 
     path = Path().l(width, 0).l(0, height).l(-width, 0).Z()
 

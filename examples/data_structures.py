@@ -49,7 +49,7 @@ class Var:
     def __lt__(self, other: Self):
         og_transform = deepcopy(self.text_element.transform)
         width = self.text_element.width
-        comparison = Text(text=f" < {other.value}", transform=Transform([width/2,0], scale=0), font_size=self.text_element.font_size, anchor=Drawable.LEFT).set_parent(self.text_element)
+        comparison = Text(text=f" < {other.value}", transform=Transform([width/2,0], scale=0), font_size=self.text_element.font_size, anchor=Anchor.LEFT).set_parent(self.text_element)
         total_width = width + comparison.width
 
         scale = width/total_width
@@ -69,7 +69,7 @@ class Var:
     def __gt__(self, other: Self):
         og_transform = deepcopy(self.text_element.transform)
         width = self.text_element.width
-        comparison = Text(text=f" > {other.value}", transform=Transform([width/2,0], scale=0), font_size=self.text_element.font_size, anchor=Drawable.LEFT).set_parent(self.text_element)
+        comparison = Text(text=f" > {other.value}", transform=Transform([width/2,0], scale=0), font_size=self.text_element.font_size, anchor=Anchor.LEFT).set_parent(self.text_element)
         total_width = width + comparison.width
 
         scale = width/total_width
@@ -117,11 +117,11 @@ class TwoPointerArray:
         x_start = -(len(self) - 1) * self._box_size/2 #+ ((len(self)+1) % 2) * self._box_size/2
         self._storage = Var(value=None, scene=scene)
 
-        self._drawing = drawing.add_children([
+        self._drawing = drawing.add_children(
             Pivot().set_transform([x_start, -self._box_size * 3/4]).add_child(self._it),
             Pivot().set_transform([x_start, self._box_size * 3/4]).add_child(self._jt),
             self._storage.text_element.set_transform([0, 100])
-        ])
+        )
         self._scene << self._drawing
 
         self.i = 0
@@ -231,4 +231,4 @@ def get_array(arr, box_size: float, scene: Scene):
         elements.append(Var(value=e, font_size=box_size, transform=tfm, scene=scene))
 
 
-    return Pivot().add_children(boxes + list(map(lambda x: x.text_element, elements))), boxes, elements
+    return Pivot().add_children(*(boxes + list(map(lambda x: x.text_element, elements)))), boxes, elements
