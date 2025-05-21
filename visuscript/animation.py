@@ -48,8 +48,6 @@ class PropertyLocker:
             for property in other._map[obj]:
                 self.add(obj, property)
 
-    
-
 class Animation(ABC):
 
     @abstractmethod
