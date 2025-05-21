@@ -1,9 +1,9 @@
 from visuscript.drawable import Drawable
-from visuscript.constants import Anchor
+from visuscript.constants import Anchor, OutputFormat
 from visuscript.element import Element
 from visuscript import Rect, Pivot
 from visuscript.primatives import *
-from visuscript.config import config
+from visuscript.config import config, Configuration, DEFAULT_CONFIG
 from typing import Iterable, Generator
 from copy import copy
 from visuscript.output import print_svg, print_png
@@ -14,19 +14,25 @@ from visuscript.animation import AnimationBundle
 
 
 class Canvas(Drawable):
-
-    SVG: int = 0
-    PNG: int = 1
-
     def __init__(self, *,
                  elements: list[Element] | None = None,
-                 width=config.canvas_width,
-                 height=config.canvas_height,
-                 logical_width=config.canvas_logical_width,
-                 logical_height = config.canvas_logical_height,
-                 color = 'dark_slate',
-                 output = config.canvas_output,
+                 width: int | Configuration = DEFAULT_CONFIG,
+                 height: int | Configuration = DEFAULT_CONFIG,
+                 logical_width: int | Configuration = DEFAULT_CONFIG,
+                 logical_height: int | Configuration = DEFAULT_CONFIG,
+                 color: str | Color | Configuration = DEFAULT_CONFIG,
+                 output: OutputFormat | Configuration = DEFAULT_CONFIG,
                  **kwargs):
+        
+
+        # from visuscript.config import config
+        width = config.canvas_width if width is DEFAULT_CONFIG else width
+        height = config.canvas_height if height is DEFAULT_CONFIG else height
+        logical_width = config.canvas_logical_width if logical_width is DEFAULT_CONFIG else logical_width
+        logical_height = config.canvas_logical_height if logical_height is DEFAULT_CONFIG else logical_height
+        color = config.canvas_color if color is DEFAULT_CONFIG else color
+        output = config.canvas_output if output is DEFAULT_CONFIG else output
+        
         assert width/height == logical_width/logical_height and width/logical_width == height/logical_height
 
         super().__init__(**kwargs)
@@ -37,7 +43,6 @@ class Canvas(Drawable):
         self._logical_scaling = width/logical_width
 
         self._elements: list[Element] = [] if elements is None else list(elements)
-        self.anchor = Anchor.CENTER
         self.color: Color = Color(color)
         self._output = output
 
@@ -67,11 +72,12 @@ class Canvas(Drawable):
         return self
     remove_elements = without_elements
 
-    def __lshift__(self, other: Element | Iterable[Element]):
-        if isinstance(other, Element):
+    def __lshift__(self, other: Drawable | Iterable[Drawable]):
+        if isinstance(other, Drawable):
             self.add_element(other)
         elif isinstance(other, Iterable):
-            self.add_elements(other)
+            for drawable in other:
+                self << drawable
         else:
             raise TypeError("'<<' is implemented only for types Element and list[Element]")
         
@@ -100,8 +106,8 @@ class Canvas(Drawable):
         ])
     
     @property
-    def top_left(self) -> np.ndarray:
-        return np.array([0,0], dtype=float)
+    def top_left(self) -> Vec2:
+        return Vec2(0,0)
 
     @property
     def width(self) -> float:
@@ -115,27 +121,34 @@ class Canvas(Drawable):
         return self
 
     def draw(self) -> str:
-        background = Rect(width=self.width, height=self.height, fill = self.color, anchor=Anchor.TOP_LEFT)
+
+        translation = self.transform.translation*self._logical_scaling
 
         transform = Transform(
-            translation= [self.width/2, self.height/2, 0] + self.transform.translation*self._logical_scaling,
+            translation = translation * self._logical_scaling*self.transform.scale,
             scale = self.transform.scale * self._logical_scaling,
             rotation = self.transform.rotation
         )
+        
+        background = Rect(width=self.width, height=self.height, fill = self.color, anchor=Anchor.TOP_LEFT).translate(self.anchor_offset)
 
         # removed deleted elements
         self._elements = list(filter(lambda x: not x.deleted, self._elements))
         
-        head = Pivot().set_transform(transform).add_children(*self._elements)
+        # head = Pivot().set_transform(transform).add_children(*self._elements)
         return svg.SVG(
-            viewBox=svg.ViewBoxSpec(0, 0, self.width, self.height),
-            elements= [background.draw(), head.draw()]).as_str()
+            viewBox=svg.ViewBoxSpec(*self.anchor_offset, self.width, self.height),
+            elements= [background.draw(),
+                       svg.G(elements=[element.draw() for element in self._elements], transform=transform.svg_transform)
+                       ]).as_str()
 
     def print(self):
-        if self._output == Canvas.SVG:
+        if self._output == OutputFormat.SVG:
             print_svg(self)
-        elif self._output == Canvas.PNG:
+        elif self._output == OutputFormat.PNG:
             print_png(self)
+        else:
+            raise ValueError("Invalid image output format")
 
     def __enter__(self) -> Self:
         self._original_elements = copy(self._elements)
@@ -166,7 +179,17 @@ class Scene(Canvas):
 
 
     def print_frames(self):
-        for frame in self.frames:
-            print_png(frame)
+        for _ in self.frames:
+            self.print()
 
     pf = print_frames
+
+
+    def __enter__(self) -> Self:
+        self._original_elements = copy(self._elements)
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.print()
+        self.print_frames()
+        self._elements = self._original_elements
+        del self._original_elements

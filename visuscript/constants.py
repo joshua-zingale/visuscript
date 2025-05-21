@@ -2,7 +2,7 @@ from enum import IntEnum, auto
 
 class Anchor(IntEnum):
     """
-    Defines anchor points for Drawables.
+    Defines anchor points for Drawable objects.
     """
     DEFAULT = auto()
     TOP_LEFT = auto()
@@ -12,3 +12,11 @@ class Anchor(IntEnum):
     BOTTOM_LEFT = auto()
     LEFT = auto()
     CENTER = auto()
+
+
+class OutputFormat(IntEnum):
+    """
+    Defines the image output format for Canvas objects.
+    """
+    SVG = auto()
+    PNG = auto()

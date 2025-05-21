@@ -158,8 +158,16 @@ class Transform:
 
         self._translation: Vec3 = get_vec3(translation, 0)
         self._scale: Vec3 = get_vec3(scale, 1)
-        self.rotation: float = rotation
+        self._rotation: float = rotation
 
+
+    @property
+    def rotation(self):
+        return self._rotation
+    
+    @rotation.setter
+    def rotation(self, value: float):
+        self._rotation = value
 
     @property
     def translation(self) -> Vec3:

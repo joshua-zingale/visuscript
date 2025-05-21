@@ -86,8 +86,9 @@ class Var:
         self._scene.pf()
         return self.value > other.value
 
-class TwoPointerArray:
 
+
+class TwoPointerArray:
     def animating(foo):
         def decorated_animating_function(self: Self, *args, **kwargs):
             r = foo(self, *args, **kwargs)

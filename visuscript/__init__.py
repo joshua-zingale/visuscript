@@ -1,8 +1,15 @@
-from .element import Circle, Rect, Image, Pivot, Drawing, VectorImage
+from .element import Circle, Rect, Image, Pivot, Drawing
 from .drawable import Drawable
 from .primatives import Transform
 from .canvas import Canvas, Scene
 from .organizer import Grid
 from .text import Text
 from .segment import Path
-from .constants import Anchor
+from .constants import Anchor, OutputFormat
+from .animation import (
+    ScaleAnimation,
+    TranslationAnimation,
+    PathAnimation,
+    RotationAnimation,
+    TransformInterpolation,
+    )

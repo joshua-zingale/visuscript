@@ -203,71 +203,77 @@ class Image(Element):
         
         self._width, self._height = img.size
         self.resolution = (self._width, self._height)
-        if width is not None:
-            ratio = self._height/self._width
-            self._width = width
-            self._height = ratio * width
+        if width is None:
+            self._resize_scale = 1
+        else:
+            self._resize_scale = width/self._width
         
         self._file_data = get_base64_from_pil_image(img)
 
         img.close()
+
+    @property
+    def anchor_offset(self):
+        return super().anchor_offset/self._resize_scale
     @property
     def top_left(self):
         return Vec2(0,0)
     
     @property
     def width(self) -> float:
-        return self._width
+        return self._width * self._resize_scale
     @property
     def height(self) -> float:
-        return self._height
+        return self._height * self._resize_scale
 
     def draw_self(self):
         x, y = self.anchor_offset
+
+        transform = deepcopy(self.global_transform)
+        transform.scale = transform.scale * self._resize_scale
         return svg.Image(
             x=x,
             y=y,
-            transform=self.global_transform,
+            transform=transform.svg_transform,
             href=f"data:image/png;base64,{self._file_data}",
-            width=self.width
         ).as_str()
 
-class VectorImage(Element):
-    def __init__(self, *, filename: str, width: float, **kwargs):
-        super().__init__(**kwargs)
+# class VectorImage(Element):
+#     def __init__(self, *, filename: str, width: float, **kwargs):
+#         super().__init__(**kwargs)
         
-        data = np.array(PILImage.open(filename))
+#         data = np.array(PILImage.open(filename))
 
-        assert len(data.shape) == 3
-        assert data.shape[-1] == 4
+#         assert len(data.shape) == 3
+#         assert data.shape[-1] == 4
 
-        resolution = (data.shape[0], data.shape[1])
-        pixel_width = width / data.shape[1]
+#         resolution = (data.shape[0], data.shape[1])
+#         pixel_width = width / data.shape[1]
 
-        self._width = data.shape[1] * pixel_width
-        self._height = data.shape[0] * pixel_width
+#         self._width = data.shape[1] * pixel_width
+#         self._height = data.shape[0] * pixel_width
 
-        grid = Grid(resolution, sizes=[pixel_width, pixel_width])
+#         grid = Grid(resolution, sizes=[pixel_width, pixel_width])
 
-        self._pixels: list[Element] = []
-        for (r,g,b,o), transform in zip(data.reshape(-1,4), grid):
-            self._pixels.append(Rect(pixel_width, pixel_width, anchor=Anchor.TOP_LEFT, fill=Color([r,g,b], opacity=o))
-                          .set_transform(transform))
+#         self._pixels: list[Element] = []
+#         for (r,g,b,o), transform in zip(data.reshape(-1,4), grid):
+#             self._pixels.append(Rect(pixel_width, pixel_width, anchor=Anchor.TOP_LEFT, fill=Color([r,g,b], opacity=o))
+#                           .set_transform(transform))
             
-        self.add_children(*self._pixels)
+#         self.add_children(*self._pixels)
 
-    @property
-    def top_left(self):
-        return Vec2(0,0)
-    @property
-    def width(self) -> float:
-        return self._width
-    @property
-    def height(self) -> float:
-        return self._height
+#     @property
+#     def top_left(self):
+#         return Vec2(0,0)
+#     @property
+#     def width(self) -> float:
+#         return self._width
+#     @property
+#     def height(self) -> float:
+#         return self._height
 
-    def draw_self(self):
-        return ""
+#     def draw_self(self):
+#         return ""
     
             
 

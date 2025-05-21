@@ -1,3 +1,37 @@
+from visuscript.constants import Anchor, OutputFormat
+from typing import Literal, TypeAlias
+
+class _AnimationConfig:
+    def __init__(self):
+        # Animation
+        self.fps = 30
+        self.animation_duration = 0.5
+
+        # Canvas
+        self.canvas_width = 480
+        self.canvas_height = 270
+        self.canvas_logical_width = 480
+        self.canvas_logical_height = 270
+        self.canvas_output = OutputFormat.SVG
+        self.canvas_color = 'dark_slate'
+
+
+
+
+config: _AnimationConfig = _AnimationConfig()
+"""
+The singleton configuration object for Visuscript, which sets defaults for various Visuscript features.
+"""
+
+DEFAULT_CONFIG = None
+"""An alias for `None`."""
+
+Configuration: TypeAlias = Literal[None]
+"""
+As an parameter type hint, specifies that passing in `None`, or the alias `DEFAULT_CONFIG`, as the argument will lead to the global configuration setting the value.
+"""
+
+
 # class _Config:
 #     def __init__(self):
 #         self._data = {}
@@ -24,20 +58,3 @@
 # """
 # The singleton configuration object for Visuscript, which sets defaults for various Visuscript features.
 # """
-
-class _AnimationConfig:
-    def __init__(self):
-        # Core animation settings
-        self.fps = 30
-        self.animation_duration = 0.5
-        self.canvas_width = 480
-        self.canvas_height = 270
-        self.canvas_logical_width = 480
-        self.canvas_logical_height = 270
-        self.canvas_output = 0
-
-
-config: _AnimationConfig = _AnimationConfig()
-"""
-The singleton configuration object for Visuscript, which sets defaults for various Visuscript features.
-"""

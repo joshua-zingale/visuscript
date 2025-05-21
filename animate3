@@ -1,0 +1,32 @@
+#!/bin/bash
+
+frame_rate="${1:-30}"
+output_file="output.mp4" # You can make this an argument too if needed
+
+rm -f output.pdf
+temp_dir=$(mktemp -d)
+counter=1
+
+while IFS= read -r svg_blob; do
+  echo "$svg_blob" > "$temp_dir/frame_$(printf "%09d" "$counter").svg"
+  counter=$((counter + 1))
+done
+
+find "$temp_dir" -name 'frame_*.svg' | sort -V | while read -r svg_file; do
+  # Extract the base filename (e.g., "frame_00001") without the extension
+  base_name=$(basename "$svg_file" .svg)
+  
+  # Construct the output PNG filename
+  png_file="$temp_dir/$base_name.png"
+  
+  # Convert the current SVG file to a PNG file
+  rsvg-convert --format=png --output="$png_file" "$svg_file"
+done
+
+
+ffmpeg -framerate "$frame_rate" -i $temp_dir/frame_%09d.png \
+       -c:v libx264 -pix_fmt yuv420p \
+       "$output_file" -y
+
+
+rm -rf "$temp_dir"
