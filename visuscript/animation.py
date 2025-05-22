@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Iterable
 from abc import ABC, abstractmethod
 from visuscript.config import *
 from visuscript.drawable import Drawable
@@ -114,12 +114,12 @@ class RF(Animation):
 class AnimationSequence(Animation):
 
     def __init__(self, *animations: Animation):
-        self._animations = animations
+        self._animations: list[Animation] = []
         self._animation_index = 0
-
         self._locker = PropertyLocker()
-        for animation in self._animations:
-            self._locker.update(animation.locker, ignore_conflicts=True)
+
+        for animation in animations:
+            self.push(animation)
 
     @property
     def locker(self) -> PropertyLocker:
@@ -130,10 +130,68 @@ class AnimationSequence(Animation):
             self._animation_index += 1
 
         if self._animation_index == len(self._animations):
+            self.clear()
             return False
         return True
+    
+
+    def push(self, animation: Animation | Iterable[Animation], _call_method: str ="push"):
+        if isinstance(animation, Animation):
+            self._locker.update(animation.locker, ignore_conflicts=True)
+            self._animations.append(animation)
+        elif isinstance(animation, Iterable):
+            for animation_ in animation:
+                self.push(animation_)
+        else:
+            raise TypeError(f"'{_call_method}' is only implemented for types Animation and Iterable[Animation], not for '{type(animation)}'")
 
 
+    def clear(self):
+        self._animations = []
+        self._locker = PropertyLocker()
+    
+    def __lshift__(self, other: Animation | Iterable[Animation]):
+        self.push(other, _call_method="<<")
+
+
+
+class AnimationBundle(Animation):
+    def __init__(self, *animations: Animation):
+        self._animations: list[Animation] = []
+
+        self._locker = PropertyLocker()
+
+        for animation in animations:
+            self.push(animation)
+                
+    @property
+    def locker(self) -> PropertyLocker:
+        return self._locker
+    
+    def advance(self) -> bool:
+        advance_made = sum(map(lambda x: x.advance(), self._animations)) > 0
+        if not advance_made:
+            self.clear()
+
+        return advance_made
+    
+    def push(self, animation: Animation | Iterable[Animation], _call_method: str ="push"):
+        if isinstance(animation, Animation):
+            self._locker.update(animation.locker)
+            self._animations.append(animation)
+        elif isinstance(animation, Iterable):
+            for animation_ in animation:
+                self.push(animation_)
+        else:
+            raise TypeError(f"'{_call_method}' is only implemented for types Animation and Iterable[Animation], not for '{type(animation)}'")
+
+
+    def clear(self):
+        self._animations = []
+        self._locker = PropertyLocker()
+    
+    def __lshift__(self, other: Animation | Iterable[Animation]):
+        self.push(other, _call_method="<<")
 
 class TimeDeltaAnimation(Animation):
     def __init__(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG, updates_per_frame: int = 1):
@@ -213,40 +271,6 @@ class AlphaAnimation(Animation):
         Updates the object to be percentage `alpha` through the animation.
         """
         ...
-
-class AnimationBundle(Animation):
-    def __init__(self, *animations: Animation):
-        self._animations: list[Animation] = []
-
-        self._locker = PropertyLocker()
-
-        for animation in animations:
-            self.push(animation)
-                
-    @property
-    def locker(self) -> PropertyLocker:
-        return self._locker
-    
-    def advance(self) -> bool:
-        return sum(map(lambda x: x.advance(), self._animations)) > 0
-    
-    def push(self, animation: Animation | list[Animation], _call_method: str ="push"):
-        if isinstance(animation, Animation):
-            self._locker.update(animation.locker)
-            self._animations.append(animation)
-        elif isinstance(animation, list):
-            for animation_ in animation:
-                self.push(animation_)
-        else:
-            raise TypeError(f"'{_call_method}' is only implemented for types Animation and list[Animation], not for '{type(animation)}'")
-
-
-    def clear(self):
-        self._animations = []
-        self._locker = PropertyLocker()
-    
-    def __lshift__(self, other: Animation | list[Animation]):
-        self.push(other, _call_method="<<")
 
 
 class PathAnimation(AlphaAnimation):

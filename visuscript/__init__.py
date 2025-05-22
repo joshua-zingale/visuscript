@@ -12,4 +12,6 @@ from .animation import (
     PathAnimation,
     RotationAnimation,
     TransformInterpolation,
+    AnimationBundle,
+    AnimationSequence
     )

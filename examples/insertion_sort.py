@@ -1,5 +1,8 @@
 from data_structures import TwoPointerArray
 from visuscript import *
+from visuscript.config import config
+
+config.canvas_output = OutputFormat.PNG
 
 def main():
     s = Scene()

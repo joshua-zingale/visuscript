@@ -1,8 +1,10 @@
 from visuscript import *
+from visuscript.animation import Animation
 from visuscript.organizer import BinaryTreeOrganizer
 from visuscript.element import Element
 from abc import ABC, abstractmethod
-from typing import Generator
+from visuscript.primatives import Vec3
+from typing import Generator, Collection, Self, Iterable, Union
 import sys
 class Var(ABC):
 
@@ -10,10 +12,14 @@ class Var(ABC):
     # def updates_value(self, *args, **kwargs):
     #     pass
 
-    def __init__(self, value, *, type_: type = str):
+    def __init__(self, value, *, type_: type | None = None):
+
+        if type_ is None:
+            type_ = type(value)
 
         self._value = type_(value)
         self._type = type_
+        # self.translation = Vec3(0,0,0)
 
     @property
     def drawable(self) -> Text:
@@ -70,6 +76,9 @@ class Var(ABC):
     def __lt__(self, other: "Var") -> bool:
         return self.value < other.value
     
+    def __str__(self):
+        return str(self.value)
+    
     # @abstractmethod
     # def update_callback(self):
     #     """Called every time this Var's value is updated."""
@@ -81,15 +90,19 @@ class Var(ABC):
     #     return Var(value, type_)
     
 
-class Node(Var):
-    def __init__(self, value, *, radius: float, type_: type = str):
-        super().__init__(value, type_=type_)
+class Node:
+    def __init__(self, *, var: Var, radius: float):
+
+        self._var = var
         self._radius: float = radius
 
-        self._element = Text(str(self.value), font_size=self._radius).with_children(
+        self._element = Text(str(self._var), font_size=self._radius).with_children(
             Circle(radius)
         )
 
+    @property
+    def data(self) -> Var:
+        return self._var
 
     @property
     def element(self) -> Element:
@@ -98,13 +111,20 @@ class Node(Var):
 
 class BinaryTreeNode(Node):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *, var: Var, radius: float):
+        super().__init__(var=var, radius=radius)
 
-        self.parent: BinaryTreeNode | None = None
-        self.left: BinaryTreeNode | None = None
-        self.right: BinaryTreeNode | None = None
+        self._parent: BinaryTreeNode | None = None
+        self._left: BinaryTreeNode | None = None
+        self._right: BinaryTreeNode | None = None
 
+    @property
+    def is_left_child(self) -> bool:
+        return self._parent is not None and self._parent.left is self
+    
+    @property
+    def is_right_child(self) -> bool:
+        return self._parent is not None and self._parent.right is self
 
     def __iter__(self) -> Generator["BinaryTreeNode"]:
         yield self
@@ -114,38 +134,174 @@ class BinaryTreeNode(Node):
         if self.right is not None:
             yield from self.right
 
+    @property
+    def parent(self) -> Union["BinaryTreeNode", None]:
+        return self._parent
+        
+    @property
+    def left(self) -> Union["BinaryTreeNode", None]:
+        return self._left
+    @left.setter
+    def left(self, value: Union["BinaryTreeNode", None]):
+        if value is not None:
+            value._parent = self
+        self._left = value
+    @property
+    def right(self) -> Union["BinaryTreeNode", None]:
+        return self._right
+    @right.setter
+    def right(self, value: Union["BinaryTreeNode", None]):
+        if value is not None:
+            value._parent = self
+        self._right = value
+
+    # def bfs(self) -> Generator["BinaryTreeNode"]:
+    #     queue = [self]
+    #     while len(queue) > 0:
+    #         node = queue.pop(0)
+
+    #         yield node
+
+    #         if node.left is not None:
+    #             queue.append(self.left)
+    #         if node.right is not None:
+    #             queue.append(self.right)
+
+
+class AnimatedCollection(Collection[Var]):
+
+    @property
+    @abstractmethod
+    def animations(self) -> Iterable[Animation]:
+        ...
+    
+    @property
+    @abstractmethod
+    def elements(self) -> Iterable[Element]:
+        ...
+
+
+    # @property
+    # @abstractmethod
+    # def removed(self) -> dict[Var, Element]:
+    #     """Returns a dictionary mapping Var objects that have been removed since the last finish of the Animations in this Structure."""
+    #     ...
+
+    # @abstractmethod
+    # def remove(self, var: Var) -> Self:
+    #     ...
+    
+
+
+class BinaryTree(AnimatedCollection):
+    def __init__(self, *, num_levels, level_heights, node_width):
+        self.root: BinaryTreeNode | None = None
+        self._organizer = BinaryTreeOrganizer(num_levels=num_levels, level_heights=level_heights, node_width=node_width)
+        self._animations = AnimationBundle()
+        self._nodes: list[BinaryTreeNode | None] = [None] * (2**(num_levels) - 1)
+
         
 
+    def organize(self):
+        for node in self:
+            var = node.data
+            transform = self.target_transform(var)
+            node.element.set_transform(transform)
 
-class BinaryTree:
-    def __init__(self):
-        self.root: BinaryTreeNode | None = None
+    def target_transform(self, var: Var):
+        return self._organizer[self._get_index(var)]
+    
+    @property
+    def animations(self):
+        return self._animations
+    
+    @property
+    def elements(self) -> Generator[Element]:
+        for node in self:
+            yield node.element
 
+    def _get_index(self, var: Var):
+        index = BinaryTree._get_index_helper(root=self.root, var=var)
 
+        if index is None:
+            raise ValueError("var does not exist in BinaryTree.")
+        
+        return index
+    
+    @staticmethod
+    def _get_index_helper(root: BinaryTreeNode, var: Var, index = 1) -> int | None:
+        if root.data is var:
+            return index - 1
+        
+        if root.left is not None:
+            maybe_index = BinaryTree._get_index_helper(root.left, var, index=2*index)
+            if maybe_index is not None:
+                return maybe_index
+        if root.right is not None:
+            maybe_index = BinaryTree._get_index_helper(root.right, var, index=2*index + 1)
+            if maybe_index is not None:
+                return maybe_index
 
-    def __getitem__(self, index: int):
-        NotImplementedError("Implement me please")
+        return None
+        
+    def __len__(self):
+        len_ = 0
+        for _ in self:
+            len_ += 1
+        return len_
+
+    def __contains__(self, var: Var) -> bool:
+        for contained_var in self:
+            if contained_var == var:
+                return True
+        return False
+
 
     def __iter__(self) -> Generator[BinaryTreeNode]:
         if self.root is not None:
-            yield from self.root
+            yield from self.root #map(lambda x: x.data, self.root)
     
+
+
 
 
 def main():
 
     radius = 16
-    sep = 1.5
+
     
     with Canvas(anchor=Anchor.TOP).translate(y=radius*1.5) as c:
-        es = [Node(i, radius=radius, type_=int).element for i in range(1,16)]
-        tog = BinaryTreeOrganizer(num_levels=4, level_heights=3*radius, node_width=radius*3)
-        tog.organize(es)
-        for t in tog:
-            print(t.translation.xy, file=sys.stderr)
-        c << es
+        es = [BinaryTreeNode(radius=radius, var=Var(i)).element for i in range(1,16)]
+        
+        root = BinaryTreeNode(radius=radius, var=Var(1))
 
-        c << Drawing(path=Path().M(*tog[0].translation.xy).L(*tog[7].translation.xy))
+        root.left = BinaryTreeNode(radius=radius, var=Var(2))
+
+        root.right = BinaryTreeNode(radius=radius, var=Var(3))
+
+        root.left.right = BinaryTreeNode(radius=radius, var=Var(5))
+        root.left.right.right = BinaryTreeNode(radius=radius, var=Var(11))
+        
+
+
+        bt = BinaryTree(num_levels=4,level_heights=48,node_width=48)
+
+        bt.root = root
+
+        bt.organize()
+        
+        c << bt.elements
+
+
+
+
+        # tog = BinaryTreeOrganizer(num_levels=4, level_heights=3*radius, node_width=radius*3)
+        # tog.organize(es)
+        # for t in tog:
+        #     print(t.translation.xy, file=sys.stderr)
+        # c << es
+
+        # c << Drawing(path=Path().M(*tog[0].translation.xy).L(*tog[7].translation.xy))
 
 
 if __name__ == '__main__':
