@@ -1,4 +1,5 @@
 from visuscript.element import Element
+from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 from xml.sax.saxutils import escape
 from .primatives import *
 from PIL import ImageFont
@@ -38,12 +39,17 @@ class Text(Element):
           return size_updating_method
 
      @update_size
-     def __init__(self, *, text: str, font_size: float, font_family: str = 'arial', fill: Color | None = None, **kwargs):
+     def __init__(self, text: str, *, font_size: float | ConfigurationDeference = DEFER_TO_CONFIG, font_family: str | ConfigurationDeference = DEFER_TO_CONFIG, fill: Color | ConfigurationDeference = DEFER_TO_CONFIG, **kwargs):
+
+               font_size = config.text_font_size if font_size is DEFER_TO_CONFIG else font_size
+               font_family = config.text_font_family if font_family is DEFER_TO_CONFIG else font_family
+               fill = config.text_fill if fill is DEFER_TO_CONFIG else fill
+
                super().__init__(**kwargs)
                self._text: str = text
                self._font_size: float = font_size
                self._font_family: str = font_family
-               self.fill: Color = Color(fill) if fill is not None else Color()
+               self.fill: Color = Color(fill)
 
 
      @property

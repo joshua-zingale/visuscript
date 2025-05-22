@@ -21,6 +21,11 @@ class _AnimationConfig:
         self.drawing_stroke_width = 1
         self.drawing_fill = Color('off_white', 0.0)
 
+        # Text
+        self.text_font_size = 16
+        self.text_font_family = 'arial'
+        self.text_fill = Color('off_white', 1)
+
 
 
 
@@ -29,14 +34,15 @@ config: _AnimationConfig = _AnimationConfig()
 The singleton configuration object for Visuscript, which sets defaults for various Visuscript features.
 """
 
-
-DEFER_TO_CONFIG = object()
-"""Indicates that this parameter should be set by the global configuration."""
-
 ConfigurationDeference: TypeAlias = object
 """
 As an parameter type hint, specifies that passing in `DEFER_TO_CONFIG` as the argument will lead to the global configuration setting the value.
 """
+
+DEFER_TO_CONFIG: ConfigurationDeference = object()
+"""Indicates that this parameter should be set by the global configuration."""
+
+
 
 
 # class _Config:

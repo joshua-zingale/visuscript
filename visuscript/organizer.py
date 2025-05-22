@@ -1,7 +1,8 @@
 from visuscript.drawable import Drawable
 from visuscript.primatives import Transform, Vec3, get_vec3
-from typing import Collection, Tuple, Generator
+from typing import Collection, Tuple, Generator, Iterable
 from abc import ABC, abstractmethod
+import numpy as np
 import sys
 
 class Organizer(ABC):
@@ -17,12 +18,14 @@ class Organizer(ABC):
         for i in range(len(self)):
             yield self[i]
 
-    def organize(self, drawables: Collection[Drawable]):
+    def organize(self, drawables: Collection[Drawable | None]):
         for drawable, transform in zip(drawables, self):
+            if drawable is None:
+                continue
             drawable.set_transform(transform)
 
 
-class Grid(Organizer):
+class GridOrganizer(Organizer):
     def __init__(self, shape: Collection[int], sizes: Collection[int], offset: Vec3 = None):
         if len(shape) == 2:
             shape = tuple(shape) + (1,)
@@ -69,3 +72,40 @@ class Grid(Organizer):
 
         return Transform(translation=translation)
 
+
+
+class BinaryTreeOrganizer(Organizer):
+
+
+    def __init__(self, *, num_levels: int, level_heights: float | Iterable[float], node_width: float, offset: Vec3 = None):
+        assert num_levels >= 1
+        self._len = int(2**(num_levels) - 1)
+        self._num_levels = num_levels
+        
+        if isinstance(level_heights, Iterable):
+            self._heights = list(level_heights)
+        else:
+            self._heights = [level_heights * l for l in range(num_levels)]
+   
+        self._node_width = node_width
+
+        self._offset = get_vec3(offset) if offset is not None else Vec3(0,0,0)
+
+
+        self._leftmost = -(2**(num_levels-2) - 1/2)*self._node_width
+
+    
+    def __len__(self) -> int:
+        return self._len
+    
+    
+    def __getitem__(self, index: int) -> Transform:
+        level = int(np.log2(index+1))
+        row_index = index - 2**(level) + 1
+        
+        horizontal_separation = Vec3(self._node_width * 2**(self._num_levels - level - 1), 0, 0)
+
+        start_x = self._leftmost + (2**(self._num_levels - level - 1) - 1) * self._node_width/2
+        start_y = self._heights[level]
+        start_of_row = Vec3(start_x, start_y, 0)
+        return Transform(translation=start_of_row + row_index*horizontal_separation)

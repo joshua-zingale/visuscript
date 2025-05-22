@@ -4,7 +4,7 @@ from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 from .primatives import *
 from .segment import Path, Segment
 from io import StringIO
-from typing import Self, Generator, Tuple
+from typing import Self, Generator
 import numpy as np
 import svg
 from abc import abstractmethod
@@ -97,6 +97,8 @@ class Element(Drawable):
         """
         child.set_parent(self, preserve_global_transform=preserve_global_transform)
         return self
+
+    with_child = add_child
     
     def remove_child(self, child: "Element", preserve_global_transform: bool = True) -> Self:
         """
@@ -108,7 +110,7 @@ class Element(Drawable):
         child.set_parent(None, preserve_global_transform=preserve_global_transform)
         return self
 
-    def add_children(self, *children: Tuple["Element", ...], preserve_global_transform: bool = False) -> Self:
+    def add_children(self, *children: "Element", preserve_global_transform: bool = False) -> Self:
         """
         Adds each input child as a child of this Element. If `preserve_global_transform` is True, then the
         transform on each child is set such that its global transform not change.
@@ -116,6 +118,8 @@ class Element(Drawable):
         for child in children:
             self.add_child(child, preserve_global_transform=preserve_global_transform)
         return self
+    
+    with_children = add_children
     
     @property
     def global_transform(self) -> Transform:
@@ -253,7 +257,7 @@ class Image(Element):
 #         self._width = data.shape[1] * pixel_width
 #         self._height = data.shape[0] * pixel_width
 
-#         grid = Grid(resolution, sizes=[pixel_width, pixel_width])
+#         grid = GridOrganizer(resolution, sizes=[pixel_width, pixel_width])
 
 #         self._pixels: list[Element] = []
 #         for (r,g,b,o), transform in zip(data.reshape(-1,4), grid):

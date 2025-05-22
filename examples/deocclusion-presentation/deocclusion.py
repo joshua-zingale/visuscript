@@ -15,7 +15,7 @@ def heading(text: str):
     return Text(text=text, font_size=30, anchor=Anchor.LEFT).set_transform(canvas.xy(0.025, 0.10)).add_child(
         Drawing(path=Path().M(0, 25).l(canvas.width/phi, 0), stroke="red", stroke_width=2))
 
-bullet_grid = Grid((10,1),(18,18), canvas.xy(0.075, 0.30))
+bullet_grid = GridOrganizer((10,1),(18,18), canvas.xy(0.075, 0.30))
 
 def bullet(text: str, num: int = 0, font_size=15):
     global bullet_grid
