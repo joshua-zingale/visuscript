@@ -1,5 +1,6 @@
 from visuscript.constants import Anchor, OutputFormat
-from typing import Literal, TypeAlias
+from visuscript.primatives import Color
+from typing import TypeAlias
 
 class _AnimationConfig:
     def __init__(self):
@@ -13,7 +14,12 @@ class _AnimationConfig:
         self.canvas_logical_width = 480
         self.canvas_logical_height = 270
         self.canvas_output = OutputFormat.SVG
-        self.canvas_color = 'dark_slate'
+        self.canvas_color = Color('dark_slate', 1)
+
+        # Drawing
+        self.drawing_stroke = Color('off_white', 1)
+        self.drawing_stroke_width = 1
+        self.drawing_fill = Color('off_white', 0.0)
 
 
 
@@ -23,12 +29,13 @@ config: _AnimationConfig = _AnimationConfig()
 The singleton configuration object for Visuscript, which sets defaults for various Visuscript features.
 """
 
-DEFAULT_CONFIG = None
-"""An alias for `None`."""
 
-Configuration: TypeAlias = Literal[None]
+DEFER_TO_CONFIG = object()
+"""Indicates that this parameter should be set by the global configuration."""
+
+ConfigurationDeference: TypeAlias = object
 """
-As an parameter type hint, specifies that passing in `None`, or the alias `DEFAULT_CONFIG`, as the argument will lead to the global configuration setting the value.
+As an parameter type hint, specifies that passing in `DEFER_TO_CONFIG` as the argument will lead to the global configuration setting the value.
 """
 
 

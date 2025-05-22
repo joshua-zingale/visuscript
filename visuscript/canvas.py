@@ -3,7 +3,7 @@ from visuscript.constants import Anchor, OutputFormat
 from visuscript.element import Element
 from visuscript import Rect, Pivot
 from visuscript.primatives import *
-from visuscript.config import config, Configuration, DEFAULT_CONFIG
+from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 from typing import Iterable, Generator
 from copy import copy
 from visuscript.output import print_svg, print_png
@@ -16,22 +16,22 @@ from visuscript.animation import AnimationBundle
 class Canvas(Drawable):
     def __init__(self, *,
                  elements: list[Element] | None = None,
-                 width: int | Configuration = DEFAULT_CONFIG,
-                 height: int | Configuration = DEFAULT_CONFIG,
-                 logical_width: int | Configuration = DEFAULT_CONFIG,
-                 logical_height: int | Configuration = DEFAULT_CONFIG,
-                 color: str | Color | Configuration = DEFAULT_CONFIG,
-                 output: OutputFormat | Configuration = DEFAULT_CONFIG,
+                 width: int | ConfigurationDeference = DEFER_TO_CONFIG,
+                 height: int | ConfigurationDeference = DEFER_TO_CONFIG,
+                 logical_width: int | ConfigurationDeference = DEFER_TO_CONFIG,
+                 logical_height: int | ConfigurationDeference = DEFER_TO_CONFIG,
+                 color: str | Color | ConfigurationDeference = DEFER_TO_CONFIG,
+                 output: OutputFormat | ConfigurationDeference = DEFER_TO_CONFIG,
                  **kwargs):
         
 
         # from visuscript.config import config
-        width = config.canvas_width if width is DEFAULT_CONFIG else width
-        height = config.canvas_height if height is DEFAULT_CONFIG else height
-        logical_width = config.canvas_logical_width if logical_width is DEFAULT_CONFIG else logical_width
-        logical_height = config.canvas_logical_height if logical_height is DEFAULT_CONFIG else logical_height
-        color = config.canvas_color if color is DEFAULT_CONFIG else color
-        output = config.canvas_output if output is DEFAULT_CONFIG else output
+        width = config.canvas_width if width is DEFER_TO_CONFIG else width
+        height = config.canvas_height if height is DEFER_TO_CONFIG else height
+        logical_width = config.canvas_logical_width if logical_width is DEFER_TO_CONFIG else logical_width
+        logical_height = config.canvas_logical_height if logical_height is DEFER_TO_CONFIG else logical_height
+        color = config.canvas_color if color is DEFER_TO_CONFIG else color
+        output = config.canvas_output if output is DEFER_TO_CONFIG else output
         
         assert width/height == logical_width/logical_height and width/logical_width == height/logical_height
 
@@ -130,7 +130,7 @@ class Canvas(Drawable):
             rotation = self.transform.rotation
         )
         
-        background = Rect(width=self.width, height=self.height, fill = self.color, anchor=Anchor.TOP_LEFT).translate(self.anchor_offset)
+        background = Rect(width=self.width, height=self.height, fill = self.color, stroke=None, anchor=Anchor.TOP_LEFT).translate(*self.anchor_offset)
 
         # removed deleted elements
         self._elements = list(filter(lambda x: not x.deleted, self._elements))

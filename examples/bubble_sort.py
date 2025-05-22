@@ -1,7 +1,10 @@
 from visuscript import *
+from visuscript.config import config
 from data_structures import TwoPointerArray
 from utility import self_string
 from visuscript.text import Text, get_multiline_texts
+
+config.canvas_output = OutputFormat.PNG
 
 s = Scene()
 

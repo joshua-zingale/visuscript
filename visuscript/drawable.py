@@ -56,8 +56,19 @@ class Drawable(ABC):
         self.transform: Transform = Transform() if transform is None else Transform(transform)
         self.anchor = anchor
 
-    def translate(self, translation: Vec2 | Vec3 | Collection[float]) -> Self:
-        self.transform.translation = translation
+    def translate(self, x: float | None = None, y: float | None = None, z: float | None = None) -> Self:
+        if x is None:
+            x = self.transform.translation.x
+        if y is None:
+            y = self.transform.translation.y
+        if z is None:
+            z = self.transform.translation.z
+
+        self.transform.translation = Vec3(x,y,z)
+        return self
+    
+    def rotate(self, degrees: float) -> Self:
+        self.transform.rotation = degrees
         return self
 
     def scale(self, scale: int | float | Collection[float]) -> Self:

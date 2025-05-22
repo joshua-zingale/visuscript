@@ -177,10 +177,9 @@ class Transform:
     def translation(self, value: Vec2 | Vec3 | Collection[float]):
         assert 2 <= len(value) and len(value) <= 3
 
-        if len(value) == 2:
-            self._translation.xy = value
-        else:
-            self._translation = value
+        value = get_vec3(value)
+
+        self._translation = value
 
 
     @property

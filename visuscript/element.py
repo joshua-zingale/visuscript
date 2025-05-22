@@ -1,6 +1,6 @@
 from visuscript.drawable import Drawable
 from visuscript.constants import Anchor
-from visuscript.organizer import Grid
+from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 from .primatives import *
 from .segment import Path, Segment
 from io import StringIO
@@ -296,11 +296,15 @@ class Pivot(Element):
 class Drawing(Element, Segment):
     def __init__(self, *,
                  path: Path,
-                 stroke: Color | None = None,
-                 stroke_width: float = 1,
-                 fill: Color | None = None,
+                 stroke: Color | None | ConfigurationDeference = DEFER_TO_CONFIG,
+                 stroke_width: float | ConfigurationDeference = DEFER_TO_CONFIG,
+                 fill: Color | None | ConfigurationDeference = DEFER_TO_CONFIG,
                  anchor = Anchor.DEFAULT,
                  **kwargs):
+        
+        stroke = config.drawing_stroke if stroke is DEFER_TO_CONFIG else stroke
+        stroke_width = config.drawing_stroke_width if stroke_width is DEFER_TO_CONFIG else stroke_width
+        fill = config.drawing_fill if fill is DEFER_TO_CONFIG else fill
         
         super().__init__(anchor=anchor, **kwargs)
 

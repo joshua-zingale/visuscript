@@ -1,11 +1,10 @@
-from typing import Callable, Iterable
+from typing import Callable
 from abc import ABC, abstractmethod
 from visuscript.config import *
 from visuscript.drawable import Drawable
 from visuscript.element import Drawing
 from visuscript.primatives import *
 from visuscript.segment import Path
-import ctypes
 import numpy as np
 
 from visuscript.config import config
@@ -27,26 +26,27 @@ class PropertyLocker:
     def __init__(self):
         self._map: dict[object, set[str]] = dict()
 
-    def add(self, obj: object, property: str = ALL_PROPERTIES):
+    def add(self, obj: object, property: str = ALL_PROPERTIES, ignore_conflicts = False):
         """Raises LockedPropertyError if the property is already locked by this PropertyLocker."""
 
         self._map[obj] = self._map.get(obj, set())
 
-        if PropertyLocker.ALL_PROPERTIES in self._map[obj]:
-            raise LockedPropertyError(obj, property)
-        if property == PropertyLocker.ALL_PROPERTIES and len(self._map[obj]) > 0:
-            raise LockedPropertyError(obj, property)
-        if property in self._map[obj]:
-            raise LockedPropertyError(obj, property)
+        if not ignore_conflicts:
+            if PropertyLocker.ALL_PROPERTIES in self._map[obj]:
+                raise LockedPropertyError(obj, property)
+            if property == PropertyLocker.ALL_PROPERTIES and len(self._map[obj]) > 0:
+                raise LockedPropertyError(obj, property)
+            if property in self._map[obj]:
+                raise LockedPropertyError(obj, property)
     
         self._map[obj] = self._map[obj].union(set([property]))
 
-    def update(self, other: "PropertyLocker"):
+    def update(self, other: "PropertyLocker", ignore_conflicts = False):
         """Merges this PropertyLocker with another in place. Raises LockedPropertyError if the two PropertyLockers lock one or more of the same properties on the same object."""
 
         for obj in other._map:
             for property in other._map[obj]:
-                self.add(obj, property)
+                self.add(obj, property, ignore_conflicts=ignore_conflicts)
 
 class Animation(ABC):
 
@@ -76,16 +76,21 @@ class Animation(ABC):
         
 class NoAnimation(Animation):
 
-    def __init__(self, *, fps: int | Configuration = DEFAULT_CONFIG, duration: float | Configuration = DEFAULT_CONFIG):
+    def __init__(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
 
-        fps = config.fps if fps is DEFAULT_CONFIG else fps
-        duration = config.animation_duration if duration is DEFAULT_CONFIG else duration
+        fps = config.fps if fps is DEFER_TO_CONFIG else fps
+        duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
 
         self._num_frames = round(fps*duration)
 
     @property
     def objects(self) -> set[int]:
         return set()
+    
+
+    @property
+    def locker(self) -> PropertyLocker:
+        return PropertyLocker()
 
     def advance(self) -> bool:
         if self._num_frames > 0:
@@ -114,7 +119,7 @@ class AnimationSequence(Animation):
 
         self._locker = PropertyLocker()
         for animation in self._animations:
-            self._locker.update(animation)
+            self._locker.update(animation.locker, ignore_conflicts=True)
 
     @property
     def locker(self) -> PropertyLocker:
@@ -131,10 +136,10 @@ class AnimationSequence(Animation):
 
 
 class TimeDeltaAnimation(Animation):
-    def __init__(self, *, fps: int | Configuration = DEFAULT_CONFIG, duration: float | Configuration = DEFAULT_CONFIG, updates_per_frame: int = 1):
+    def __init__(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG, updates_per_frame: int = 1):
 
-        fps = config.fps if fps is DEFAULT_CONFIG else fps
-        duration = config.animation_duration if duration is DEFAULT_CONFIG else duration
+        fps = config.fps if fps is DEFER_TO_CONFIG else fps
+        duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
 
         assert updates_per_frame >= 0
 
@@ -170,10 +175,10 @@ class TimeDeltaAnimation(Animation):
 
 
 class AlphaAnimation(Animation):
-    def __init__(self, *, fps: int | Configuration = DEFAULT_CONFIG, duration: float | Configuration = DEFAULT_CONFIG, easing_function: Callable[[float], float] = sin_easing):
+    def __init__(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG, easing_function: Callable[[float], float] = sin_easing):
 
-        fps = config.fps if fps is DEFAULT_CONFIG else fps
-        duration = config.animation_duration if duration is DEFAULT_CONFIG else duration
+        fps = config.fps if fps is DEFER_TO_CONFIG else fps
+        duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
 
         self._frame_number: int = 1
         self._num_frames: int = round(fps * duration)
@@ -231,7 +236,7 @@ class AnimationBundle(Animation):
             self._animations.append(animation)
         elif isinstance(animation, list):
             for animation_ in animation:
-                self.push(animation)
+                self.push(animation_)
         else:
             raise TypeError(f"'{_call_method}' is only implemented for types Animation and list[Animation], not for '{type(animation)}'")
 
@@ -335,10 +340,10 @@ class RotationAnimation(AlphaAnimation):
 
 
 class TransformInterpolation(Animation):
-    def __init__(self, drawable: Drawable, target: Transform, fps: int | Configuration = DEFAULT_CONFIG, duration: float | Configuration = DEFAULT_CONFIG, easing_function: Callable[[float], float] = sin_easing):
+    def __init__(self, drawable: Drawable, target: Transform, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG, easing_function: Callable[[float], float] = sin_easing):
 
-        fps = config.fps if fps is DEFAULT_CONFIG else fps
-        duration = config.animation_duration if duration is DEFAULT_CONFIG else duration
+        fps = config.fps if fps is DEFER_TO_CONFIG else fps
+        duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
 
         super().__init__()
 
