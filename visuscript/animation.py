@@ -14,6 +14,10 @@ def quintic_easing(x: float) -> float:
 def sin_easing(a: float) -> float:
     return float(1 - np.cos(a*np.pi))/2
 
+SIN_EASING_OUT_BACK_SCALING_FACTOR = 1/float(1 - np.cos(np.pi*1.1))
+def sin_easing_out_back(a: float) -> float:
+    return float(1 - np.cos(a*np.pi*1.1))*SIN_EASING_OUT_BACK_SCALING_FACTOR
+
 class LockedPropertyError(ValueError):
     def __init__(self, obj: object, property: str):
         message = f"'{property}' on object of type {type(obj)} is already locked."
@@ -315,8 +319,6 @@ class TranslationAnimation(AlphaAnimation):
         self._source_translation = self._drawable.transform.translation
 
     def update(self, alpha: float):
-        assert 0 <= alpha <= 1
-
         self._drawable.transform.translation = self._source_translation * (1 - alpha) + self._target_translation * alpha
 
 class ScaleAnimation(AlphaAnimation):
@@ -338,7 +340,6 @@ class ScaleAnimation(AlphaAnimation):
         self._source_scale = self._drawable.transform.scale
 
     def update(self, alpha: float):
-        assert 0 <= alpha <= 1
         self._drawable.transform.scale = self._source_scale * (1 - alpha) + self._target_scale * alpha
 
 class RotationAnimation(AlphaAnimation):
@@ -358,7 +359,6 @@ class RotationAnimation(AlphaAnimation):
         self._source_rotation = self._drawable.transform.rotation
 
     def update(self, alpha: float):
-        assert 0 <= alpha <= 1
         self._drawable.transform.rotation = self._source_rotation * (1 - alpha) + self._target_rotation * alpha
 
 

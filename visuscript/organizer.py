@@ -26,7 +26,7 @@ class Organizer(ABC):
 
 
 class GridOrganizer(Organizer):
-    def __init__(self, shape: Collection[int], sizes: Collection[int], offset: Vec3 = None):
+    def __init__(self, shape: Collection[int], sizes: Collection[int], transform: Transform | None = None):
         if len(shape) == 2:
             shape = tuple(shape) + (1,)
         elif len(shape) == 3:
@@ -40,8 +40,7 @@ class GridOrganizer(Organizer):
         else:
             raise ValueError("`sizes` must be of length 2 or 3")
 
-        self._offset = get_vec3(offset) if offset is not None else Vec3(0,0,0)
-        self._offset[0], self._offset[1] = self._offset[1], self._offset[0]
+        self._transform = transform
 
         self._shape = shape
         self._sizes = sizes
@@ -66,11 +65,11 @@ class GridOrganizer(Organizer):
             if index >= size:
                 raise IndexError(f"index {index} is out of bounds for axis {i} with size {size}")
         
-        translation = [i * size + self._offset[axis] for axis, (i, size) in enumerate(zip(indices, self._sizes))]
+        translation = [i * size for i, size in zip(indices, self._sizes)]
 
         translation = [translation[1], translation[0], translation[2]]
 
-        return Transform(translation=translation)
+        return self._transform(Transform(translation=translation))
 
 
 

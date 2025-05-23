@@ -400,6 +400,11 @@ class Circle(Drawing):
     @property
     def height(self):
         return self.radius * 2
+    
+    @property
+    def circumscribed_radius(self):
+        return self.radius
+        
 
     def draw_self(self):
         x, y = self.anchor_offset

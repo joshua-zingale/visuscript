@@ -1,22 +1,29 @@
 from visuscript import *
-from visuscript.animation import Animation
+from visuscript.animation import Animation, NoAnimation
+from visuscript import animation
 from visuscript.organizer import BinaryTreeOrganizer, Organizer
 from visuscript.element import Element
 from abc import ABC, abstractmethod
-from visuscript.primatives import Vec3, get_vec3
-from typing import Generator, Collection, Self, Iterable, MutableSequence
+from visuscript.primatives import Vec3, get_vec3, Vec2
+from typing import Collection, Iterable, MutableSequence, Any
 import numpy as np
 import sys
 
 from visuscript.config import config
+from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
 
 class Var:
+
     def __init__(self, value, *, type_: type | None = None):
 
         if type_ is None:
             type_ = type(value)
 
-        self._value = type_(value)
+        if value is None and type_ is type(None):
+            self._value = None
+        else:
+            self._value = type_(value)
+    
         self._type = type_
 
     @property
@@ -27,40 +34,44 @@ class Var:
     def value(self):
         return self._value
     
+    @property
+    def is_none(self):
+        return self.value is None
+    
     def __add__(self, other: "Var"):
         value = self.value + other.value
         type_ = type(value)
-        return Var(value, type_)
+        return Var(value, type_=type_)
     
     def __sub__(self, other: "Var"):
         value = self.value - other.value
         type_ = type(value)
-        return Var(value, type_)
+        return Var(value, type_=type_)
     
     def __mul__(self, other: "Var"):
         value = self.value * other.value
         type_ = type(value)
-        return Var(value, type_)
+        return Var(value, type_=type_)
     
     def __truediv__(self, other: "Var"):
         value = self.value / other.value
         type_ = type(value)
-        return Var(value, type_)
+        return Var(value, type_=type_)
     
     def __mod__(self, other: "Var"):
         value = self.value % other.value
         type_ = type(value)
-        return Var(value, type_)
+        return Var(value, type_=type_)
     
     def __floordiv__(self, other: "Var"):
         value = self.value // other.value
         type_ = type(value)
-        return Var(value, type_)
+        return Var(value, type_=type_)
     
     def __pow__(self, other: "Var"):
         value = self.value ** other.value
         type_ = type(value)
-        return Var(value, type_)
+        return Var(value, type_=type_)
     
 
     def __gt__(self, other: "Var") -> bool:
@@ -82,6 +93,9 @@ class Var:
     #     type_ = type(value)
     #     return Var(value, type_)
 
+NilVar = Var(None)
+"""A Var representing no value."""
+
 
 class VarContainer(ABC):
 
@@ -94,17 +108,28 @@ class VarContainer(ABC):
     @abstractmethod
     def element(self) -> Element:
         ...
+
+class BlankContainer(VarContainer):
+
+    def __init__(self, var: Var):
+        self._var = var
+        self._element = Pivot()
+
+    @property
+    def var(self) -> Var:
+        return self._var
+    
+    @property
+    def element(self) -> Element:
+        return self._element
     
 
 class Node(VarContainer):
     def __init__(self, *, var: Var, radius: float):
 
         self._var = var
-        self._radius: float = radius
 
-        self._element = Text(str(self._var), font_size=self._radius).with_children(
-            Circle(radius)
-        )
+        self._element = Circle(radius).with_child(Text(str(self._var), font_size=radius))
 
     @property
     def var(self) -> Var:
@@ -114,7 +139,42 @@ class Node(VarContainer):
     def element(self) -> Element:
         return self._element
     
+class BasicContainer(VarContainer):
+    def __init__(self, *, var: Var, font_size: float):
+
+        self._var = var
+
+        self._element = Text(str(self._var), font_size=font_size)
+
+    @property
+    def var(self) -> Var:
+        return self._var
+
+    @property
+    def element(self) -> Element:
+        return self._element
+
+# TODO Fix this hack, which allows the canvas to reflect the current elements of the AnimatedCollection
+# This should be replaced with something that does not depend on implementational details like _children
+class _AnimatedCollectionElement(Pivot):
+    def __init__(self, animated_collection: "AnimatedCollection", **kwargs):
+        super().__init__(**kwargs)
+        self._animated_collection = animated_collection
+
+    @property
+    def _children(self):
+        return self._animated_collection.elements
+    
+    @_children.setter
+    def _children(self, value):
+        pass
+    
 class AnimatedCollection(Collection[Var]):
+
+    # @property
+    # @abstractmethod
+    # def scaffolding(self) -> Iterable[Element]:
+    #     ...
 
     @abstractmethod
     def element_for(self, var: Var) -> Element:
@@ -127,22 +187,21 @@ class AnimatedCollection(Collection[Var]):
     def transform_for(self, var: Var) -> Transform:
         return self.element_for(var).transform
     
-    def organize(self):
+    def organize(self, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
+        animation_bundle = AnimationBundle(NoAnimation(duration=duration))
         for var in self:
-            if var is None:
-                continue
-            self.element_for(var).set_transform(self.target_for(var))
-    
-    
-    @property
-    @abstractmethod
-    def animations(self) -> Iterable[Animation]:
-        ...
+            animation_bundle << TransformInterpolation(self.element_for(var), self.target_for(var), duration=duration)
+        return animation_bundle
+        
     
     @property
     @abstractmethod
     def elements(self) -> Iterable[Element]:
         ...
+
+    @property
+    def structure_element(self):
+        return _AnimatedCollectionElement(self)
 
 
     # @property
@@ -155,9 +214,10 @@ class AnimatedCollection(Collection[Var]):
     # def remove(self, var: Var) -> Self:
     #     ...
 
-class AnimatedList(AnimatedCollection, MutableSequence):
-    def __init__(self, variables: Iterable[Var | None], *, transform: Transform | None = None):
-        self._list = list(map(lambda v: None if v is None else self.new_container_for(v), variables))
+class AnimatedList(AnimatedCollection, MutableSequence[Var]):
+    def __init__(self, variables: Iterable = [], *, transform: Transform | None = None):
+        variables = map(lambda v: v if isinstance(v, Var) else Var(v), variables)
+        self._list = list(map(lambda v: self.new_container_for(v), variables))
         self._transform = Transform() if transform is None else Transform(transform)
 
     @property
@@ -172,74 +232,112 @@ class AnimatedList(AnimatedCollection, MutableSequence):
     def organizer(self) -> Organizer:
         ...
 
-
     @property
     def elements(self):
-        return list(map(lambda x: None if x is None else x.element, self._list))
+        return list(map(lambda x: x.element, self._list))
 
     def target_for(self, var: Var):
-        index = next(index for index, container in enumerate(self._list) if container and container.var is var)
+        index = next(index for index, container in enumerate(self._list) if container.var is var)
         return self.organizer[index]
 
     def element_for(self, var: Var):
         for container in self._list:
-            if container is None:
-                continue
             if container.var is var:
                 return container.element
             
         raise ValueError(f"Var {var} is not present in this AnimatedList")
     
 
-    def _element_iter(self):
-        yield from map(lambda x: x.element, filter(None, self._list))
-
-
     def __len__(self):
         return len(self._list)
 
     def __getitem__(self, index: int | slice):
         container = self._list[index]
-        if isinstance(index, slice):
-            return list(map(lambda x: None if x is None else x.var, container))
+        if isinstance(container, list):
+            return list(map(lambda x: x.var, container))
         else:
-            return None if container is None else container.var
+            return container.var
         
     def __setitem__(self, index: int | slice, value: Var):
+        if not isinstance(value, Var):
+            value = Var(value)
         self._list[index] = self.new_container_for(value)
 
     def __delitem__(self, index: int | slice):
         del self._list[index]
 
-    def insert(self, index: int, value: Var):
+    def insert(self, index: int, value: Var, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
+        if not isinstance(value, Var):
+            value = Var(value)
         self._list.insert(index, self.new_container_for(value))
+        return self.organize(duration=duration)
 
+    def _swap(self, a, b):
+        tmp = self._list[a]
+        self._list[a] = self._list[b]
+        self._list[b] = tmp
+
+
+    def swap(self, a: int, b: int) -> AnimationBundle:
+        assert a != b
+
+        element_a = self.element_for(self[a])
+        element_b = self.element_for(self[b])
+
+        diff = element_b.transform.translation.xy - element_a.transform.translation.xy
+        distance = np.linalg.norm(diff)
+        direction = diff / distance
+        ortho = Vec2(-direction.y, direction.x)
+
+        mid = element_a.transform.translation.xy + direction * distance/2
+        lift = ortho * element_a.shape.circumscribed_radius*2
+
+        self._swap(a,b)
+        
+        return AnimationBundle(
+            PathAnimation(element_a, Path().M(*element_a.transform.translation.xy).Q(*(mid - lift), *element_b.transform.translation.xy)),
+            PathAnimation(element_b, Path().M(*element_b.transform.translation.xy).Q(*(mid + lift), *element_a.transform.translation.xy))
+        )
+    
+    def extend(self, values: Iterable, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
+        super().extend(values)
+        return self.organize(duration=duration)
+
+class AnimatedArray(AnimatedList):
+
+    def __init__(self, variables: Iterable, *, font_size: float, **kwargs):
+
+        self._font_size = font_size
+
+        super().__init__(variables, **kwargs)
+   
+    @property
+    def organizer(self):
+        return GridOrganizer((1,len(self)), (self._font_size*2, self._font_size*2), transform = self.transform)
+    
+    def new_container_for(self, var):
+        if var.is_none:
+            return BlankContainer(var)
+        return BasicContainer(var=var, font_size=self._font_size)
 
 class AnimatedBinaryTreeArray(AnimatedList):
 
-    def __init__(self, variables: Iterable[Var | None], *, radius: float, level_heights: float | None = None, node_width: float | None = None, **kwargs):
+    def __init__(self, variables: Iterable[Var], *, radius: float, level_heights: float | None = None, node_width: float | None = None, **kwargs):
 
         self._radius = radius
         self.level_heights = level_heights or 3*radius
         self.node_width = node_width or 3*radius
 
-        self._animations = AnimationBundle()
-
         super().__init__(variables, **kwargs)
-        
-
    
-    @property
-    def animations(self):
-        return self._animations
-    
     @property
     def organizer(self):
         num_levels = int(np.log2(len(self))) + 1
         return BinaryTreeOrganizer(num_levels=num_levels, level_heights=self.level_heights, node_width=self.node_width, transform = self.transform)
     
-
     def new_container_for(self, var):
+        if var.is_none:
+            return BlankContainer(var)
         return Node(var=var, radius=self._radius)
 
 def main():
@@ -247,16 +345,20 @@ def main():
     config.drawing_stroke='dark_slate'
     config.text_fill='dark_slate'
     radius = 16
-    with Canvas() as c:
-        arr = AnimatedBinaryTreeArray([1,2,3,4,5,6,7,8,9,None,11], radius=radius, transform=Transform([0,-75,0], rotation=5))
+    with Scene() as c:
+
+        l = [0,5,3,6,7,4,6,6,53]
+
+        arr = AnimatedBinaryTreeArray([], radius=radius, transform=Transform([0,-75,0], rotation=0, scale=1))
+
+        c << arr.structure_element
+
+        c.animations << arr.organize()
+
+        c.print_frames()
         
-        arr.organize()
+        c.animations << arr.extend(l)
 
-        c << arr.elements
-
-        arr.append(12)
-
-        c << arr.elements
 
 
 
