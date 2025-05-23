@@ -1,17 +1,16 @@
 from visuscript import *
 from visuscript.animation import Animation
-from visuscript.organizer import BinaryTreeOrganizer
+from visuscript.organizer import BinaryTreeOrganizer, Organizer
 from visuscript.element import Element
 from abc import ABC, abstractmethod
-from visuscript.primatives import Vec3
-from typing import Generator, Collection, Self, Iterable, Union
+from visuscript.primatives import Vec3, get_vec3
+from typing import Generator, Collection, Self, Iterable, MutableSequence
+import numpy as np
 import sys
-class Var(ABC):
 
-    # @staticmethod
-    # def updates_value(self, *args, **kwargs):
-    #     pass
+from visuscript.config import config
 
+class Var:
     def __init__(self, value, *, type_: type | None = None):
 
         if type_ is None:
@@ -19,7 +18,6 @@ class Var(ABC):
 
         self._value = type_(value)
         self._type = type_
-        # self.translation = Vec3(0,0,0)
 
     @property
     def drawable(self) -> Text:
@@ -79,18 +77,26 @@ class Var(ABC):
     def __str__(self):
         return str(self.value)
     
-    # @abstractmethod
-    # def update_callback(self):
-    #     """Called every time this Var's value is updated."""
-    #     ...
-    
     # def __matmul__(self, other: "Var"):
     #     value = self.value @ other.value
     #     type_ = type(value)
     #     return Var(value, type_)
+
+
+class VarContainer(ABC):
+
+    @property
+    @abstractmethod
+    def var(self) -> Var:
+        ...
+
+    @property
+    @abstractmethod
+    def element(self) -> Element:
+        ...
     
 
-class Node:
+class Node(VarContainer):
     def __init__(self, *, var: Var, radius: float):
 
         self._var = var
@@ -101,75 +107,33 @@ class Node:
         )
 
     @property
-    def data(self) -> Var:
+    def var(self) -> Var:
         return self._var
 
     @property
     def element(self) -> Element:
         return self._element
     
-
-class BinaryTreeNode(Node):
-
-    def __init__(self, *, var: Var, radius: float):
-        super().__init__(var=var, radius=radius)
-
-        self._parent: BinaryTreeNode | None = None
-        self._left: BinaryTreeNode | None = None
-        self._right: BinaryTreeNode | None = None
-
-    @property
-    def is_left_child(self) -> bool:
-        return self._parent is not None and self._parent.left is self
-    
-    @property
-    def is_right_child(self) -> bool:
-        return self._parent is not None and self._parent.right is self
-
-    def __iter__(self) -> Generator["BinaryTreeNode"]:
-        yield self
-        
-        if self.left is not None:
-            yield from self.left
-        if self.right is not None:
-            yield from self.right
-
-    @property
-    def parent(self) -> Union["BinaryTreeNode", None]:
-        return self._parent
-        
-    @property
-    def left(self) -> Union["BinaryTreeNode", None]:
-        return self._left
-    @left.setter
-    def left(self, value: Union["BinaryTreeNode", None]):
-        if value is not None:
-            value._parent = self
-        self._left = value
-    @property
-    def right(self) -> Union["BinaryTreeNode", None]:
-        return self._right
-    @right.setter
-    def right(self, value: Union["BinaryTreeNode", None]):
-        if value is not None:
-            value._parent = self
-        self._right = value
-
-    # def bfs(self) -> Generator["BinaryTreeNode"]:
-    #     queue = [self]
-    #     while len(queue) > 0:
-    #         node = queue.pop(0)
-
-    #         yield node
-
-    #         if node.left is not None:
-    #             queue.append(self.left)
-    #         if node.right is not None:
-    #             queue.append(self.right)
-
-
 class AnimatedCollection(Collection[Var]):
 
+    @abstractmethod
+    def element_for(self, var: Var) -> Element:
+        ...
+
+    @abstractmethod
+    def target_for(self, var: Var) -> Transform:
+        ...
+
+    def transform_for(self, var: Var) -> Transform:
+        return self.element_for(var).transform
+    
+    def organize(self):
+        for var in self:
+            if var is None:
+                continue
+            self.element_for(var).set_transform(self.target_for(var))
+    
+    
     @property
     @abstractmethod
     def animations(self) -> Iterable[Animation]:
@@ -190,118 +154,110 @@ class AnimatedCollection(Collection[Var]):
     # @abstractmethod
     # def remove(self, var: Var) -> Self:
     #     ...
+
+class AnimatedList(AnimatedCollection, MutableSequence):
+    def __init__(self, variables: Iterable[Var | None], *, transform: Transform | None = None):
+        self._list = list(map(lambda v: None if v is None else self.new_container_for(v), variables))
+        self._transform = Transform() if transform is None else Transform(transform)
+
+    @property
+    def transform(self) -> Transform:
+        return self._transform
+
+    @abstractmethod
+    def new_container_for(self, var: Var) -> VarContainer:
+        ...
+
+    @property
+    def organizer(self) -> Organizer:
+        ...
+
+
+    @property
+    def elements(self):
+        return list(map(lambda x: None if x is None else x.element, self._list))
+
+    def target_for(self, var: Var):
+        index = next(index for index, container in enumerate(self._list) if container and container.var is var)
+        return self.organizer[index]
+
+    def element_for(self, var: Var):
+        for container in self._list:
+            if container is None:
+                continue
+            if container.var is var:
+                return container.element
+            
+        raise ValueError(f"Var {var} is not present in this AnimatedList")
     
 
+    def _element_iter(self):
+        yield from map(lambda x: x.element, filter(None, self._list))
 
-class BinaryTree(AnimatedCollection):
-    def __init__(self, *, num_levels, level_heights, node_width):
-        self.root: BinaryTreeNode | None = None
-        self._organizer = BinaryTreeOrganizer(num_levels=num_levels, level_heights=level_heights, node_width=node_width)
+
+    def __len__(self):
+        return len(self._list)
+
+    def __getitem__(self, index: int | slice):
+        container = self._list[index]
+        if isinstance(index, slice):
+            return list(map(lambda x: None if x is None else x.var, container))
+        else:
+            return None if container is None else container.var
+        
+    def __setitem__(self, index: int | slice, value: Var):
+        self._list[index] = self.new_container_for(value)
+
+    def __delitem__(self, index: int | slice):
+        del self._list[index]
+
+    def insert(self, index: int, value: Var):
+        self._list.insert(index, self.new_container_for(value))
+
+
+class AnimatedBinaryTreeArray(AnimatedList):
+
+    def __init__(self, variables: Iterable[Var | None], *, radius: float, level_heights: float | None = None, node_width: float | None = None, **kwargs):
+
+        self._radius = radius
+        self.level_heights = level_heights or 3*radius
+        self.node_width = node_width or 3*radius
+
         self._animations = AnimationBundle()
-        self._nodes: list[BinaryTreeNode | None] = [None] * (2**(num_levels) - 1)
 
+        super().__init__(variables, **kwargs)
         
 
-    def organize(self):
-        for node in self:
-            var = node.data
-            transform = self.target_transform(var)
-            node.element.set_transform(transform)
-
-    def target_transform(self, var: Var):
-        return self._organizer[self._get_index(var)]
-    
+   
     @property
     def animations(self):
         return self._animations
     
     @property
-    def elements(self) -> Generator[Element]:
-        for node in self:
-            yield node.element
-
-    def _get_index(self, var: Var):
-        index = BinaryTree._get_index_helper(root=self.root, var=var)
-
-        if index is None:
-            raise ValueError("var does not exist in BinaryTree.")
-        
-        return index
-    
-    @staticmethod
-    def _get_index_helper(root: BinaryTreeNode, var: Var, index = 1) -> int | None:
-        if root.data is var:
-            return index - 1
-        
-        if root.left is not None:
-            maybe_index = BinaryTree._get_index_helper(root.left, var, index=2*index)
-            if maybe_index is not None:
-                return maybe_index
-        if root.right is not None:
-            maybe_index = BinaryTree._get_index_helper(root.right, var, index=2*index + 1)
-            if maybe_index is not None:
-                return maybe_index
-
-        return None
-        
-    def __len__(self):
-        len_ = 0
-        for _ in self:
-            len_ += 1
-        return len_
-
-    def __contains__(self, var: Var) -> bool:
-        for contained_var in self:
-            if contained_var == var:
-                return True
-        return False
-
-
-    def __iter__(self) -> Generator[BinaryTreeNode]:
-        if self.root is not None:
-            yield from self.root #map(lambda x: x.data, self.root)
+    def organizer(self):
+        num_levels = int(np.log2(len(self))) + 1
+        return BinaryTreeOrganizer(num_levels=num_levels, level_heights=self.level_heights, node_width=self.node_width, transform = self.transform)
     
 
-
-
+    def new_container_for(self, var):
+        return Node(var=var, radius=self._radius)
 
 def main():
-
+    config.canvas_color='off_white'
+    config.drawing_stroke='dark_slate'
+    config.text_fill='dark_slate'
     radius = 16
-
-    
-    with Canvas(anchor=Anchor.TOP).translate(y=radius*1.5) as c:
-        es = [BinaryTreeNode(radius=radius, var=Var(i)).element for i in range(1,16)]
+    with Canvas() as c:
+        arr = AnimatedBinaryTreeArray([1,2,3,4,5,6,7,8,9,None,11], radius=radius, transform=Transform([0,-75,0], rotation=5))
         
-        root = BinaryTreeNode(radius=radius, var=Var(1))
+        arr.organize()
 
-        root.left = BinaryTreeNode(radius=radius, var=Var(2))
+        c << arr.elements
 
-        root.right = BinaryTreeNode(radius=radius, var=Var(3))
+        arr.append(12)
 
-        root.left.right = BinaryTreeNode(radius=radius, var=Var(5))
-        root.left.right.right = BinaryTreeNode(radius=radius, var=Var(11))
-        
+        c << arr.elements
 
-
-        bt = BinaryTree(num_levels=4,level_heights=48,node_width=48)
-
-        bt.root = root
-
-        bt.organize()
-        
-        c << bt.elements
-
-
-
-
-        # tog = BinaryTreeOrganizer(num_levels=4, level_heights=3*radius, node_width=radius*3)
-        # tog.organize(es)
-        # for t in tog:
-        #     print(t.translation.xy, file=sys.stderr)
-        # c << es
-
-        # c << Drawing(path=Path().M(*tog[0].translation.xy).L(*tog[7].translation.xy))
 
 
 if __name__ == '__main__':

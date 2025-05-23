@@ -18,7 +18,7 @@ class Organizer(ABC):
         for i in range(len(self)):
             yield self[i]
 
-    def organize(self, drawables: Collection[Drawable | None]):
+    def organize(self, drawables: Iterable[Drawable | None]):
         for drawable, transform in zip(drawables, self):
             if drawable is None:
                 continue
@@ -77,7 +77,7 @@ class GridOrganizer(Organizer):
 class BinaryTreeOrganizer(Organizer):
 
 
-    def __init__(self, *, num_levels: int, level_heights: float | Iterable[float], node_width: float, offset: Vec3 = None):
+    def __init__(self, *, num_levels: int, level_heights: float | Iterable[float], node_width: float, transform: Transform | None = None):
         assert num_levels >= 1
         self._len = int(2**(num_levels) - 1)
         self._num_levels = num_levels
@@ -89,7 +89,7 @@ class BinaryTreeOrganizer(Organizer):
    
         self._node_width = node_width
 
-        self._offset = get_vec3(offset) if offset is not None else Vec3(0,0,0)
+        self._transform = Transform() if transform is None else Transform(transform)
 
 
         self._leftmost = -(2**(num_levels-2) - 1/2)*self._node_width
@@ -108,4 +108,4 @@ class BinaryTreeOrganizer(Organizer):
         start_x = self._leftmost + (2**(self._num_levels - level - 1) - 1) * self._node_width/2
         start_y = self._heights[level]
         start_of_row = Vec3(start_x, start_y, 0)
-        return Transform(translation=start_of_row + row_index*horizontal_separation)
+        return self._transform(Transform(translation=start_of_row + row_index*horizontal_separation))

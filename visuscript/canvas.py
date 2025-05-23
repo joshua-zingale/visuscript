@@ -73,13 +73,16 @@ class Canvas(Drawable):
     remove_elements = without_elements
 
     def __lshift__(self, other: Drawable | Iterable[Drawable]):
+        if other is None:
+            return
+        
         if isinstance(other, Drawable):
             self.add_element(other)
         elif isinstance(other, Iterable):
             for drawable in other:
                 self << drawable
         else:
-            raise TypeError("'<<' is implemented only for types Element and list[Element]")
+            raise TypeError(f"'<<' is not implemented for {type(other)}, only for types Drawable and Iterable[Drawable]")
         
 
     # def __rshift__(self, other: Element | list[Element]):
