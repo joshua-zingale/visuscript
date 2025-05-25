@@ -36,12 +36,44 @@ def get_base64_from_pil_image(pil_image: PILImage) -> str:
     return img_str
 
 class Element(Drawable):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self,
+                 stroke: Color | ConfigurationDeference = DEFER_TO_CONFIG,
+                 stroke_width: float | ConfigurationDeference = DEFER_TO_CONFIG,
+                 fill: Color | ConfigurationDeference = DEFER_TO_CONFIG,
+                 opacity: float | None = 1.0,
+                 **kwargs):
+        
+        stroke = config.drawing_stroke if stroke is DEFER_TO_CONFIG else stroke
+        stroke_width = config.drawing_stroke_width if stroke_width is DEFER_TO_CONFIG else stroke_width
+        fill = config.drawing_fill if fill is DEFER_TO_CONFIG else fill
+
         self._children: list["Element"] = []
         self._parent: "Element" | None = None
         self._svg_pivot = None
         self._deleted = False
+
+        # if fill is not None and stroke is None:
+        #     self.stroke: Color = Color(fill)
+        # else:
+        #     self.stroke: Color = Color(stroke) if stroke is not None else Color()
+
+        self.stroke: Color = Color(stroke)
+        self.stroke_width: float = stroke_width
+        self.fill: Color = Color(fill)
+
+        self._opacity = opacity
+    
+        super().__init__(**kwargs)
+
+
+    @property
+    def opacity(self) -> float | None:
+        return self._opacity
+
+    @opacity.setter
+    def opacity(self, value: float | None):
+        for element in self:
+            element._opacity = value
     
     def set_global_transform(self, transform: Transform) -> Self:
         """
@@ -120,6 +152,15 @@ class Element(Drawable):
         return self
     
     with_children = add_children
+
+
+    def set_fill(self, color: Color) -> Self:
+        self.fill = Color(color)
+        return self
+    
+    def set_stroke(self, color: Color) -> Self:
+        self.stroke = Color(color)
+        return self
     
     @property
     def global_transform(self) -> Transform:
@@ -238,6 +279,7 @@ class Image(Element):
         return svg.Image(
             x=x,
             y=y,
+            opacity=self.opacity,
             transform=transform.svg_transform,
             href=f"data:image/png;base64,{self._file_data}",
         ).as_str()
@@ -279,10 +321,7 @@ class Image(Element):
 #     def draw_self(self):
 #         return ""
     
-            
-
-
-                
+                            
 
 class Pivot(Element):
     @property
@@ -300,38 +339,13 @@ class Pivot(Element):
 class Drawing(Element, Segment):
     def __init__(self, *,
                  path: Path,
-                 stroke: Color | None | ConfigurationDeference = DEFER_TO_CONFIG,
-                 stroke_width: float | ConfigurationDeference = DEFER_TO_CONFIG,
-                 fill: Color | None | ConfigurationDeference = DEFER_TO_CONFIG,
                  anchor = Anchor.DEFAULT,
                  **kwargs):
         
-        stroke = config.drawing_stroke if stroke is DEFER_TO_CONFIG else stroke
-        stroke_width = config.drawing_stroke_width if stroke_width is DEFER_TO_CONFIG else stroke_width
-        fill = config.drawing_fill if fill is DEFER_TO_CONFIG else fill
-        
         super().__init__(anchor=anchor, **kwargs)
-
-
-        if fill is not None and stroke is None:
-            self.stroke: Color = Color(fill)
-        else:
-            self.stroke: Color = Color(stroke) if stroke is not None else Color()
-
-        self.fill: Color = Color(fill) if fill is not None else Color(opacity=0.0)
-        self.stroke_width: float = stroke_width
 
         self._path: Path = path
 
-
-    def set_fill(self, color: Color) -> Self:
-        self.fill = Color(color)
-        return self
-    
-    def set_stroke(self, color: Color) -> Self:
-        self.stroke = Color(color)
-        return self
-        
     def point(self, length: float) -> np.ndarray:
         return self.transform(Transform(self._path.set_offset(*self.anchor_offset).point(length))).xy
     
@@ -378,6 +392,7 @@ class Drawing(Element, Segment):
                 stroke_opacity=self.stroke.opacity,
                 fill=self.fill.rgb,
                 fill_opacity=self.fill.opacity,
+                opacity=self.opacity,
                 stroke_width=self.stroke_width).as_str()
     
 
@@ -417,7 +432,9 @@ class Circle(Drawing):
             stroke_opacity=self.stroke.opacity,
             fill=self.fill.rgb,
             fill_opacity=self.fill.opacity,
-            stroke_width=self.stroke_width).as_str()
+            stroke_width=self.stroke_width,
+            opacity=self.opacity,
+            ).as_str()
 
 
 def Rect(width, height, anchor: Anchor = Anchor.CENTER, **kwargs):

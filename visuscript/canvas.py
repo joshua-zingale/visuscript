@@ -136,7 +136,7 @@ class Canvas(Drawable):
             rotation = self.transform.rotation
         )
         
-        background = Rect(width=self.width, height=self.height, fill = self.color, stroke=None, anchor=Anchor.TOP_LEFT).translate(*self.anchor_offset)
+        background = Rect(width=self.width, height=self.height, fill = self.color, stroke=self.color, anchor=Anchor.TOP_LEFT).translate(*self.anchor_offset)
 
         # removed deleted elements
         self._elements = list(filter(lambda x: not x.deleted, self._elements))

@@ -45,11 +45,12 @@ class Text(Element):
                font_family = config.text_font_family if font_family is DEFER_TO_CONFIG else font_family
                fill = config.text_fill if fill is DEFER_TO_CONFIG else fill
 
-               super().__init__(**kwargs)
                self._text: str = text
                self._font_size: float = font_size
                self._font_family: str = font_family
-               self.fill: Color = Color(fill)
+
+               super().__init__(fill=fill, **kwargs)
+               
 
 
      @property
@@ -106,7 +107,8 @@ class Text(Element):
                font_family=self.font_family,
                font_style="normal",
                fill=self.fill.rgb,
-               fill_opacity=self.fill.opacity
+               fill_opacity=self.fill.opacity,
+               opacity=self.opacity
                ).as_str() + "<text/>" # The extra tag is to skirt a bug in the rendering of the SVG
 
 

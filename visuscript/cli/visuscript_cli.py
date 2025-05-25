@@ -78,8 +78,6 @@ def main():
 
         if hasattr(mod, "main"):
             mod.main()
-    except (FileNotFoundError, AttributeError) as e:
-        raise FileNotFoundError(f"No such file: {input_filename}")
     finally:
         animate_proc.stdin.flush()
         animate_proc.stdin.close()
