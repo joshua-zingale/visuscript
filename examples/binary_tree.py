@@ -8,13 +8,18 @@ def main():
     # config.drawing_stroke='dark_slate'
     # config.drawing_fill=Color('dark_slate', 0)
     # config.text_fill=Color('dark_slate', 1)
-    config.animation_duration = 1
     radius = 16
 
     scene = Scene()
 
 
     with scene as s:
+
+        with s as s:
+            text = Text("Binary Trees").set_opacity(0.0)
+            s << text
+            s.player << fade_in(text)
+            s.player << fade_out(text)
 
         arr = AnimatedBinaryTreeArray([0,1,2,3,4,5], radius=radius, transform=[0,-75])
 

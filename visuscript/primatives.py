@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Self, Collection
+from typing import Self, Collection, Tuple
 from copy import deepcopy
 from ast import literal_eval
 
@@ -328,11 +328,20 @@ class Color():
 
     @property
     def rgb(self) -> str:
-        return str(self)
+        return deepcopy(self._rgb)
+    
+    @rgb.setter
+    def rgb(self, value: Tuple[int, int, int]):
+        value = tuple(value)
+        self._rgb[:] = value
+
+    @property
+    def svg_rgb(self):
+        r,g,b = self._rgb
+        return f"rgb({r},{g},{b})"
 
     def __str__(self) -> str:
-        r,g,b = list(self._rgb)
-        return f"rgb({r},{g},{b})"
+        return f"Color(color={tuple(self._rgb)}, opacity={self.opacity}"
     
     def __add__(self, other: Self) -> Self:
         color = (self._rgb + other._rgb).clip(0,255)

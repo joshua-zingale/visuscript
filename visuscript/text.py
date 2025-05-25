@@ -106,7 +106,7 @@ class Text(Element):
                font_size=self.font_size,
                font_family=self.font_family,
                font_style="normal",
-               fill=self.fill.rgb,
+               fill=self.fill.svg_rgb,
                fill_opacity=self.fill.opacity,
                opacity=self.opacity
                ).as_str() + "<text/>" # The extra tag is to skirt a bug in the rendering of the SVG

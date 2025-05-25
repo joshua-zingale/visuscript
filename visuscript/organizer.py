@@ -1,24 +1,33 @@
 from visuscript.drawable import Drawable
-from visuscript.primatives import Transform, Vec3, get_vec3
+from visuscript.primatives import Transform, Vec3
 from typing import Collection, Tuple, Generator, Iterable
 from abc import ABC, abstractmethod
 import numpy as np
-import sys
 
 class Organizer(ABC):
+    """An Organizer maps integer indices to Transforms."""
+
     @abstractmethod
     def __len__(self) -> int:
+        """The maximum number of drawables that can be organized by this Organizer."""
         ...
     
     @abstractmethod
     def __getitem__(self, index: int) -> Transform:
+        """Gets a Transform for a given index."""
         ...
 
     def __iter__(self) -> Generator[Transform]:
+        """Iterates over all Transform objects herein contained in order."""
         for i in range(len(self)):
             yield self[i]
 
     def organize(self, drawables: Iterable[Drawable | None]):
+        """
+        Applies transformations to at most len(self) of the input drawables
+        
+        The first Drawable in drawables is transformed with self[0]', the second with self[1] etc.
+        """
         for drawable, transform in zip(drawables, self):
             if drawable is None:
                 continue
@@ -26,19 +35,21 @@ class Organizer(ABC):
 
 
 class GridOrganizer(Organizer):
+    """GridOrganizer arranges its output Transform objects into a three dimensional grid."""
+
     def __init__(self, shape: Collection[int], sizes: Collection[int], transform: Transform | None = None):
         if len(shape) == 2:
             shape = tuple(shape) + (1,)
         elif len(shape) == 3:
             shape = tuple(shape)
         else:
-            raise ValueError("`shape` must be of length 2 or 3")
+            raise ValueError("shape must be of length 2 or 3")
         if len(sizes) == 2:
             sizes = tuple(sizes) + (1,)
         elif len(sizes) == 3:
             sizes = tuple(sizes)
         else:
-            raise ValueError("`sizes` must be of length 2 or 3")
+            raise ValueError("sizes must be of length 2 or 3")
 
         self._transform = Transform() if transform is None else Transform(transform)
 
@@ -59,7 +70,7 @@ class GridOrganizer(Organizer):
         elif len(indices) == 3:
             indices = tuple(indices)
         else:
-            raise ValueError("`indices` must be a tuple of length 2 or 3 or an `int`")
+            raise ValueError("indices must be a tuple of length 2 or 3 or an int")
         
         for i, (index, size) in enumerate(zip(indices, self._shape)):
             if index >= size:
@@ -74,7 +85,7 @@ class GridOrganizer(Organizer):
 
 
 class BinaryTreeOrganizer(Organizer):
-
+    """BinaryTreeOrganizer arranges its Transform objects into a binary tree."""
 
     def __init__(self, *, num_levels: int, level_heights: float | Iterable[float], node_width: float, transform: Transform | None = None):
         assert num_levels >= 1

@@ -7,7 +7,7 @@ class _AnimationConfig:
     def __init__(self):
         # Animation
         self.fps = 30
-        self.animation_duration = 0.5
+        self.animation_duration = 1
 
         # Canvas
         self.canvas_width = 480

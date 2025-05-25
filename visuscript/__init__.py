@@ -15,4 +15,7 @@ from .animation import (
     AnimationBundle,
     AnimationSequence,
     OpacityAnimation,
+    NoAnimation,
+    fade_in,
+    fade_out
     )

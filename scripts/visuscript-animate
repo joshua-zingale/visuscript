@@ -19,6 +19,10 @@ while IFS= read -r svg_blob; do
   counter=$((counter + 1))
 done
 
+total_frames=$(find "$temp_dir" -name 'frame_*.svg' | wc -l)
+converted=0
+
+
 find "$temp_dir" -name 'frame_*.svg' | sort -V | while read -r svg_file; do
   # Extract the base filename (e.g., "frame_00001") without the extension
   base_name=$(basename "$svg_file" .svg)
@@ -28,7 +32,12 @@ find "$temp_dir" -name 'frame_*.svg' | sort -V | while read -r svg_file; do
   
   # Convert the current SVG file to a PNG file
   rsvg-convert --format=png --output="$png_file" "$svg_file"
+
+  converted=$((converted + 1))
+  printf "\rConverting frames: %d / %d" "$converted" "$total_frames"
 done
+
+echo ""
 
 
 ffmpeg -framerate "$frame_rate" -i $temp_dir/frame_%09d.png \

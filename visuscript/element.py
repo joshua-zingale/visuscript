@@ -40,7 +40,7 @@ class Element(Drawable):
                  stroke: Color | ConfigurationDeference = DEFER_TO_CONFIG,
                  stroke_width: float | ConfigurationDeference = DEFER_TO_CONFIG,
                  fill: Color | ConfigurationDeference = DEFER_TO_CONFIG,
-                 opacity: float | None = 1.0,
+                 opacity: float = 1.0,
                  **kwargs):
         
         stroke = config.drawing_stroke if stroke is DEFER_TO_CONFIG else stroke
@@ -67,13 +67,17 @@ class Element(Drawable):
 
 
     @property
-    def opacity(self) -> float | None:
+    def opacity(self) -> float:
         return self._opacity
 
     @opacity.setter
-    def opacity(self, value: float | None):
+    def opacity(self, value: float):
         for element in self:
             element._opacity = value
+
+    def set_opacity(self, value: float) -> Self:
+        self.opacity = value
+        return self
     
     def set_global_transform(self, transform: Transform) -> Self:
         """
@@ -388,9 +392,9 @@ class Drawing(Element, Segment):
         return svg.Path(
                 d=self._path.path_str,
                 transform=self.global_transform.svg_transform,
-                stroke=self.stroke.rgb,
+                stroke=self.stroke.svg_rgb,
                 stroke_opacity=self.stroke.opacity,
-                fill=self.fill.rgb,
+                fill=self.fill.svg_rgb,
                 fill_opacity=self.fill.opacity,
                 opacity=self.opacity,
                 stroke_width=self.stroke_width).as_str()
@@ -428,9 +432,9 @@ class Circle(Drawing):
             cy = y,
             r=self.radius,
             transform=self.global_transform.svg_transform,
-            stroke=self.stroke.rgb,
+            stroke=self.stroke.svg_rgb,
             stroke_opacity=self.stroke.opacity,
-            fill=self.fill.rgb,
+            fill=self.fill.svg_rgb,
             fill_opacity=self.fill.opacity,
             stroke_width=self.stroke_width,
             opacity=self.opacity,

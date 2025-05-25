@@ -2,7 +2,7 @@ from typing import Callable, Iterable
 from abc import ABC, abstractmethod
 from visuscript.config import *
 from visuscript.drawable import Drawable
-from visuscript.element import Drawing
+from visuscript.element import Drawing, Element
 from visuscript.primatives import *
 from visuscript.segment import Path
 import numpy as np
@@ -13,10 +13,6 @@ def quintic_easing(x: float) -> float:
     return 6 * x**5 - 15 * x**4 + 10 * x**3
 def sin_easing(a: float) -> float:
     return float(1 - np.cos(a*np.pi))/2
-
-SIN_EASING_OUT_BACK_SCALING_FACTOR = 1/float(1 - np.cos(np.pi*1.1))
-def sin_easing_out_back(a: float) -> float:
-    return float(1 - np.cos(a*np.pi*1.1))*SIN_EASING_OUT_BACK_SCALING_FACTOR
 
 class LockedPropertyError(ValueError):
     def __init__(self, obj: object, property: str):
@@ -102,7 +98,7 @@ class NoAnimation(Animation):
             return True
         return False
     
-class RF(Animation):
+class RunFunction(Animation):
 
     def __init__(self, function: Callable[[], None]):
         self._function = function
@@ -276,13 +272,6 @@ class AlphaAnimation(Animation):
         """
         ...
 
-
-# class PropertyInterpolation(AlphaAnimation):
-
-#     @property
-#     @abstractmethod
-#     def 
-
 class PathAnimation(AlphaAnimation):
     def __init__(self, transform: Transform, path: Path, **kwargs):
         super().__init__(**kwargs)
@@ -307,9 +296,6 @@ class PathAnimation(AlphaAnimation):
             self._transform.translation = self._path.end
 
         self._transform.translation = self._path.point_percentage(alpha)
-
-
-
 
 class TranslationAnimation(AlphaAnimation):
     def __init__(self, transform: Transform, target_translation: Vec2 | list, **kwargs):
@@ -370,8 +356,6 @@ class RotationAnimation(AlphaAnimation):
     def update(self, alpha: float):
         self._transform.rotation = self._source_rotation * (1 - alpha) + self._target_rotation * alpha
 
-
-
 class TransformAnimation(AlphaAnimation):
     def __init__(self, transform: Transform, target: Transform, **kwargs):
         super().__init__(**kwargs)
@@ -391,11 +375,9 @@ class TransformAnimation(AlphaAnimation):
 
     def update(self, alpha: float):
         self._transform.update(self._transform * (1 - alpha) + self._target * alpha)
-    
-    
 
 class OpacityAnimation(AlphaAnimation):
-    def __init__(self, color: Color, target_opacity: float, **kwargs):
+    def __init__(self, color: Color | Element, target_opacity: float, **kwargs):
         super().__init__(**kwargs)
         self._color = color
         self._source_opacity = color.opacity
@@ -411,15 +393,26 @@ class OpacityAnimation(AlphaAnimation):
     def update(self, alpha: float):
         self._color.opacity = self._source_opacity * (1 - alpha) + self._target_opacity * alpha
 
-        
-
-class FillAnimation(AlphaAnimation):
-    def __init__(self, drawable: Drawing, target_fill: Color, **kwargs):
+class RgbAnimation(AlphaAnimation):
+    def __init__(self, color: Color, target_rgb: Vec3, **kwargs):
         super().__init__(**kwargs)
-        self._drawable = drawable
-        self._source_color = Color(drawable.fill)
-        self._target_color = Color(target_fill)
+        self._color = color
+        self._source_rgb = color.rgb
+        self._target_rgb = target_rgb
+
+        self._locker = PropertyLocker()
+        self._locker.add(self._color, "rgb")
+
+    @property
+    def locker(self) -> PropertyLocker:
+        return self._locker
 
     def update(self, alpha: float):
-        assert 0 <= alpha <= 1
-        self._drawable.fill = self._source_color * (1 - alpha) + self._target_color * alpha
+        self._color.rgb = self._source_rgb * (1 - alpha) + self._target_rgb * alpha
+
+
+def fade_in(element: Element, **kwargs) -> Animation:
+    return OpacityAnimation(element, 1.0, **kwargs)
+
+def fade_out(element: Element, **kwargs) -> Animation:
+    return OpacityAnimation(element, 0.0, **kwargs)
