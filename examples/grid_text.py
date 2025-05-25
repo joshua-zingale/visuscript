@@ -27,4 +27,4 @@ with Scene() as c:
     c.animations << RotationAnimation(c, 360)
     c.animations << RotationAnimation(im, -360)
     c.animations << RotationAnimation(r, -360)
-    # c.animations << TransformInterpolation(c, Transform(scale=2))
+    # c.animations << TransformAnimation(c, Transform(scale=2))

@@ -33,7 +33,7 @@ s.pf()
 # for frame in s.run():
 #     print_png(frame)
 
-# s.animations << TransformInterpolation(s, Transform([-100,100], scale = 4), fps = 24, duration=3)
+# s.animations << TransformAnimation(s, Transform([-100,100], scale = 4), fps = 24, duration=3)
 
 # for frame in s.run():
 #     print_png(frame)

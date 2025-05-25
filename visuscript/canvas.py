@@ -10,7 +10,7 @@ from visuscript.output import print_svg, print_png
 import numpy as np
 import svg
 
-from visuscript.animation import AnimationBundle
+from visuscript.animation import AnimationBundle, Animation
 
 
 class Canvas(Drawable):
@@ -162,16 +162,32 @@ class Canvas(Drawable):
         del self._original_elements
 
 
+class _Player:
+    def __init__(self, scene: "Scene"):
+        self._scene = scene
+    
+    def __lshift__(self, animation: Animation):
+        while animation.advance():
+            self._scene.print()
+
 class Scene(Canvas):
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         self._animation_bundle: AnimationBundle = AnimationBundle()
+        self._player = _Player(self)
+        self._original_elements = []
+        self._original_animation_bundle = []
+        super().__init__(**kwargs)
     
     @property
     def animations(self):
         #TODO check if the elements to be animated are elements of this scene and not already being animated
         return self._animation_bundle
+    
+    @property
+    def player(self):
+        return self._player
+        
         
     @property
     def frames(self) -> Generator[Self]:
@@ -185,14 +201,13 @@ class Scene(Canvas):
         for _ in self.frames:
             self.print()
 
-    pf = print_frames
-
-
     def __enter__(self) -> Self:
-        self._original_elements = copy(self._elements)
+        self._original_elements.append(copy(self._elements))
+        self._original_animation_bundle.append(self._animation_bundle)
+        self._animation_bundle = AnimationBundle()
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.print()
         self.print_frames()
-        self._elements = self._original_elements
-        del self._original_elements
+        self._elements = self._original_elements.pop()
+        self._animation_bundle = self._original_animation_bundle.pop()

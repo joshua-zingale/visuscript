@@ -11,7 +11,8 @@ from .animation import (
     TranslationAnimation,
     PathAnimation,
     RotationAnimation,
-    TransformInterpolation,
+    TransformAnimation,
     AnimationBundle,
-    AnimationSequence
+    AnimationSequence,
+    OpacityAnimation,
     )

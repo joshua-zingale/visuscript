@@ -277,14 +277,20 @@ class AlphaAnimation(Animation):
         ...
 
 
+# class PropertyInterpolation(AlphaAnimation):
+
+#     @property
+#     @abstractmethod
+#     def 
+
 class PathAnimation(AlphaAnimation):
-    def __init__(self, drawable: Drawable, path: Path, **kwargs):
+    def __init__(self, transform: Transform, path: Path, **kwargs):
         super().__init__(**kwargs)
-        self._drawable = drawable
+        self._transform = transform
         self._path = path
 
         self._locker = PropertyLocker()
-        self._locker.add(self._drawable, "transform.translation")
+        self._locker.add(self._transform, "translation")
 
     @property
     def locker(self) -> PropertyLocker:
@@ -292,99 +298,119 @@ class PathAnimation(AlphaAnimation):
     
 
     def first_advance_initializer(self):
-        self._source_translation = self._drawable.transform.translation
+        self._source_translation = self._transform.translation
 
 
     def update(self, alpha: float):
         assert 0 <= alpha <= 1
         if alpha == 1:
-            self._drawable.transform.translation = self._path.end
+            self._transform.translation = self._path.end
 
-        self._drawable.transform.translation = self._path.point_percentage(alpha)
+        self._transform.translation = self._path.point_percentage(alpha)
+
+
+
 
 class TranslationAnimation(AlphaAnimation):
-    def __init__(self, drawable: Drawable, target_translation: Vec2 | list, **kwargs):
+    def __init__(self, transform: Transform, target_translation: Vec2 | list, **kwargs):
         super().__init__(**kwargs)
-        self._drawable = drawable
+        self._transform = transform
         self._target_translation = Transform(target_translation).translation
 
         self._locker = PropertyLocker()
-        self._locker.add(self._drawable, "transform.translation")
+        self._locker.add(self._transform, "translation")
 
     @property
     def locker(self) -> PropertyLocker:
         return self._locker
 
     def first_advance_initializer(self):
-        self._source_translation = self._drawable.transform.translation
+        self._source_translation = self._transform.translation
 
     def update(self, alpha: float):
-        self._drawable.transform.translation = self._source_translation * (1 - alpha) + self._target_translation * alpha
+        self._transform.translation = self._source_translation * (1 - alpha) + self._target_translation * alpha
 
 class ScaleAnimation(AlphaAnimation):
-    def __init__(self, drawable: Drawable, target_scale: float | Vec3 | list, **kwargs):
+    def __init__(self, transform: Transform, target_scale: float | Vec3 | list, **kwargs):
         super().__init__(**kwargs)
-        self._drawable = drawable
+
+        self._transform = transform
         
         self._target_scale = target_scale
 
         self._locker = PropertyLocker()
-        self._locker.add(self._drawable, "transform.scale")
+        self._locker.add(self._transform, "scale")
 
     @property
     def locker(self) -> PropertyLocker:
         return self._locker
 
-
     def first_advance_initializer(self):
-        self._source_scale = self._drawable.transform.scale
+        self._source_scale = self._transform.scale
 
     def update(self, alpha: float):
-        self._drawable.transform.scale = self._source_scale * (1 - alpha) + self._target_scale * alpha
+        self._transform.scale = self._source_scale * (1 - alpha) + self._target_scale * alpha
 
 class RotationAnimation(AlphaAnimation):
-    def __init__(self, drawable: Drawable, target_rotation: float, **kwargs):
+    def __init__(self, transform: Transform, target_rotation: float, **kwargs):
         super().__init__(**kwargs)
-        self._drawable = drawable
+        self._transform = transform
         self._target_rotation = target_rotation
 
         self._locker = PropertyLocker()
-        self._locker.add(self._drawable, "transform.rotation")
+        self._locker.add(self._transform, "rotation")
 
     @property
     def locker(self) -> PropertyLocker:
         return self._locker
 
     def first_advance_initializer(self):
-        self._source_rotation = self._drawable.transform.rotation
+        self._source_rotation = self._transform.rotation
 
     def update(self, alpha: float):
-        self._drawable.transform.rotation = self._source_rotation * (1 - alpha) + self._target_rotation * alpha
+        self._transform.rotation = self._source_rotation * (1 - alpha) + self._target_rotation * alpha
 
 
 
-class TransformInterpolation(Animation):
-    def __init__(self, drawable: Drawable, target: Transform, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG, easing_function: Callable[[float], float] = sin_easing):
+class TransformAnimation(AlphaAnimation):
+    def __init__(self, transform: Transform, target: Transform, **kwargs):
+        super().__init__(**kwargs)
 
-        fps = config.fps if fps is DEFER_TO_CONFIG else fps
-        duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
+        self._transform = transform
+        self._target = Transform(target)
 
-        super().__init__()
-
-        animations = [
-            TranslationAnimation(drawable=drawable, target_translation=target.translation, fps=fps, duration=duration, easing_function=easing_function),
-            ScaleAnimation(drawable=drawable, target_scale=target.scale, fps = fps, duration = duration, easing_function = easing_function),
-            RotationAnimation(drawable=drawable, target_rotation=target.rotation, fps = fps, duration = duration, easing_function = easing_function)
-        ]
-
-        self._animation_bundle = AnimationBundle(*animations)
+        self._locker = PropertyLocker()
+        self._locker.add(self._transform, "*")
 
     @property
     def locker(self) -> PropertyLocker:
-        return self._animation_bundle.locker
+        return self._locker
     
-    def advance(self) -> bool:
-        return self._animation_bundle.advance()
+    def first_advance_initializer(self):
+        self._source_transform = deepcopy(self._transform)
+
+    def update(self, alpha: float):
+        self._transform.update(self._transform * (1 - alpha) + self._target * alpha)
+    
+    
+
+class OpacityAnimation(AlphaAnimation):
+    def __init__(self, color: Color, target_opacity: float, **kwargs):
+        super().__init__(**kwargs)
+        self._color = color
+        self._source_opacity = color.opacity
+        self._target_opacity = target_opacity
+
+        self._locker = PropertyLocker()
+        self._locker.add(self._color, "opacity")
+
+    @property
+    def locker(self) -> PropertyLocker:
+        return self._locker
+
+    def update(self, alpha: float):
+        self._color.opacity = self._source_opacity * (1 - alpha) + self._target_opacity * alpha
+
         
 
 class FillAnimation(AlphaAnimation):

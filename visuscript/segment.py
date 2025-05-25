@@ -155,6 +155,8 @@ class QSegment(Segment):
         self._p2_og = Vec2(x2, y2)
         self._p3_og = Vec2(x3, y3)
 
+        self._arc_length = self._get_arc_length()
+
 
     def set_offset(self, x_offset: float, y_offset: float) -> Self:
         offset = Vec2(x_offset, y_offset)
@@ -178,6 +180,9 @@ class QSegment(Segment):
 
     @property
     def arc_length(self) -> float:
+        return self._arc_length
+
+    def _get_arc_length(self) -> float:
         num_segments = 1000
         total_length = 0.0
         dt = 1.0 / num_segments

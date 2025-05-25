@@ -111,9 +111,9 @@ def Var:
         xy = self.text_element.transform.xy
 
         self._scene.animations << AnimationSequence(
-            AnimationBundle(TransformInterpolation(drawable=self.text_element, target=Transform(xy + [-comparison.width/2*scale, 0], scale=scale)),ScaleAnimation(comparison, 1)),
+            AnimationBundle(TransformAnimation(drawable=self.text_element, target=Transform(xy + [-comparison.width/2*scale, 0], scale=scale)),ScaleAnimation(comparison, 1)),
             NoAnimation(),
-            AnimationBundle(TransformInterpolation(drawable=self.text_element, target=og_transform), ScaleAnimation(comparison, 0.0)),
+            AnimationBundle(TransformAnimation(drawable=self.text_element, target=og_transform), ScaleAnimation(comparison, 0.0)),
             RF(lambda : comparison.set_parent(None))
             )
 

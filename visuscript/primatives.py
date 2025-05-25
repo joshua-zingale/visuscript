@@ -163,7 +163,7 @@ class Transform:
 
     @property
     def rotation(self):
-        return self._rotation
+        return deepcopy(self._rotation)
     
     @rotation.setter
     def rotation(self, value: float):
@@ -184,7 +184,7 @@ class Transform:
 
     @property
     def scale(self) -> Vec3:
-        return self._scale
+        return deepcopy(self._scale)
     
     @scale.setter
     def scale(self, value: int | float | Collection[float]):
@@ -261,6 +261,11 @@ class Transform:
     def interpolate(self, other: Self, alpha: float):
         np.clip(alpha, 0.0, 1.0)
         return self * (1-alpha) + other * alpha
+    
+    def update(self, other: Self):
+        self.translation = other.translation
+        self.scale = other.scale
+        self.rotation = other.rotation
     
     @property
     def inv(self):
