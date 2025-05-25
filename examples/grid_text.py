@@ -2,7 +2,7 @@ from visuscript import *
 from random import choice
 from visuscript.config import config
 
-config.canvas_output = OutputFormat.SVG
+config.canvas_output_format = OutputFormat.SVG
 config.canvas_color = 'off_white'
 config.animation_duration = 1.5
 

@@ -21,7 +21,8 @@ class Canvas(Drawable):
                  logical_width: int | ConfigurationDeference = DEFER_TO_CONFIG,
                  logical_height: int | ConfigurationDeference = DEFER_TO_CONFIG,
                  color: str | Color | ConfigurationDeference = DEFER_TO_CONFIG,
-                 output: OutputFormat | ConfigurationDeference = DEFER_TO_CONFIG,
+                 output_format: OutputFormat | ConfigurationDeference = DEFER_TO_CONFIG,
+                 output_stream: ConfigurationDeference = DEFER_TO_CONFIG,
                  **kwargs):
         
 
@@ -31,7 +32,8 @@ class Canvas(Drawable):
         logical_width = config.canvas_logical_width if logical_width is DEFER_TO_CONFIG else logical_width
         logical_height = config.canvas_logical_height if logical_height is DEFER_TO_CONFIG else logical_height
         color = config.canvas_color if color is DEFER_TO_CONFIG else color
-        output = config.canvas_output if output is DEFER_TO_CONFIG else output
+        output_format = config.canvas_output_format if output_format is DEFER_TO_CONFIG else output_format
+        output_stream = config.canvas_output_stream if output_stream is DEFER_TO_CONFIG else output_stream
         
         assert width/height == logical_width/logical_height and width/logical_width == height/logical_height
 
@@ -44,7 +46,8 @@ class Canvas(Drawable):
 
         self._elements: list[Element] = [] if elements is None else list(elements)
         self.color: Color = Color(color)
-        self._output = output
+        self._output_format = output_format
+        self._output_stream = output_stream
 
         
     
@@ -146,10 +149,10 @@ class Canvas(Drawable):
                        ]).as_str()
 
     def print(self):
-        if self._output == OutputFormat.SVG:
-            print_svg(self)
-        elif self._output == OutputFormat.PNG:
-            print_png(self)
+        if self._output_format == OutputFormat.SVG:
+            print_svg(self, file=self._output_stream)
+        elif self._output_format == OutputFormat.PNG:
+            print_png(self, file=self._output_stream)
         else:
             raise ValueError("Invalid image output format")
 

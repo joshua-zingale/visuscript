@@ -1,6 +1,7 @@
 from visuscript.constants import Anchor, OutputFormat
 from visuscript.primatives import Color
 from typing import TypeAlias
+import sys
 
 class _AnimationConfig:
     def __init__(self):
@@ -13,8 +14,9 @@ class _AnimationConfig:
         self.canvas_height = 270
         self.canvas_logical_width = 480
         self.canvas_logical_height = 270
-        self.canvas_output = OutputFormat.SVG
+        self.canvas_output_format = OutputFormat.SVG
         self.canvas_color = Color('dark_slate', 1)
+        self.canvas_output_stream = sys.stdout
 
         # Drawing
         self.drawing_stroke = Color('off_white', 1)

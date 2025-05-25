@@ -2,7 +2,7 @@ from data_structures import TwoPointerArray
 from visuscript import *
 from visuscript.config import config
 
-config.canvas_output = OutputFormat.PNG
+config.canvas_output_format = OutputFormat.PNG
 
 def main():
     s = Scene()

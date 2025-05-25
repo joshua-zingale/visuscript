@@ -3,19 +3,15 @@ from visuscript.config import *
 from visuscript.animated_collection import AnimatedBinaryTreeArray
 
 def main():
-    # config.canvas_width = 1920
-    # config.canvas_height = 1080
+
     config.canvas_color='off_white'
     config.drawing_stroke='dark_slate'
     config.drawing_fill=Color('dark_slate', 0)
     config.text_fill=Color('dark_slate', 1)
     config.animation_duration = 1
-    config.fps = 30
     radius = 16
 
     scene = Scene()
-
-    
 
     with scene as s:
 

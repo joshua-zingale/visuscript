@@ -1,11 +1,18 @@
 #!/bin/bash
 
+set -euo pipefail
+
 frame_rate="${1:-30}"
-output_file="output.mp4" # You can make this an argument too if needed
+output_file="${2:-output.mp4}" # You can make this an argument too if needed
 
 rm -f output.pdf
 temp_dir=$(mktemp -d)
 counter=1
+
+cleanup() {
+  rm -rf "$temp_dir"
+}
+trap cleanup EXIT
 
 while IFS= read -r svg_blob; do
   echo "$svg_blob" > "$temp_dir/frame_$(printf "%09d" "$counter").svg"
@@ -26,7 +33,5 @@ done
 
 ffmpeg -framerate "$frame_rate" -i $temp_dir/frame_%09d.png \
        -c:v libx264 -pix_fmt yuv420p \
-       "$output_file" -y
-
-
-rm -rf "$temp_dir"
+       "$output_file" -y \
+       -hide_banner -loglevel warning
