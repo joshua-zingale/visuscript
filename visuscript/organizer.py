@@ -40,7 +40,7 @@ class GridOrganizer(Organizer):
         else:
             raise ValueError("`sizes` must be of length 2 or 3")
 
-        self._transform = transform
+        self._transform = Transform() if transform is None else Transform(transform)
 
         self._shape = shape
         self._sizes = sizes
