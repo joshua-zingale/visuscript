@@ -11,5 +11,6 @@ setup(
     },
     scripts=[
         'scripts/visuscript-animate',
+        'scripts/visuscript-slideshow'
     ],
 )

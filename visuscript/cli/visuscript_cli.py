@@ -10,6 +10,8 @@ import os
 
 from visuscript.config import config
 
+MODES = ["video", "slideshow"]
+
 def main():
 
     parser = ArgumentParser(__doc__)
@@ -22,6 +24,7 @@ def main():
     parser.add_argument("--logical_height", default=270, type=int,help="Logical height of the output video.")
     parser.add_argument("--downscale", default=1, type=int,help="Both the output video's dimensions are scaled down by this factor.")
     parser.add_argument("--fps", default=30, type=int,help="Frames Per Second of the output video file.")
+    parser.add_argument("--mode", default="video", choices=MODES)
 
 
     args = parser.parse_args()
@@ -36,16 +39,28 @@ def main():
 
     fps: int = args.fps
 
+    mode: str = args.mode
+
     if not os.path.exists(input_filename):
         print(f"visuscript error: File \"{input_filename}\" does not exists.", file=sys.stderr)
         exit()
 
 
-    animate_proc = subprocess.Popen(
-        ["visuscript-animate", f"{fps}", f"{output_filename}"],
-        stdin=subprocess.PIPE,
-        text=True
-    )
+    if mode == "video":
+        animate_proc = subprocess.Popen(
+            ["visuscript-animate", f"{fps}", f"{output_filename}"],
+            stdin=subprocess.PIPE,
+            text=True
+        )
+    elif mode == "slideshow":
+        animate_proc = subprocess.Popen(
+            ["visuscript-slideshow", f"{output_filename}"],
+            stdin=subprocess.PIPE,
+            text=True
+        )
+    else:
+        print(f"The mode must be one of {MODES}", file=sys.stderr)
+
 
     config.canvas_width = width
     config.canvas_height = height

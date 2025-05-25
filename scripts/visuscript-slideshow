@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euo pipefail
+
+output_file="${1:-output.pdf}"
+
+rm -f $output_file
+temp_dir=$(mktemp -d)
+
+cleanup() {
+  rm -rf "$temp_dir"
+}
+trap cleanup EXIT
+
+counter=1
+
+while IFS= read -r svg_blob; do
+  echo "$svg_blob" > "$temp_dir/temp_$(printf "%09d" "$counter").svg"
+  counter=$((counter + 1))
+done
+
+rsvg-convert -f pdf "$temp_dir"/temp_*.svg -o "$output_file"
