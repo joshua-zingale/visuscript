@@ -15,11 +15,14 @@ def main():
 
     with scene as s:
 
-        with s as s:
-            text = Text("Binary Trees").set_opacity(0.0)
-            s << text
-            s.player << fade_in(text)
-            s.player << fade_out(text)
+        for _ in range(3):
+            with s as s:
+                text = Text("Binary Trees", font_size=50).set_opacity(0.0)
+                s << text
+                s.player << fade_in(text)
+                s.player << TransformAnimation(text.transform, Transform(s.xy(0,0) + [text.width/2, text.height/2]))
+                s.player << fade_out(text)
+
 
         arr = AnimatedBinaryTreeArray([0,1,2,3,4,5], radius=radius, transform=[0,-75])
 

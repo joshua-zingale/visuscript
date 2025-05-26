@@ -3,7 +3,7 @@
 set -euo pipefail
 
 frame_rate="${1:-30}"
-output_file="${2:-output.mp4}" # You can make this an argument too if needed
+output_file="${2:-output.mp4}"
 
 rm -f output.pdf
 temp_dir=$(mktemp -d)
@@ -14,33 +14,34 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Step 1: Read SVG blobs from stdin and write to files
 while IFS= read -r svg_blob; do
   echo "$svg_blob" > "$temp_dir/frame_$(printf "%09d" "$counter").svg"
   counter=$((counter + 1))
 done
 
-total_frames=$(find "$temp_dir" -name 'frame_*.svg' | wc -l)
-converted=0
+# Step 2: Parallel conversion
+export temp_dir  # export so subprocesses can use it
 
-
-find "$temp_dir" -name 'frame_*.svg' | sort -V | while read -r svg_file; do
-  # Extract the base filename (e.g., "frame_00001") without the extension
+convert_svg_to_png() {
+  svg_file="$1"
   base_name=$(basename "$svg_file" .svg)
-  
-  # Construct the output PNG filename
   png_file="$temp_dir/$base_name.png"
-  
-  # Convert the current SVG file to a PNG file
   rsvg-convert --format=png --output="$png_file" "$svg_file"
+}
 
-  converted=$((converted + 1))
-  printf "\rConverting frames: %d / %d" "$converted" "$total_frames"
-done
+export -f convert_svg_to_png
 
-echo ""
+total_frames=$(find "$temp_dir" -name 'frame_*.svg' | wc -l)
 
+# Use find + sort + xargs to parallelize
+find "$temp_dir" -name 'frame_*.svg' | sort -V | \
+  xargs -n 1 -P "$(sysctl -n hw.ncpu)" -I {} bash -c 'convert_svg_to_png "$@"' _ {}
 
-ffmpeg -framerate "$frame_rate" -i $temp_dir/frame_%09d.png \
+echo "Converted $total_frames frames."
+
+# Step 3: Generate video
+ffmpeg -framerate "$frame_rate" -i "$temp_dir/frame_%09d.png" \
        -c:v libx264 -pix_fmt yuv420p \
        "$output_file" -y \
        -hide_banner -loglevel warning
