@@ -72,6 +72,11 @@ class Text(Element):
      def text(self, value: str):
           self._text = value
 
+     @update_size
+     def set_text(self, text: str) -> Self:
+          self._text = text
+          return self
+
 
      @property
      def font_size(self) -> float:

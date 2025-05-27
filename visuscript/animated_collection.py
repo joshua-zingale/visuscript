@@ -20,6 +20,11 @@ class Var:
 
     def __init__(self, value, *, type_: type | None = None):
 
+        if isinstance(value, Var):
+            self._value = value.value
+            self._type = value._type
+            return
+
         if type_ is None:
             type_ = type(value)
 
@@ -29,10 +34,6 @@ class Var:
             self._value = type_(value)
     
         self._type = type_
-
-    @property
-    def drawable(self) -> Text:
-        return self._text
     
     @property
     def value(self):
@@ -90,7 +91,10 @@ class Var:
         return self.value < other.value
     
     def __str__(self):
-        return str(self.value)
+        return f"Var({self.value}, type={self._type.__name__})"
+    
+    def __repr__(self):
+        return str(self)
 
 NilVar = Var(None)
 """A Var representing no value."""
@@ -128,7 +132,7 @@ class Node(VarContainer):
 
         self._var = var
 
-        self._element = Circle(radius).with_child(Text(str(self._var), font_size=radius))
+        self._element = Circle(radius).with_child(Text(str(self._var.value), font_size=radius))
 
     @property
     def var(self) -> Var:
@@ -141,7 +145,7 @@ class Node(VarContainer):
 class TextContainer(VarContainer):
     def __init__(self, *, var: Var, font_size: float):
         self._var = var
-        self._element = Text(str(self._var), font_size=font_size)
+        self._element = Text(str(self._var.value), font_size=font_size)
 
     @property
     def var(self) -> Var:
@@ -235,6 +239,9 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
             
         raise ValueError(f"Var {var} is not present in this AnimatedList")
     
+    def container_at(self, index: int) -> VarContainer:
+        return self._list[index]
+    
 
     def __len__(self):
         return len(self._list)
@@ -248,7 +255,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         
     def __setitem__(self, index: int | slice, value: Var):
         if not isinstance(value, Var):
-            value = Var(value)
+            raise TypeError(f"Cannot set value of type {type(value).__name__}: must be of type Var")
         self._list[index] = self.new_container_for(value)
 
     def __delitem__(self, index: int | slice):
@@ -256,7 +263,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
 
     def insert(self, index: int, value: Var, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
         if not isinstance(value, Var):
-            value = Var(value)
+            raise TypeError(f"Cannot insert value of type {type(value).__name__}: must be of type Var")
         self._list.insert(index, self.new_container_for(value))
         return self.organize(duration=duration)
 
@@ -290,6 +297,11 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     def extend(self, values: Iterable, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
         super().extend(values)
         return self.organize(duration=duration)
+    
+
+    def is_index(self, var: Var) -> int:
+        return list(map(lambda x: x is var, map(lambda x: x.var, self._list))).index(True)
+
 
 class AnimatedArray(AnimatedList):
 
@@ -331,16 +343,20 @@ class AnimatedBinaryTreeArray(AnimatedList):
         n = Node(var=var, radius=self._radius)
         n.element.set_transform(self.transform)
         return n
-    
 
     def get_parent_index(self, var: Var):
-        return int((self.index(var) + 1)//2) - 1
+        return int((self.is_index(var) + 1)//2) - 1
     
     def get_left_index(self, var: Var):
-        return int((self.index(var) + 1) * 2) - 1 
+        return int((self.is_index(var) + 1) * 2) - 1 
     
     def get_right_index(self, var: Var):
-        return self.get_left_index(self, var) + 1
+        return self.get_left_index(var) + 1
+    
+
+    @property
+    def root(self) -> Var:
+        return self[0]
     
 
     def get_parent(self, var: Var) -> Var:        
@@ -367,3 +383,7 @@ class AnimatedBinaryTreeArray(AnimatedList):
             return NilVar
         
         return self[idx]
+    
+    # def insert(self, index, value, *, duration = DEFER_TO_CONFIG):
+    #     self.extend([None]*max(index - len(self), 0))
+    #     return super().insert(index, value, duration=duration)

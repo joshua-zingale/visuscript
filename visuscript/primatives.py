@@ -169,6 +169,15 @@ class Transform:
     def rotation(self, value: float):
         self._rotation = value
 
+    def rotate(self, vec3: Vec3, degrees: float) -> Vec3:
+        r_matrix = np.array([
+            [np.cos(degrees), -np.sin(degrees),0],
+            [np.sin(degrees), np.cos(degrees), 0],
+            [0, 0, 1]
+        ])
+
+        return Vec3(*(r_matrix @ vec3))
+
     @property
     def translation(self) -> Vec3:
         return deepcopy(self._translation)
@@ -314,7 +323,7 @@ class Color():
         self._rgb: np.ndarray
 
         if isinstance(color, Color):
-            self._rgb = color._rgb
+            self._rgb = deepcopy(color._rgb)
         elif isinstance(color, str) and color[:3] == "rgb":
             self._rgb = np.array(literal_eval(color[4:])).astype(int)
         elif isinstance(color, str):
@@ -324,6 +333,15 @@ class Color():
             self._rgb = np.array(color, dtype=int)
         else:
             raise TypeError(f"{type(color)} is not accepted.")
+        
+
+    def set_opacity(self, opacity: float) -> Self:
+        self.opacity = opacity
+        return self
+    
+    def set_rgb(self, rgb: Tuple[int,int,int]) -> Self:
+        self.rgb = rgb
+        return self
 
 
     @property
@@ -332,8 +350,7 @@ class Color():
     
     @rgb.setter
     def rgb(self, value: Tuple[int, int, int]):
-        value = tuple(value)
-        self._rgb[:] = value
+        self._rgb[:] = (*value,)
 
     @property
     def svg_rgb(self):

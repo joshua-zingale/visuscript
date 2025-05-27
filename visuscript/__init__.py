@@ -6,6 +6,7 @@ from .organizer import GridOrganizer
 from .text import Text
 from .segment import Path
 from .constants import Anchor, OutputFormat
+from .animated_collection import Var, NilVar
 from .animation import (
     ScaleAnimation,
     TranslationAnimation,
@@ -16,6 +17,8 @@ from .animation import (
     AnimationSequence,
     OpacityAnimation,
     NoAnimation,
+    RunFunction,
+    RgbAnimation,
     fade_in,
     fade_out
     )

@@ -9,6 +9,8 @@ class Anchor(IntEnum):
     TOP = auto()
     TOP_RIGHT = auto()
     RIGHT = auto()
+    BOTTOM_RIGHT = auto()
+    BOTTOM = auto()
     BOTTOM_LEFT = auto()
     LEFT = auto()
     CENTER = auto()

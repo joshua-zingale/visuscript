@@ -1,4 +1,4 @@
-from visuscript.drawable import Drawable
+from visuscript.drawable import Drawable, Shape
 from visuscript.constants import Anchor
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 from .primatives import *
@@ -227,13 +227,9 @@ class Element(Drawable):
             element._deleted = True
             element.set_parent(None)
 
-    # # TODO Fix how canvas 
-    # @property
-    # def global_shape(self):
-    #     if self._parent is not None:
-    #         return Shape(self, external_transform=self._parent.global_transform)
-    #     else:
-    #         return self.shape
+    @property
+    def global_shape(self):
+        return Shape(self, self.global_transform)
 
 
 class Image(Element):

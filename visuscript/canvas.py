@@ -122,9 +122,7 @@ class Canvas(Drawable):
     def height(self) -> float:
         return self._height
     
-    def set_zoom(self, zoom: Transform):
-        self.zoom = zoom
-        return self
+
 
     def draw(self) -> str:
 
@@ -210,7 +208,6 @@ class Scene(Canvas):
         self._animation_bundle = AnimationBundle()
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.print()
         self.print_frames()
         self._elements = self._original_elements.pop()
         self._animation_bundle = self._original_animation_bundle.pop()

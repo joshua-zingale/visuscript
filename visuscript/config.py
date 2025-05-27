@@ -15,18 +15,46 @@ class _AnimationConfig:
         self.canvas_logical_width = 480
         self.canvas_logical_height = 270
         self.canvas_output_format = OutputFormat.SVG
-        self.canvas_color = Color('dark_slate', 1)
+        self._canvas_color = Color('dark_slate', 1)
         self.canvas_output_stream = sys.stdout
 
         # Drawing
-        self.drawing_stroke = Color('off_white', 1)
+        self._drawing_stroke = Color('off_white', 1)
         self.drawing_stroke_width = 1
-        self.drawing_fill = Color('off_white', 0.0)
+        self._drawing_fill = Color('off_white', 0.0)
 
         # Text
         self.text_font_size = 16
         self.text_font_family = 'arial'
-        self.text_fill = Color('off_white', 1)
+        self._text_fill = Color('off_white', 1)
+
+    @property
+    def canvas_color(self):
+        return Color(self._canvas_color)
+    @canvas_color.setter
+    def canvas_color(self, value: Color):
+        self._canvas_color = Color(value)
+
+    @property
+    def drawing_stroke(self):
+        return Color(self._drawing_stroke)
+    @drawing_stroke.setter
+    def drawing_stroke(self, value: Color):
+        self._drawing_stroke = Color(value)
+
+    @property
+    def drawing_fill(self):
+        return Color(self._drawing_fill)
+    @canvas_color.setter
+    def drawing_fill(self, value: Color):
+        self._drawing_fill = Color(value)
+
+    @property
+    def text_fill(self):
+        return Color(self._text_fill)
+    @text_fill.setter
+    def text_fill(self, value: Color):
+        self._text_fill = Color(value)
 
 
 
