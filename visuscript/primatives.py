@@ -169,10 +169,10 @@ class Transform:
     def rotation(self, value: float):
         self._rotation = value
 
-    def rotate(self, vec3: Vec3, degrees: float) -> Vec3:
+    def rotate(self, vec3: Vec3) -> Vec3:
         r_matrix = np.array([
-            [np.cos(degrees), -np.sin(degrees),0],
-            [np.sin(degrees), np.cos(degrees), 0],
+            [np.cos(self.rotation*np.pi/180), -np.sin(self.rotation*np.pi/180),0],
+            [np.sin(self.rotation*np.pi/180), np.cos(self.rotation*np.pi/180), 0],
             [0, 0, 1]
         ])
 

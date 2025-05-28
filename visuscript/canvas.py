@@ -122,16 +122,15 @@ class Canvas(Drawable):
     def height(self) -> float:
         return self._height
     
-
-
+    
     def draw(self) -> str:
 
-        translation = self.transform.translation*self._logical_scaling
+        inv_rotation = Transform(rotation=-self.transform.rotation)
 
         transform = Transform(
-            translation = translation * self._logical_scaling*self.transform.scale,
+            translation = -inv_rotation(self.transform.translation*self.transform.scale*self._logical_scaling),
             scale = self.transform.scale * self._logical_scaling,
-            rotation = self.transform.rotation
+            rotation = -self.transform.rotation
         )
         
         background = Rect(width=self.width, height=self.height, fill = self.color, stroke=self.color, anchor=Anchor.TOP_LEFT).translate(*self.anchor_offset)
@@ -139,7 +138,6 @@ class Canvas(Drawable):
         # removed deleted elements
         self._elements = list(filter(lambda x: not x.deleted, self._elements))
         
-        # head = Pivot().set_transform(transform).add_children(*self._elements)
         return svg.SVG(
             viewBox=svg.ViewBoxSpec(*self.anchor_offset, self.width, self.height),
             elements= [background.draw(),
