@@ -10,7 +10,7 @@ from visuscript.primatives import Transform
 
 from abc import ABC, abstractmethod
 from visuscript.primatives import Vec2
-from typing import Collection, Iterable, MutableSequence
+from typing import Collection, Iterable, MutableSequence, Self
 
 
 import numpy as np
@@ -164,7 +164,7 @@ class _AnimatedCollectionElement(Pivot):
 
     @property
     def _children(self):
-        return self._animated_collection.elements
+        return self._animated_collection.all_elements
     
     @_children.setter
     def _children(self, value):
@@ -200,9 +200,31 @@ class AnimatedCollection(Collection[Var]):
     def elements(self) -> Iterable[Element]:
         ...
 
+
+    @property
+    def all_elements(self) -> Iterable[Element]:
+        yield from self.elements
+        yield from self.auxiliary_elements
+
     @property
     def structure_element(self):
         return _AnimatedCollectionElement(self)
+    
+    @property
+    def auxiliary_elements(self) -> list[Element]:
+        if not hasattr(self, "_auxiliary_elements"):
+            self._auxiliary_elements: list[Element] = []
+        return self._auxiliary_elements
+    
+
+    def add_auxiliary_element(self, element: Element) -> Self:
+        self.auxiliary_elements.append(element)
+        return self
+    
+    def remove_auxiliary_element(self, element: Element) -> Self:
+        self.auxiliary_elements.remove(element)
+        return self
+
 
 
 class AnimatedList(AnimatedCollection, MutableSequence[Var]):

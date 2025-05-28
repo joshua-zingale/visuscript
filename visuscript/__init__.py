@@ -1,6 +1,6 @@
 from .element import Circle, Rect, Image, Pivot, Drawing
 from .drawable import Drawable
-from .primatives import Transform
+from .primatives import Transform, Color, Vec2, Vec3
 from .canvas import Canvas, Scene
 from .organizer import GridOrganizer
 from .text import Text

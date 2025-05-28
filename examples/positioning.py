@@ -4,9 +4,10 @@ from visuscript.animation import sin_easing
 import sys
 config.canvas_color = "off_white"
 config.drawing_stroke = "dark_slate"
+config.drawing_fill = "off_white"
 config.text_fill = "dark_slate"
 
-with Scene().set_anchor(Anchor.CENTER) as c:
+with Canvas().set_anchor(Anchor.CENTER) as c:
     c << (r:=Rect(50,50, anchor=Anchor.CENTER)).translate(50,50)
 
     c << (less_than := Text(f"<", font_size=30, anchor=Anchor.RIGHT)
@@ -16,6 +17,8 @@ with Scene().set_anchor(Anchor.CENTER) as c:
 
     c.set_transform(Transform(translation=r.transform.translation,rotation=0, scale=1))
 
-    c.animations << RotationAnimation(c.transform, 360)
-    c.animations << RotationAnimation(r.transform, 360)
-    c.animations << ScaleAnimation(c.transform, 2, easing_function=lambda a: sin_easing(3*a))
+    c << Circle(45).set_transform(r.transform).set_fill(Color('dark_slate', opacity=0.0))
+
+    # c.animations << RotationAnimation(c.transform, 360)
+    # c.animations << RotationAnimation(r.transform, 360)
+    # c.animations << ScaleAnimation(c.transform, 2, easing_function=lambda a: sin_easing(3*a))

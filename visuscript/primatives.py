@@ -207,6 +207,20 @@ class Transform:
             self._scale.xy = value
         else:
             self._scale = value
+
+
+    def set_translation(self, translation: Vec2 | Vec3) -> Self:
+        self.translation = translation
+        return self
+    
+    def set_scale(self, scale: int | float | Vec2 | Vec3) -> Self:
+        self.scale = scale
+        return self
+    
+    def set_rotation(self, rotation: int | float) -> Self:
+        self.rotation = rotation
+        return self
+
     
 
     @property

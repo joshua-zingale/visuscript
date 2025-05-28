@@ -45,7 +45,7 @@ class _AnimationConfig:
     @property
     def drawing_fill(self):
         return Color(self._drawing_fill)
-    @canvas_color.setter
+    @drawing_fill.setter
     def drawing_fill(self, value: Color):
         self._drawing_fill = Color(value)
 

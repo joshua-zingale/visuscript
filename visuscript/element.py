@@ -430,9 +430,9 @@ class Circle(Drawing):
             transform=self.global_transform.svg_transform,
             stroke=self.stroke.svg_rgb,
             stroke_opacity=self.stroke.opacity,
+            stroke_width=self.stroke_width,
             fill=self.fill.svg_rgb,
             fill_opacity=self.fill.opacity,
-            stroke_width=self.stroke_width,
             opacity=self.opacity,
             ).as_str()
 
