@@ -1,7 +1,8 @@
 from visuscript import *
+from visuscript.element import Element
 import numpy as np
 from visuscript.config import *
-from visuscript.animated_collection import AnimatedBinaryTreeArray
+from visuscript.animated_collection import AnimatedBinaryTreeArray, TextContainer
 
 def insert(var: Var, tree: AnimatedBinaryTreeArray) -> Var:
     # Get insert index
@@ -19,29 +20,27 @@ def insert(var: Var, tree: AnimatedBinaryTreeArray) -> Var:
 
     return var
 
-def compare(var1: Var, var2: Var, tree: AnimatedBinaryTreeArray):
+def compare(operator: str, element1: Element, element2: Element, is_true: bool):
 
-    element1 = tree.element_for(var1)
-    element2 = tree.element_for(var2)
 
-    if var1 > var2:
+    if is_true:
         color = 'green'
         text = "✓"
     else:
         color = 'red'
         text = "X"
 
-    less_than = (Text(f"<", font_size=element1.height, anchor=Anchor.RIGHT, fill=color).translate(*(element1.shape.left*1.5))
-                    .add_child(question_mark := Text(text, font_size=element1.height/2, fill=color).set_anchor(Anchor.BOTTOM))).set_opacity(0.0)
+    less_than = (Text(f"{operator}", font_size=element2.height, anchor=Anchor.RIGHT, fill=color).translate(*(element2.shape.left*1.5))
+                    .add_child(question_mark := Text(text, font_size=element2.height/2, fill=color).set_anchor(Anchor.BOTTOM))).set_opacity(0.0)
     question_mark.translate(*(less_than.shape.top*1.25))
 
-    element1.add_child(less_than)
+    element2.add_child(less_than)
 
     sequence = AnimationSequence()
 
     sequence << AnimationBundle(
-        TranslationAnimation(element1.transform, element2.transformed_shape.right + (element1.shape.right - element1.shape.left)/1.25),
-        ScaleAnimation(element1.transform, 0.5),
+        TranslationAnimation(element2.transform, element1.transformed_shape.right + (element2.shape.right - element2.shape.left)/1.25),
+        ScaleAnimation(element2.transform, 0.5),
     )
 
     sequence << AnimationBundle(
@@ -50,7 +49,7 @@ def compare(var1: Var, var2: Var, tree: AnimatedBinaryTreeArray):
 
     sequence << NoAnimation()
 
-    sequence << RunFunction(lambda : element1.remove_child(less_than))
+    sequence << RunFunction(lambda : element2.remove_child(less_than))
 
     return sequence
 
@@ -67,9 +66,9 @@ def animate_insert(var: Var, tree: AnimatedBinaryTreeArray):
     element.set_transform(Transform([0,-150], scale=0))
 
     while not node is var:
-        sequence << compare(var, node, tree)
+        sequence << compare("<", tree.element_for(node), element, node < var)
 
-        if var > node:
+        if node < var:
             node = tree.get_right(node)
         else:
             node = tree.get_left(node)
@@ -86,10 +85,10 @@ def magnifying_glass(radius = 32, length = 32):
     start = radius * unit
     end = (radius + length) * unit
 
-    return Circle(radius=radius).add_child(Drawing(path=Path().M(*start).L(*end)))
+    return Circle(radius=radius).add_child(Drawing(path=Path().M(*start).L(*end))).set_fill(Color('white', opacity=0.0125))
 
 
-def animate_find(var: Var, tree: AnimatedBinaryTreeArray):
+def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
 
     sequence = AnimationSequence()
 
@@ -97,21 +96,56 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray):
 
     glass = magnifying_glass().set_transform(tree.element_for(node).transform).set_opacity(0.0)
 
+    found_text = f"{var.value} ="
+    not_found_text = f"{var.value} ≠"
+    go_right_text = f"< {var.value} →"
+    go_left_text = f"< {var.value} ←"
+    glass.add_children(
+        check := Text(not_found_text, fill=Color('red', 0.0)).set_anchor(Anchor.RIGHT).translate(*glass.shape.left + font_size*LEFT/2),
+        comparison := Pivot().set_opacity(0.0).add_children(
+            less_than := Text("", font_size=font_size).set_anchor(Anchor.LEFT).translate(*glass.shape.right + font_size*RIGHT/2),
+            less_than_check := Text("", font_size=font_size/2).set_anchor(Anchor.LEFT).translate(*glass.shape.right + UP*font_size/2 + font_size*RIGHT/2),
+        )
+        )
+
     tree.add_auxiliary_element(glass)
     sequence << fade_in(glass)
 
     while True:
 
         if node == var:
+            sequence << RunFunction(lambda: check.set_text(found_text))
+            sequence << RunFunction(lambda: check.set_fill(Color('green', 0.0)))
+            sequence << OpacityAnimation(check.fill, 1.0)
             break
-
-        if var > node:
-            node = tree.get_right(node)
         else:
+            sequence << OpacityAnimation(check.fill, 1.0)
+
+        if node < var:
+            node = tree.get_right(node)
+            sequence << AnimationBundle(
+                RunFunction(lambda: less_than_check.set_fill('green')),
+                RunFunction(lambda: less_than_check.set_text("✓")),
+                RunFunction(lambda: less_than.set_fill("green")),
+                RunFunction(lambda: less_than.set_text(go_right_text)),
+                OpacityAnimation(comparison, 1.0),
+            )
+        else:
+            sequence << AnimationBundle(
+                RunFunction(lambda: less_than_check.set_fill('red')),
+                RunFunction(lambda: less_than_check.set_text("X")),
+                RunFunction(lambda: less_than.set_fill("red")),
+                RunFunction(lambda: less_than.set_text(go_left_text)),
+                OpacityAnimation(comparison, 1.0),
+            )
             node = tree.get_left(node)
 
         if not node is NilVar:
-            sequence << TransformAnimation(glass.transform, tree.element_for(node).transform)
+            sequence << AnimationBundle(
+                TransformAnimation(glass.transform, tree.element_for(node).transform),
+                OpacityAnimation(check.fill, 0.0),
+                OpacityAnimation(comparison, 0.0)
+                )
 
         if node.is_none:
             break
@@ -135,10 +169,13 @@ def main():
     with scene as s:
             
 
-        text = Text("Binary Search Trees", font_size=50).set_opacity(0.0)
+        text = Text("Binary Search Trees", font_size=25).set_opacity(0.0)
         s << text
         s.player << fade_in(text)
-        s.player << TransformAnimation(text.transform, Transform(s.xy(0,0) + [text.width/3, text.height/3], scale=2/3))
+        s.player << AnimationBundle(
+            RunFunction(lambda: text.set_anchor(Anchor.TOP_LEFT, keep_position=True)),
+            TransformAnimation(text.transform, Transform(s.xy(0.01,0.01)))
+            )
 
 
         tree = AnimatedBinaryTreeArray([Var(None) for _ in range(15)], radius=radius, transform=[0,-75])

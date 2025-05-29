@@ -1,4 +1,5 @@
 from enum import IntEnum, auto
+from visuscript.primatives import *
 
 class Anchor(IntEnum):
     """
@@ -22,3 +23,11 @@ class OutputFormat(IntEnum):
     """
     SVG = auto()
     PNG = auto()
+
+
+UP: Vec2 = Vec2(0,-1)
+RIGHT: Vec2 = Vec2(1,0)
+DOWN: Vec2 = Vec2(0,1)
+LEFT: Vec2 = Vec2(-1,0)
+BACKWARD: Vec3 = Vec3(0,0,-1)
+FORWARD: Vec3 = Vec3(0,0,1)

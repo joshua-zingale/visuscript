@@ -102,13 +102,16 @@ class RunFunction(Animation):
 
     def __init__(self, function: Callable[[], None]):
         self._function = function
+        self._has_been_run = False
 
     @property
     def locker(self) -> PropertyLocker:
         return PropertyLocker()
 
     def advance(self) -> bool:
-        self._function()
+        if not self._has_been_run:
+            self._function()
+            self._has_been_run = True
         return False
     
 class AnimationSequence(Animation):
@@ -380,7 +383,6 @@ class OpacityAnimation(AlphaAnimation):
     def __init__(self, color: Color | Element, target_opacity: float, **kwargs):
         super().__init__(**kwargs)
         self._color = color
-        self._source_opacity = color.opacity
         self._target_opacity = target_opacity
 
         self._locker = PropertyLocker()
@@ -389,6 +391,9 @@ class OpacityAnimation(AlphaAnimation):
     @property
     def locker(self) -> PropertyLocker:
         return self._locker
+    
+    def first_advance_initializer(self):
+        self._source_opacity = self._color.opacity
 
     def update(self, alpha: float):
         self._color.opacity = self._source_opacity * (1 - alpha) + self._target_opacity * alpha
@@ -397,7 +402,7 @@ class RgbAnimation(AlphaAnimation):
     def __init__(self, color: Color, target_rgb: str | Tuple[int, int, int], **kwargs):
         super().__init__(**kwargs)
         self._color = color
-        self._source_rgb = color.rgb
+        
 
         if isinstance(target_rgb, str):
             target_rgb = Color.PALETTE[target_rgb]
@@ -409,6 +414,9 @@ class RgbAnimation(AlphaAnimation):
     @property
     def locker(self) -> PropertyLocker:
         return self._locker
+    
+    def first_advance_initializer(self):
+        self._source_rgb = self._color.rgb
 
     def update(self, alpha: float):
         self._color.rgb = self._source_rgb * (1 - alpha) + self._target_rgb * alpha

@@ -5,7 +5,11 @@ from .canvas import Canvas, Scene
 from .organizer import GridOrganizer
 from .text import Text
 from .segment import Path
-from .constants import Anchor, OutputFormat
+from .constants import (
+    Anchor,
+    OutputFormat,
+    UP, RIGHT, DOWN, LEFT, FORWARD, BACKWARD, 
+    )
 from .animated_collection import Var, NilVar
 from .animation import (
     ScaleAnimation,

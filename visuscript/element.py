@@ -72,8 +72,7 @@ class Element(Drawable):
 
     @opacity.setter
     def opacity(self, value: float):
-        for element in self:
-            element._opacity = value
+        self._opacity = value
 
     def set_opacity(self, value: float) -> Self:
         self.opacity = value
@@ -159,6 +158,7 @@ class Element(Drawable):
 
 
     def set_fill(self, color: Color) -> Self:
+        color = Color(color)
         self.fill.rgb = color.rgb
         self.fill.opacity = color.opacity
         return self
@@ -183,6 +183,24 @@ class Element(Drawable):
             curr = curr._parent
 
         return transform
+    
+    @property
+    def global_opacity(self) -> float:
+        """
+        The global opacity of this Element.
+
+        Returns the product of all ancestor opacities and that of this Element.
+        """
+        curr = self
+
+        opacity = self.opacity
+
+        while curr._parent is not None:
+            opacity *= curr._parent.opacity
+            curr = curr._parent
+
+        return opacity
+
     
     @global_transform.setter
     def global_transform(self, value: Transform):
@@ -280,7 +298,7 @@ class Image(Element):
         return svg.Image(
             x=x,
             y=y,
-            opacity=self.opacity,
+            opacity=self.global_opacity,
             transform=transform.svg_transform,
             href=f"data:image/png;base64,{self._file_data}",
         ).as_str()
@@ -393,7 +411,7 @@ class Drawing(Element, Segment):
                 stroke_opacity=self.stroke.opacity,
                 fill=self.fill.svg_rgb,
                 fill_opacity=self.fill.opacity,
-                opacity=self.opacity,
+                opacity=self.global_opacity,
                 stroke_width=self.stroke_width).as_str()
     
 
@@ -434,7 +452,7 @@ class Circle(Drawing):
             stroke_width=self.stroke_width,
             fill=self.fill.svg_rgb,
             fill_opacity=self.fill.opacity,
-            opacity=self.opacity,
+            opacity=self.global_opacity,
             ).as_str()
 
 

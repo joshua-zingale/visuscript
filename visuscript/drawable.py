@@ -82,8 +82,13 @@ class Drawable(ABC):
         self.transform = Transform(transform)
         return self
     
-    def set_anchor(self, anchor: Anchor):
+    def set_anchor(self, anchor: Anchor, keep_position = False):
+        old_anchor_offset = deepcopy(self.anchor_offset)
+
         self.anchor = anchor
+
+        if keep_position:
+            self.translate(*old_anchor_offset - self.anchor_offset)
         return self
     
     @property
