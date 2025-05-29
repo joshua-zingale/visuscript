@@ -159,7 +159,8 @@ class Element(Drawable):
 
 
     def set_fill(self, color: Color) -> Self:
-        self.fill = Color(color)
+        self.fill.rgb = color.rgb
+        self.fill.opacity = color.opacity
         return self
     
     def set_stroke(self, color: Color) -> Self:

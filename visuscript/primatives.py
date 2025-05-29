@@ -353,7 +353,7 @@ class Color():
         self.opacity = opacity
         return self
     
-    def set_rgb(self, rgb: Tuple[int,int,int]) -> Self:
+    def set_rgb(self, rgb: str | Tuple[int,int,int]) -> Self:
         self.rgb = rgb
         return self
 
@@ -363,7 +363,9 @@ class Color():
         return deepcopy(self._rgb)
     
     @rgb.setter
-    def rgb(self, value: Tuple[int, int, int]):
+    def rgb(self, value: str | Tuple[int, int, int]):
+        if isinstance(value, str):
+            value = Color.PALETTE[value]
         self._rgb[:] = (*value,)
 
     @property
