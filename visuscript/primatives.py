@@ -517,7 +517,7 @@ class Color():
 
 
     @property
-    def rgb(self) -> str:
+    def rgb(self) -> np.ndarray:
         return deepcopy(self._rgb)
     
     @rgb.setter

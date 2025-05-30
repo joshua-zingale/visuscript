@@ -6,6 +6,7 @@ from visuscript.text import Text
 from visuscript.organizer import BinaryTreeOrganizer, Organizer, GridOrganizer
 from visuscript.element import Circle, Pivot
 from visuscript.primatives import Transform
+from visuscript.drawable import Drawable
 
 
 from abc import ABC, abstractmethod
@@ -95,6 +96,9 @@ class Var:
     
     def __repr__(self):
         return str(self)
+    
+    def __bool__(self):
+        return self.value is not None and self.value is not False
 
 NilVar = Var(None)
 """A Var representing no value."""
@@ -157,18 +161,25 @@ class TextContainer(VarContainer):
 
 # TODO Fix this hack, which allows the canvas to reflect the current elements of the AnimatedCollection
 # This should be replaced with something that does not depend on implementational details like _children
-class _AnimatedCollectionElement(Pivot):
+class _AnimatedCollectionElement(Drawable):
     def __init__(self, animated_collection: "AnimatedCollection", **kwargs):
         super().__init__(**kwargs)
         self._animated_collection = animated_collection
 
     @property
-    def _children(self):
-        return self._animated_collection.all_elements
+    def top_left(self):
+        return Vec2(0,0)
+    @property
+    def width(self):
+        return 0.0
+    @property
+    def height(self):
+        return 0.0
     
-    @_children.setter
-    def _children(self, value):
-        pass
+    def draw(self):
+        return "".join(element.draw() for element in self._animated_collection.all_elements)
+    
+   
     
 class AnimatedCollection(Collection[Var]):
 
@@ -337,10 +348,6 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     def is_contains(self, var: Var):
         return sum(map(lambda x: x is var, self._var_iter())) > 0
 
-    
-
-
-
 class AnimatedArray(AnimatedList):
 
     def __init__(self, variables: Iterable, *, font_size: float, **kwargs):
@@ -394,13 +401,11 @@ class AnimatedBinaryTreeArray(AnimatedList):
     
     def get_right_index(self, var: int | Var):
         return self.get_left_index(var) + 1
-    
 
     @property
     def root(self) -> Var:
         return self[0]
     
-
     def get_parent(self, var: Var) -> Var:        
         idx = self.get_parent_index(var)
 
@@ -408,7 +413,6 @@ class AnimatedBinaryTreeArray(AnimatedList):
             return NilVar
         
         return self[idx]
-
 
     def get_left(self, var: Var) -> Var:        
         idx = self.get_left_index(var)
@@ -425,7 +429,6 @@ class AnimatedBinaryTreeArray(AnimatedList):
             return NilVar
         
         return self[idx]
-    
 
     def is_root(self, var: Var) -> bool:
         return self.root is var
@@ -435,7 +438,6 @@ class AnimatedBinaryTreeArray(AnimatedList):
         return self.get_left(var).is_none and self.get_right(var).is_none
     def number_of_children(self, var: Var) -> int:
         return int((not self.get_left(var).is_none) + (not self.get_right(var).is_none))
-    
     def get_children(self, var: Var):
         return map(lambda x: not x.is_none, [self.get_left(var), self.get_right(var)])
     

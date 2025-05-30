@@ -66,6 +66,10 @@ class Element(Drawable):
         super().__init__(**kwargs)
 
 
+    def iter_children(self) -> Generator["Element"]:
+        yield from self._children
+
+
     @property
     def opacity(self) -> float:
         return self._opacity
@@ -227,18 +231,19 @@ class Element(Drawable):
 
     def draw(self) -> str:
         string_builder = StringIO()
-        for element in self:
-            assert element.deleted == False
-            string_builder.write(element.draw_self())
+
+        drawlist = [(self, Transform())]
+
+        while drawlist:
+            element, inherited_transform = drawlist.pop(0)
+            transform = inherited_transform @ element.transform
+            string_builder.write(element.draw_self(transform))
+
+            for child in element.iter_children():
+                drawlist.append((child, transform))
+            
         return string_builder.getvalue()
     
-    @abstractmethod
-    def draw_self(self) -> str:
-        """
-        Returns the SVG representation for this Element but not for its children.
-        """
-        ...
-
     @property
     def deleted(self) -> bool:
         return self._deleted
@@ -255,6 +260,14 @@ class Element(Drawable):
     # TODO make children not move with respect to parnet when parent's anchor is updated with keep_position=True
     def set_anchor(self, anchor, keep_position=False) -> Self:
         return super().set_anchor(anchor, keep_position=keep_position)
+    
+
+    @abstractmethod
+    def draw_self(self, transform: Transform) -> str:
+        """
+        Returns the SVG representation for this Element but not for its children.
+        """
+        ...
 
 
 class Image(Element):
@@ -296,10 +309,10 @@ class Image(Element):
     def height(self) -> float:
         return self._height * self._resize_scale
 
-    def draw_self(self):
+    def draw_self(self, transform: Transform):
         x, y = self.anchor_offset
 
-        transform = deepcopy(self.global_transform)
+        transform = deepcopy(transform)
         transform.scale = transform.scale * self._resize_scale
         return svg.Image(
             x=x,
@@ -358,12 +371,13 @@ class Pivot(Element):
     @property
     def height(self) -> float:
         return 0.0
-    def draw_self(self):
+    def draw_self(self, transform: Transform):
         return ""
 
 class Drawing(Element, Segment):
-    def __init__(self, *,
+    def __init__(self,
                  path: Path,
+                 *,
                  anchor = Anchor.DEFAULT,
                  **kwargs):
         
@@ -408,11 +422,11 @@ class Drawing(Element, Segment):
     def height(self):
         return self._path.height
     
-    def draw_self(self):
+    def draw_self(self, transform: Transform):
         self._path.set_offset(*self.anchor_offset)
         return svg.Path(
                 d=self._path.path_str,
-                transform=self.global_transform.svg_transform,
+                transform=transform.svg_transform,
                 stroke=self.stroke.svg_rgb,
                 stroke_opacity=self.stroke.opacity,
                 fill=self.fill.svg_rgb,
@@ -446,13 +460,13 @@ class Circle(Drawing):
         return self.radius
         
 
-    def draw_self(self):
+    def draw_self(self, transform: Transform):
         x, y = self.anchor_offset
         return svg.Circle(
             cx = x,
             cy = y,
             r=self.radius,
-            transform=self.global_transform.svg_transform,
+            transform=transform.svg_transform,
             stroke=self.stroke.svg_rgb,
             stroke_opacity=self.stroke.opacity,
             stroke_width=self.stroke_width,

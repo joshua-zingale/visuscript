@@ -23,5 +23,6 @@ from .animation import (
     RunFunction,
     RgbAnimation,
     fade_in,
-    fade_out
+    fade_out,
+    flash
     )

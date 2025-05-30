@@ -1,6 +1,5 @@
 from visuscript.drawable import Drawable
 from visuscript.constants import Anchor, OutputFormat
-from visuscript.element import Element
 from visuscript import Rect, Pivot
 from visuscript.primatives import *
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
@@ -15,7 +14,7 @@ from visuscript.animation import AnimationBundle, Animation
 
 class Canvas(Drawable):
     def __init__(self, *,
-                 elements: list[Element] | None = None,
+                 drawables: list[Drawable] | None = None,
                  width: int | ConfigurationDeference = DEFER_TO_CONFIG,
                  height: int | ConfigurationDeference = DEFER_TO_CONFIG,
                  logical_width: int | ConfigurationDeference = DEFER_TO_CONFIG,
@@ -44,7 +43,7 @@ class Canvas(Drawable):
         self._logical_height = logical_height
         self._logical_scaling = width/logical_width
 
-        self._elements: list[Element] = [] if elements is None else list(elements)
+        self._drawables: list[Drawable] = [] if drawables is None else list(drawables)
         self.color: Color = Color(color)
         self._output_format = output_format
         self._output_stream = output_stream
@@ -52,49 +51,49 @@ class Canvas(Drawable):
         
     
     def clear(self):
-        self._elements = set()
+        self._drawables = set()
 
-    def with_element(self, element: Element) -> Self:
-        self._elements.append(element)
+    def with_drawable(self, drawable: Drawable) -> Self:
+        self._drawables.append(drawable)
         return self
-    add_element = with_element
+    add_drawable = with_drawable
 
-    def with_elements(self, elements: Iterable[Element]) -> Self:
-        self._elements.extend(elements)
+    def with_drawables(self, drawables: Iterable[Drawable]) -> Self:
+        self._drawables.extend(drawables)
         return self
-    add_elements = with_elements
+    add_drawables = with_drawables
 
-    def without_element(self, element: Element) -> Self:
-        self._elements.remove(element)
+    def without_drawable(self, drawable: Drawable) -> Self:
+        self._drawables.remove(drawable)
         return self
-    remove_element = without_element
+    remove_drawable = without_drawable
 
-    def without_elements(self, elements: list[Element]) -> Self:
-        for element in elements:
-            self._elements.remove(element)
+    def without_drawables(self, drawables: list[Drawable]) -> Self:
+        for drawable in drawables:
+            self._drawables.remove(drawable)
         return self
-    remove_elements = without_elements
+    remove_drawables = without_drawables
 
     def __lshift__(self, other: Drawable | Iterable[Drawable]):
         if other is None:
             return
         
         if isinstance(other, Drawable):
-            self.add_element(other)
+            self.add_drawable(other)
         elif isinstance(other, Iterable):
             for drawable in other:
                 self << drawable
         else:
             raise TypeError(f"'<<' is not implemented for {type(other)}, only for types Drawable and Iterable[Drawable]")
-        
+    
 
-    # def __rshift__(self, other: Element | list[Element]):
+    # def __rshift__(self, other: Drawable | list[Drawable]):
     #     if isinstance(other, list):
-    #         self.remove_elements(other)
-    #     elif isinstance(other, Element):
-    #         self.remove_element(other)
+    #         self.remove_drawables(other)
+    #     elif isinstance(other, Drawable):
+    #         self.remove_drawable(other)
     #     else:
-    #         raise TypeError("'<<' is implemented only for types Element and list[Element]")
+    #         raise TypeError("'<<' is implemented only for types Drawable and list[Drawable]")
 
     def a(self, percentage: float) -> float:
         """
@@ -102,9 +101,9 @@ class Canvas(Drawable):
         """
         return percentage * self._logical_width * self._logical_height
     def x(self, x_percentage: float) -> float:
-        return self._logical_width * x_percentage - self._logical_width/2
+        return self._logical_width * x_percentage + self.anchor_offset.x
     def y(self, y_percentage: float) -> float:
-        return self._logical_height * y_percentage - self._logical_height/2
+        return self._logical_height * y_percentage + self.anchor_offset.y
     def xy(self, x_percentage: float, y_percentage: float) -> np.ndarray:
         return np.array([
             self.x(x_percentage),
@@ -117,10 +116,14 @@ class Canvas(Drawable):
 
     @property
     def width(self) -> float:
-        return self._width
+        return self._logical_width
     @property
     def height(self) -> float:
-        return self._height
+        return self._logical_height
+    
+    @property
+    def logical_scaling(self):
+        return self._logical_scaling
     
     
     def draw(self) -> str:
@@ -128,20 +131,20 @@ class Canvas(Drawable):
         inv_rotation = Transform(rotation=-self.transform.rotation)
 
         transform = Transform(
-            translation = -inv_rotation(self.transform.translation*self.transform.scale*self._logical_scaling),
-            scale = self.transform.scale * self._logical_scaling,
+            translation = -inv_rotation(self.transform.translation*self.transform.scale*self.logical_scaling) - self.anchor_offset.extend(0)*self.logical_scaling,
+            scale = self.transform.scale*self.logical_scaling,
             rotation = -self.transform.rotation
         )
         
-        background = Rect(width=self.width, height=self.height, fill = self.color, stroke=self.color, anchor=Anchor.TOP_LEFT).translate(*self.anchor_offset)
+        background = Rect(width=self.width*self.logical_scaling, height=self.height*self.logical_scaling, fill = self.color, stroke=self.color, anchor=Anchor.TOP_LEFT)
 
-        # removed deleted elements
-        self._elements = list(filter(lambda x: not x.deleted, self._elements))
+        # removed deleted drawables
+        # self._drawables = list(filter(lambda x: not x.deleted, self._drawables))
         
         return svg.SVG(
-            viewBox=svg.ViewBoxSpec(*self.anchor_offset, self.width, self.height),
+            viewBox=svg.ViewBoxSpec(0,0, self.width*self.logical_scaling, self.height*self.logical_scaling),
             elements= [background.draw(),
-                       svg.G(elements=[element.draw() for element in self._elements], transform=transform.svg_transform)
+                       svg.G(elements=[drawable.draw() for drawable in self._drawables], transform=transform.svg_transform)
                        ]).as_str()
 
     def print(self):
@@ -153,12 +156,12 @@ class Canvas(Drawable):
             raise ValueError("Invalid image output format")
 
     def __enter__(self) -> Self:
-        self._original_elements = copy(self._elements)
+        self._original_drawables = copy(self._drawables)
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.print()
-        self._elements = self._original_elements
-        del self._original_elements
+        self._drawables = self._original_drawables
+        del self._original_drawables
 
 
 class _Player:
@@ -174,13 +177,13 @@ class Scene(Canvas):
     def __init__(self, **kwargs):
         self._animation_bundle: AnimationBundle = AnimationBundle()
         self._player = _Player(self)
-        self._original_elements = []
+        self._original_drawables = []
         self._original_animation_bundle = []
         super().__init__(**kwargs)
     
     @property
     def animations(self):
-        #TODO check if the elements to be animated are elements of this scene and not already being animated
+        #TODO check if the drawables to be animated are drawables of this scene and not already being animated
         return self._animation_bundle
     
     @property
@@ -201,12 +204,12 @@ class Scene(Canvas):
             self.print()
 
     def __enter__(self) -> Self:
-        self._original_elements.append(copy(self._elements))
+        self._original_drawables.append(copy(self._drawables))
         self._original_animation_bundle.append(self._animation_bundle)
         self._animation_bundle = AnimationBundle()
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.print()
+        # self.print()
         self.print_frames()
-        self._elements = self._original_elements.pop()
+        self._drawables = self._original_drawables.pop()
         self._animation_bundle = self._original_animation_bundle.pop()

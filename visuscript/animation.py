@@ -1,5 +1,5 @@
 from typing import Callable, Iterable
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, ABCMeta
 from visuscript.config import *
 from visuscript.drawable import Drawable
 from visuscript.element import Drawing, Element
@@ -48,7 +48,45 @@ class PropertyLocker:
             for property in other._map[obj]:
                 self.add(obj, property, ignore_conflicts=ignore_conflicts)
 
-class Animation(ABC):
+
+class AnimationMetaClass(ABCMeta):
+    def __new__(mcs, name, bases, namespace):
+        cls = super().__new__(mcs, name, bases, namespace)
+        cls._animation_speed = 1
+
+        def set_speed(self, speed: float) -> Self:
+            if not isinstance(speed, (int, float)) or speed <= 0:
+                raise ValueError("Animation speed must be a positive number.")
+            self._animation_speed = speed
+            return self
+        cls.set_speed = set_speed
+
+        cls._num_processed_frames = 0
+        cls._num_advances = 0
+
+        if 'advance' in namespace and not getattr(namespace['advance'], '__isabstractmethod__', False):
+            original_advance = namespace['advance']
+
+            def wrapped_advance(self):
+                self._num_advances += 1
+                num_to_advance = round(self._animation_speed * self._num_advances - self._num_processed_frames)
+
+                keep_advancing = True
+                for _ in range(num_to_advance):
+                    if not self._base_advance():
+                        keep_advancing = False
+                        break
+
+                self._num_processed_frames += num_to_advance
+
+                return keep_advancing
+
+            cls._base_advance = original_advance 
+            cls.advance = wrapped_advance
+
+        return cls
+
+class Animation(ABC, metaclass=AnimationMetaClass):
 
     @abstractmethod
     def advance(self) -> bool:
@@ -73,6 +111,10 @@ class Animation(ABC):
         """
         while self.advance():
             pass
+
+    def set_speed(self, speed: float) -> Self:
+        """Sets the playback speed for this Animation."""
+        ... # Implementation in AnimationMetaClass
         
 class NoAnimation(Animation):
 
@@ -426,3 +468,11 @@ def fade_in(element: Element, **kwargs) -> Animation:
 
 def fade_out(element: Element, **kwargs) -> Animation:
     return OpacityAnimation(element, 0.0, **kwargs)
+
+def flash(color: Color, rgb: str | Tuple[int, int, int], **kwargs):
+    original_rgb = color.rgb
+    return AnimationSequence(
+        RgbAnimation(color, rgb, **kwargs),
+        RgbAnimation(color, original_rgb, **kwargs)
+    ).set_speed(2)
+

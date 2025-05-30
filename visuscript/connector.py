@@ -1,7 +1,7 @@
 from visuscript.drawable import Drawable
 from visuscript.element import Drawing, Path, Element
 from visuscript.segment import Segment
-from visuscript.primatives import Vec2
+from visuscript.primatives import Vec2, Transform
 from visuscript.constants import LineTarget
 from visuscript.config import *
 from abc import ABC, abstractmethod
@@ -72,7 +72,7 @@ class Connector(Element):
 
         return np.linalg.norm(self._destination.global_shape.center - self._source.global_shape.center) < distance
 
-    def draw_self(self):
+    def draw_self(self, transform: Transform):
         return self.get_connector(
             source=self.source,
             destination=self.destination,

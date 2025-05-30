@@ -6,6 +6,61 @@ from visuscript.config import *
 from visuscript.animated_collection import AnimatedBinaryTreeArray, TextContainer
 from typing import Tuple
 
+class Edges(Drawable):
+    def __init__(self):
+        super().__init__()
+        self._edges: dict[Tuple[Element, Element], Line] = dict()
+        self._fading_away: set[Line] = set()
+
+    @property
+    def top_left(self):
+        return Vec2(0,0)
+    @property
+    def width(self):
+        return 0.0
+    @property
+    def height(self):
+        return 0.0
+
+    def get_edge(self, element1: Element, element2: Element):
+        assert self.connected(element1, element2)
+        return self._edges.get((element1, element2), self._edges[(element2, element1)])
+    
+    def connected(self, element1: Element, element2: Element):
+        return (element1, element2) in self._edges or (element2, element1) in self._edges
+    
+    def connect(self, element1: Element, element2: Element):
+        assert not self.connected(element1, element2)
+        assert element1 is not element2
+
+        edge = Line(source=element1, destination=element2).set_opacity(0.0)
+        self._edges[(element1, element2)] = edge
+
+        return fade_in(edge, duration=0.5)
+
+    def disconnect(self, element1: Element, element2: Element):
+        assert self.connected(element1, element2)
+        if (element1, element2) in self._edges:
+            edge = self._edges.pop((element1, element2))
+        else:
+            edge = self._edges.pop((element2, element1))
+        
+        self._fading_away.add(edge)
+
+        return AnimationSequence(
+            fade_out(edge),
+            RunFunction(lambda:self._fading_away.remove(edge))
+        )
+
+    def draw(self):
+        drawing = ""
+        for edge in self._edges.values():
+            drawing += edge.draw()
+        for edge in self._fading_away:
+            drawing += edge.draw()
+        return drawing
+
+
 def insert(var: Var, tree: AnimatedBinaryTreeArray) -> Var:
     node = tree[0]
     while not node.is_none:
@@ -54,7 +109,7 @@ def compare(operator: str, element1: Element, element2: Element, is_true: bool):
     return sequence
 
 
-def animate_insert(var: Var, tree: AnimatedBinaryTreeArray):
+def animate_insert(var: Var, tree: AnimatedBinaryTreeArray, edges: Edges):
     insert(var, tree)
 
     sequence = AnimationSequence()
@@ -63,14 +118,19 @@ def animate_insert(var: Var, tree: AnimatedBinaryTreeArray):
     
     element.set_transform(Transform([0,-150], scale=0))
 
+    parent = NilVar
     node = tree.root
     while not node is var:
+        parent = node
         sequence << compare("<", tree.element_for(node), element, node < var)
 
         if node < var:
             node = tree.get_right(node)
         else:
             node = tree.get_left(node)
+
+    if not parent.is_none:
+        sequence << edges.connect(tree.element_for(parent), tree.element_for(var))
 
     sequence << tree.organize()
     return sequence
@@ -167,13 +227,12 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
     return sequence
 
 
-def animate_remove(var: Var, tree: AnimatedBinaryTreeArray):
+def animate_remove(var: Var, tree: AnimatedBinaryTreeArray, edges: Edges):
     assert var in tree
 
     sequence = AnimationSequence()
 
     removal_node = tree.root
-
     while removal_node != var:
         if removal_node < var:
             removal_node = tree.get_right(removal_node)
@@ -182,13 +241,45 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray):
 
     removal_element = tree.element_for(removal_node)
     tree.add_auxiliary_element(removal_element)
+
+    removal_element.add_child(
+        removal_text := Text("Removing", font_size=8).translate(*removal_element.shape.top + 6*UP).set_opacity(0.0)
+    )
+
+    sequence << AnimationBundle(
+        RgbAnimation(removal_element.stroke, 'red'),
+        fade_in(removal_text)
+        )
     
     if tree.number_of_children(removal_node) == 2:
         swap_node = tree.get_left(removal_node)
+        sequence << RgbAnimation(tree.element_for(swap_node).stroke, 'blue')
+        parent = swap_node
         while not tree.get_right(swap_node).is_none:
+            parent = swap_node
             swap_node = tree.get_right(swap_node)
-        sequence << tree.swap(removal_node, swap_node)
+            sequence << AnimationBundle(
+                RgbAnimation(tree.element_for(parent).stroke, 'off_white'),
+                RgbAnimation(tree.element_for(swap_node).stroke, 'blue')
+                )
+            
+        removal_parent = tree.get_parent(removal_node)
+        sequence << AnimationBundle(
+            edges.disconnect(tree.element_for(removal_node),tree.element_for(tree.get_left(removal_node))),
+            edges.disconnect(tree.element_for(removal_node),tree.element_for(tree.get_right(removal_node))),
+            edges.disconnect(tree.element_for(removal_parent),tree.element_for(removal_node)) if removal_parent else None,
+        )
+        sequence << AnimationBundle(
+            RgbAnimation(tree.element_for(parent).stroke, 'off_white'),
+            edges.connect(tree.element_for(swap_node), tree.element_for(tree.get_right(removal_node))),
+            edges.connect(tree.element_for(removal_parent), tree.element_for(swap_node)) if removal_parent else None,
+            tree.swap(removal_node, swap_node),
+            )
+        
+        sequence << RgbAnimation(tree.element_for(swap_node).stroke, 'off_white')
     
+    ## Reorganize tree if needed
+
     if tree.is_root(removal_node) or tree.get_left(tree.get_parent(removal_node)) is removal_node:
         removal_node_is_right_child = False
     else:
@@ -235,50 +326,6 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray):
     sequence << RunFunction(lambda: tree.remove_auxiliary_element(removal_element))
     return sequence
 
-class Edges(Pivot):
-
-    def __init__(self):
-        super().__init__()
-        self._edges: dict[Tuple[Element, Element], Line] = dict()
-        self._fading_away: set[Line] = set()
-
-    def get_edge(self, element1: Element, element2: Element):
-        assert self.connected(element1, element2)
-        return self._edges.get((element1, element2), self._edges[(element2, element1)])
-    
-    def connected(self, element1: Element, element2: Element):
-        return (element1, element2) in self._edges or (element2, element1) in self._edges
-    
-    def connect(self, element1: Element, element2: Element):
-        assert not self.connected(element1, element2)
-        assert element1 is not element2
-
-        edge = Line(source=element1, destination=element2).set_opacity(0.0)
-        self._edges[(element1, element2)] = edge
-
-        return fade_in(edge, duration=0.5)
-
-    def disconnect(self, element1: Element, element2: Element):
-        assert self.connected(element1, element2)
-        if (element1, element2) in self._edges:
-            edge = self._edges.pop((element1, element2))
-        else:
-            edge = self._edges.pop((element2, element1))
-        
-        self._fading_away.add(edge)
-
-        return AnimationSequence(
-            fade_out(edge),
-            RunFunction(lambda:self._fading_away.remove(edge))
-        )
-
-    def draw_self(self):
-        drawing = ""
-        for edge in self._edges.values():
-            drawing += edge.draw()
-        for edge in self._fading_away:
-            drawing += edge.draw()
-        return drawing
 
 def main():
 
@@ -313,19 +360,15 @@ def main():
         vars = list(map(Var, [5,3,7,6,8,7]))
 
         for var in vars:
-            s.player << flash_text(f"insert({var.value})", animate_insert(var, tree))
-            parent = tree.get_parent(var)
-            if not parent.is_none:
-                s.player << edges.connect(tree.element_for(parent), tree.element_for(var))
-        
+            s.player << flash_text(f"insert({var.value})", animate_insert(var, tree, edges)).set_speed(5)
 
         s.player << flash_text("find(6)", animate_find(Var(6), tree))
         s.player << flash_text("find(4)", animate_find(Var(4), tree))
 
-        s.player << edges.disconnect(tree.element_for(find(Var(5), tree)), tree.element_for(find(Var(3), tree)))
-        s.player << edges.disconnect(tree.element_for(find(Var(5), tree)), tree.element_for(find(Var(7), tree)))
-        s.player << flash_text("remove(5)", animate_remove(Var(5), tree))
-        s.player << edges.connect(tree.element_for(find(Var(3), tree)), tree.element_for(find(Var(7), tree)))
+        # s.player << edges.disconnect(tree.element_for(find(Var(5), tree)), tree.element_for(find(Var(3), tree)))
+        # s.player << edges.disconnect(tree.element_for(find(Var(5), tree)), tree.element_for(find(Var(7), tree)))
+        s.player << flash_text("remove(5)", animate_remove(Var(7), tree, edges))
+        # s.player << edges.connect(tree.element_for(find(Var(3), tree)), tree.element_for(find(Var(7), tree)))
 
             
 
