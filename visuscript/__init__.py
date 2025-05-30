@@ -4,7 +4,6 @@ from .canvas import Canvas, Scene
 from .organizer import GridOrganizer
 from .text import Text
 from .segment import Path
-from .connector import Line
 from .constants import (
     Anchor,
     OutputFormat,

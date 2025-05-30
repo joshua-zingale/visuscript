@@ -3,8 +3,8 @@ from visuscript.config import config
 from visuscript.animation import sin_easing
 import sys
 config.canvas_color = "off_white"
-config.drawing_stroke = "dark_slate"
-config.drawing_fill = "off_white"
+config.element_stroke = "dark_slate"
+config.element_fill = "off_white"
 config.text_fill = "dark_slate"
 
 with Canvas().set_anchor(Anchor.CENTER) as c:

@@ -247,7 +247,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         ...
 
     @property
-    def elements(self):
+    def elements(self) -> list[Element]:
         return list(map(lambda x: x.element, self._list))
 
     def target_for(self, var: Var):

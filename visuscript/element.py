@@ -43,9 +43,9 @@ class Element(Drawable):
                  opacity: float = 1.0,
                  **kwargs):
         
-        stroke = config.drawing_stroke if stroke is DEFER_TO_CONFIG else stroke
-        stroke_width = config.drawing_stroke_width if stroke_width is DEFER_TO_CONFIG else stroke_width
-        fill = config.drawing_fill if fill is DEFER_TO_CONFIG else fill
+        stroke = config.element_stroke if stroke is DEFER_TO_CONFIG else stroke
+        stroke_width = config.element_stroke_width if stroke_width is DEFER_TO_CONFIG else stroke_width
+        fill = config.element_fill if fill is DEFER_TO_CONFIG else fill
 
         self._children: list["Element"] = []
         self._parent: "Element" | None = None
@@ -164,7 +164,9 @@ class Element(Drawable):
         return self
     
     def set_stroke(self, color: Color) -> Self:
-        self.stroke = Color(color)
+        color = Color(color)
+        self.stroke.rgb = color.rgb
+        self.stroke.opacity = color.opacity
         return self
     
     @property

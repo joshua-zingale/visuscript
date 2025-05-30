@@ -66,13 +66,13 @@ def main():
     if theme == "dark":
         config.canvas_color = Color("dark_slate", 1.0)
         config.text_fill = Color("off_white", 1)
-        config.drawing_fill = Color("off_white", 0.0)
-        config.drawing_stroke = Color("off_white", 1)
+        config.element_fill = Color("off_white", 0.0)
+        config.element_stroke = Color("off_white", 1)
     elif theme == "light":
         config.canvas_color = Color("off_white", 1.0)
         config.text_fill = Color("dark_slate", 1)
-        config.drawing_fill = Color("dark_slate", 0.0)
-        config.drawing_stroke = Color("dark_slate", 1)
+        config.element_fill = Color("dark_slate", 0.0)
+        config.element_stroke = Color("dark_slate", 1)
 
 
     config.canvas_width = width

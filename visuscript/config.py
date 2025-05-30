@@ -19,9 +19,9 @@ class _AnimationConfig:
         self.canvas_output_stream = sys.stdout
 
         # Drawing
-        self._drawing_stroke = Color('off_white', 1)
-        self.drawing_stroke_width = 1
-        self._drawing_fill = Color('off_white', 0.0)
+        self._element_stroke = Color('off_white', 1)
+        self.element_stroke_width = 1
+        self._element_fill = Color('off_white', 0.0)
 
         # Text
         self.text_font_size = 16
@@ -36,18 +36,18 @@ class _AnimationConfig:
         self._canvas_color = Color(value)
 
     @property
-    def drawing_stroke(self):
-        return Color(self._drawing_stroke)
-    @drawing_stroke.setter
-    def drawing_stroke(self, value: Color):
-        self._drawing_stroke = Color(value)
+    def element_stroke(self):
+        return Color(self._element_stroke)
+    @element_stroke.setter
+    def element_stroke(self, value: Color):
+        self._element_stroke = Color(value)
 
     @property
-    def drawing_fill(self):
-        return Color(self._drawing_fill)
-    @drawing_fill.setter
-    def drawing_fill(self, value: Color):
-        self._drawing_fill = Color(value)
+    def element_fill(self):
+        return Color(self._element_fill)
+    @element_fill.setter
+    def element_fill(self, value: Color):
+        self._element_fill = Color(value)
 
     @property
     def text_fill(self):
