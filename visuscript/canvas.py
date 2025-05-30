@@ -206,6 +206,7 @@ class Scene(Canvas):
         self._animation_bundle = AnimationBundle()
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.print()
         self.print_frames()
         self._elements = self._original_elements.pop()
         self._animation_bundle = self._original_animation_bundle.pop()

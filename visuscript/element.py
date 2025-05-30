@@ -249,6 +249,10 @@ class Element(Drawable):
     @property
     def global_shape(self):
         return Shape(self, self.global_transform)
+    
+    # TODO make children not move with respect to parnet when parent's anchor is updated with keep_position=True
+    def set_anchor(self, anchor, keep_position=False) -> Self:
+        return super().set_anchor(anchor, keep_position=keep_position)
 
 
 class Image(Element):

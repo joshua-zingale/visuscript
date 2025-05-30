@@ -5,7 +5,6 @@ from visuscript.config import *
 from visuscript.animated_collection import AnimatedBinaryTreeArray, TextContainer
 
 def insert(var: Var, tree: AnimatedBinaryTreeArray) -> Var:
-    # Get insert index
     node = tree[0]
     while not node.is_none:
         if var <= node:
@@ -21,7 +20,6 @@ def insert(var: Var, tree: AnimatedBinaryTreeArray) -> Var:
     return var
 
 def compare(operator: str, element1: Element, element2: Element, is_true: bool):
-
 
     if is_true:
         color = 'green'
@@ -57,14 +55,13 @@ def compare(operator: str, element1: Element, element2: Element, is_true: bool):
 def animate_insert(var: Var, tree: AnimatedBinaryTreeArray):
     insert(var, tree)
 
-    node = tree.root
-
     sequence = AnimationSequence()
 
     element = tree.element_for(var)
     
     element.set_transform(Transform([0,-150], scale=0))
 
+    node = tree.root
     while not node is var:
         sequence << compare("<", tree.element_for(node), element, node < var)
 
@@ -72,7 +69,6 @@ def animate_insert(var: Var, tree: AnimatedBinaryTreeArray):
             node = tree.get_right(node)
         else:
             node = tree.get_left(node)
-
 
     sequence << tree.organize()
     return sequence
@@ -105,7 +101,8 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
         comparison := Pivot().set_opacity(0.0).add_children(
             less_than := Text("", font_size=font_size).set_anchor(Anchor.LEFT).translate(*glass.shape.right + font_size*RIGHT/2),
             less_than_check := Text("", font_size=font_size/2).set_anchor(Anchor.LEFT).translate(*glass.shape.right + UP*font_size/2 + font_size*RIGHT/2),
-        )
+        ),
+        center_cross := Text("X", fill='red', font_size=glass.shape.height).set_opacity(0.0)
         )
 
     tree.add_auxiliary_element(glass)
@@ -150,50 +147,124 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
         if node.is_none:
             break
 
+    if node.is_none:
+        sequence << OpacityAnimation(center_cross, 1.0)
+
     sequence << fade_out(glass)
-    sequence << RunFunction(lambda : tree.remove_auxiliary_element(glass))
+    sequence << RunFunction(lambda: tree.remove_auxiliary_element(glass))
     return sequence
 
 
+def animate_remove(var: Var, tree: AnimatedBinaryTreeArray):
+    assert var in tree
+
+    sequence = AnimationSequence()
+
+    removal_node = tree.root
+
+    while removal_node != var:
+        if removal_node < var:
+            removal_node = tree.get_right(removal_node)
+        else:
+            removal_node = tree.get_left(removal_node)
+
+    removal_element = tree.element_for(removal_node)
+    tree.add_auxiliary_element(removal_element)
+    
+    if tree.number_of_children(removal_node) == 2:
+        swap_node = tree.get_left(removal_node)
+        while not tree.get_right(swap_node).is_none:
+            swap_node = tree.get_right(swap_node)
+        sequence << tree.swap(removal_node, swap_node)
+    
+    if tree.is_root(removal_node) or tree.get_left(tree.get_parent(removal_node)) is removal_node:
+        removal_node_is_right_child = False
+    else:
+        removal_node_is_right_child = True
+    
+    removal_node_parent = tree.get_parent(removal_node)
+
+    # Unprocessed node, new index
+    move_queue = [(tree.get_left(removal_node), removal_node_parent, removal_node_is_right_child), (tree.get_right(removal_node), removal_node_parent, removal_node_is_right_child)]
+
+    tree[tree.is_index(removal_node)] = Var(None)
+
+    while move_queue:
+        node, parent, is_right_child = move_queue.pop(0)
+
+        if not node.is_none:
+            move_queue.extend([
+            (tree.get_left(node), node, False),
+            (tree.get_right(node), node, True)
+            ])
+
+        if parent.is_none:
+            old_index = tree.is_index(node)
+            tree.swap(0, node)
+            tree[old_index] = Var(None)
+            continue
+
+        if node.is_none:
+            continue
+        
+        old_index = tree.is_index(node)
+        if is_right_child:
+            tree.swap(tree.get_right(parent), node)
+        else:
+            tree.swap(tree.get_left(parent), node)
+
+        tree[old_index] = Var(None)
+    
+
+    sequence << AnimationBundle(
+        tree.organize(),
+        fade_out(removal_element)
+        )
+    sequence << RunFunction(lambda: tree.remove_auxiliary_element(removal_element))
+    return sequence
+
 def main():
 
-    # config.canvas_color='off_white'
-    # config.drawing_stroke=Color('dark_slate', 1.0)
-    # config.drawing_fill=Color('dark_slate', 0.0)
-    # config.text_fill=Color('dark_slate', 1)
     radius = 16
 
     scene = Scene()
 
-
     with scene as s:
             
-
-        text = Text("Binary Search Trees", font_size=25).set_opacity(0.0)
+        
+        text = Text("Binary Search Trees", font_size=50).set_opacity(0.0)
         s << text
         s.player << fade_in(text)
         s.player << AnimationBundle(
             RunFunction(lambda: text.set_anchor(Anchor.TOP_LEFT, keep_position=True)),
-            TransformAnimation(text.transform, Transform(s.xy(0.01,0.01)))
+            TransformAnimation(text.transform, Transform(s.shape.top_left + [10,10], scale=0.5))
             )
-
 
         tree = AnimatedBinaryTreeArray([Var(None) for _ in range(15)], radius=radius, transform=[0,-75])
 
         s << tree.structure_element
 
-        s.player << animate_insert(Var(5), tree)
-        s.player << animate_insert(Var(3), tree)
-        s.player << animate_insert(Var(7), tree)
-        s.player << animate_insert(v := Var(6), tree)
+        operation_text = Text("").set_anchor(Anchor.TOP_RIGHT).translate(*s.shape.top_right + [-10, 10])
+        s << operation_text
 
-        s.player << animate_find(v, tree)
+        flash_text = lambda text, other_animation: AnimationSequence(
+            RunFunction(lambda: operation_text.set_text(text)),
+            fade_in(operation_text, duration = 0.5),
+            other_animation,
+            fade_out(operation_text, duration = 0.5)
+        )
+        s.player << flash_text("insert(5)", animate_insert(Var(5), tree))
+        # s.player << flash_text("insert(3)", animate_insert(Var(3), tree))
+        s.player << flash_text("insert(7)", animate_insert(Var(7), tree))
+        s.player << flash_text("insert(6)", animate_insert(Var(6), tree))
+        s.player << flash_text("insert(8)", animate_insert(Var(8), tree))
+        s.player << flash_text("insert(6.5)", animate_insert(Var(6.5), tree))
 
+        s.player << flash_text("find(6)", animate_find(Var(6), tree))
+        s.player << flash_text("find(4)", animate_find(Var(4), tree))
 
+        s.player << flash_text("remove(5)", animate_remove(Var(5), tree))
 
-        
-
-        
             
 
 

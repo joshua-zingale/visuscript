@@ -9,8 +9,10 @@ import sys
 import os
 
 from visuscript.config import config
+from visuscript.primatives import Color
 
 MODES = ["video", "slideshow"]
+THEME = ["dark", "light"]
 
 def main():
 
@@ -25,6 +27,7 @@ def main():
     parser.add_argument("--downscale", default=1, type=int,help="Both the output video's dimensions are scaled down by this factor.")
     parser.add_argument("--fps", default=30, type=int,help="Frames Per Second of the output video file.")
     parser.add_argument("--mode", default="video", choices=MODES)
+    parser.add_argument("--theme", default="dark", choices=THEME)
 
 
     args = parser.parse_args()
@@ -40,6 +43,7 @@ def main():
     fps: int = args.fps
 
     mode: str = args.mode
+    theme: str = args.theme
 
     if not os.path.exists(input_filename):
         print(f"visuscript error: File \"{input_filename}\" does not exists.", file=sys.stderr)
@@ -58,8 +62,17 @@ def main():
             stdin=subprocess.PIPE,
             text=True
         )
-    else:
-        print(f"The mode must be one of {MODES}", file=sys.stderr)
+
+    if theme == "dark":
+        config.canvas_color = Color("dark_slate", 1.0)
+        config.text_fill = Color("off_white", 1)
+        config.drawing_fill = Color("off_white", 0.0)
+        config.drawing_stroke = Color("off_white", 1)
+    elif theme == "light":
+        config.canvas_color = Color("off_white", 1.0)
+        config.text_fill = Color("dark_slate", 1)
+        config.drawing_fill = Color("dark_slate", 0.0)
+        config.drawing_stroke = Color("dark_slate", 1)
 
 
     config.canvas_width = width

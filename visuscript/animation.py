@@ -403,7 +403,6 @@ class RgbAnimation(AlphaAnimation):
         super().__init__(**kwargs)
         self._color = color
         
-
         if isinstance(target_rgb, str):
             target_rgb = Color.PALETTE[target_rgb]
         self._target_rgb = np.array(target_rgb)

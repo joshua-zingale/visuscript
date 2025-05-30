@@ -24,6 +24,12 @@ class OutputFormat(IntEnum):
     SVG = auto()
     PNG = auto()
 
+class LineTarget(IntEnum):
+    """
+    Defines the source or destination point method for a Line.
+    """
+    RADIAL = auto()
+    CENTER = auto()
 
 UP: Vec2 = Vec2(0,-1)
 RIGHT: Vec2 = Vec2(1,0)

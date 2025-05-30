@@ -203,8 +203,8 @@ class AnimatedCollection(Collection[Var]):
 
     @property
     def all_elements(self) -> Iterable[Element]:
-        yield from self.elements
         yield from self.auxiliary_elements
+        yield from self.elements
 
     @property
     def structure_element(self):
@@ -278,6 +278,8 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     def __setitem__(self, index: int | slice, value: Var):
         if not isinstance(value, Var):
             raise TypeError(f"Cannot set value of type {type(value).__name__}: must be of type Var")
+        if self.is_contains(value):
+            raise ValueError(f"Cannot have the same Var in this AnimatedList twice.")
         self._list[index] = self.new_container_for(value)
 
     def __delitem__(self, index: int | slice):
@@ -286,6 +288,8 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     def insert(self, index: int, value: Var, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
         if not isinstance(value, Var):
             raise TypeError(f"Cannot insert value of type {type(value).__name__}: must be of type Var")
+        if self.is_contains(value):
+            raise ValueError(f"Cannot have the same Var in this AnimatedList twice.")
         self._list.insert(index, self.new_container_for(value))
         return self.organize(duration=duration)
 
@@ -294,8 +298,13 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         self._list[a] = self._list[b]
         self._list[b] = tmp
 
+    def swap(self, a: int | Var, b: int | Var) -> AnimationBundle:
 
-    def swap(self, a: int, b: int) -> AnimationBundle:
+        if isinstance(a, Var):
+            a = self.is_index(a)
+        if isinstance(b, Var):
+            b = self.is_index(b)
+
         assert a != b
 
         element_a = self.element_for(self[a])
@@ -321,8 +330,15 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         return self.organize(duration=duration)
     
 
+    def _var_iter(self):
+        return map(lambda x: x.var, self._list)
     def is_index(self, var: Var) -> int:
-        return list(map(lambda x: x is var, map(lambda x: x.var, self._list))).index(True)
+        return list(map(lambda x: x is var, self._var_iter())).index(True)
+    def is_contains(self, var: Var):
+        return sum(map(lambda x: x is var, self._var_iter())) > 0
+
+    
+
 
 
 class AnimatedArray(AnimatedList):
@@ -366,13 +382,17 @@ class AnimatedBinaryTreeArray(AnimatedList):
         n.element.set_transform(self.transform)
         return n
 
-    def get_parent_index(self, var: Var):
+    def get_parent_index(self, var: int | Var):
+        if isinstance(var, int):
+            var = self[var]
         return int((self.is_index(var) + 1)//2) - 1
     
-    def get_left_index(self, var: Var):
+    def get_left_index(self, var: int | Var):
+        if isinstance(var, int):
+            var = self[var]
         return int((self.is_index(var) + 1) * 2) - 1 
     
-    def get_right_index(self, var: Var):
+    def get_right_index(self, var: int | Var):
         return self.get_left_index(var) + 1
     
 
@@ -405,6 +425,19 @@ class AnimatedBinaryTreeArray(AnimatedList):
             return NilVar
         
         return self[idx]
+    
+
+    def is_root(self, var: Var) -> bool:
+        return self.root is var
+    def is_child(self, var: Var) -> bool:
+        return not self.get_parent(var).is_none
+    def is_leaf(self, var: Var) -> bool:
+        return self.get_left(var).is_none and self.get_right(var).is_none
+    def number_of_children(self, var: Var) -> int:
+        return int((not self.get_left(var).is_none) + (not self.get_right(var).is_none))
+    
+    def get_children(self, var: Var):
+        return map(lambda x: not x.is_none, [self.get_left(var), self.get_right(var)])
     
     # def insert(self, index, value, *, duration = DEFER_TO_CONFIG):
     #     self.extend([None]*max(index - len(self), 0))

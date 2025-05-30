@@ -83,7 +83,7 @@ class Drawable(ABC):
         return self
     
     def set_anchor(self, anchor: Anchor, keep_position = False):
-        old_anchor_offset = deepcopy(self.anchor_offset)
+        old_anchor_offset = self.anchor_offset
 
         self.anchor = anchor
 
