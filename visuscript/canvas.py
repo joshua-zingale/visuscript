@@ -142,8 +142,6 @@ class Canvas(Drawable):
     def print(self):
         if self._output_format == OutputFormat.SVG:
             print_svg(self, file=self._output_stream)
-        elif self._output_format == OutputFormat.PNG:
-            print_png(self, file=self._output_stream)
         else:
             raise ValueError("Invalid image output format")
 

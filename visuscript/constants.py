@@ -22,7 +22,6 @@ class OutputFormat(IntEnum):
     Defines the image output format for Canvas objects.
     """
     SVG = auto()
-    PNG = auto()
 
 class LineTarget(IntEnum):
     """

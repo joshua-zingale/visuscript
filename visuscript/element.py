@@ -23,18 +23,6 @@ def get_base64_from_pil_image(pil_image: PILImage) -> str:
     img_str = base64.b64encode(img_byte).decode('utf-8')
     return img_str
 
-
-def get_base64_from_pil_image(pil_image: PILImage) -> str:
-    """
-    Converts a PIL Image object to a base64 encoded string.
-    """
-    buffered = BytesIO()
-    image_format = pil_image.format if pil_image.format else "PNG"  # Default to PNG if format is None
-    pil_image.save(buffered, format=image_format)
-    img_byte = buffered.getvalue()
-    img_str = base64.b64encode(img_byte).decode('utf-8')
-    return img_str
-
 class Element(Drawable):
     def __init__(self,
                  stroke: Color | ConfigurationDeference = DEFER_TO_CONFIG,
