@@ -15,9 +15,7 @@ Please use with caution and expect frequent updates that may require adjustments
 
 ```bash
 brew install ffmpeg
-```
-```bash
 brew install librsvg
 ```
 
-Both of these utilities' executables must be be in PATH and have names `ffmpeg` and `rsvg-convert`.
+Both of these utilities' executables must be in PATH and have names `ffmpeg` and `rsvg-convert`.
