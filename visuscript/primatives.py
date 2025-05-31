@@ -420,28 +420,32 @@ class Transform:
             rotation = self.rotation + other.rotation
             )
     
-    def __add__(self, other: Self):
-        assert isinstance(other, Transform)
-        return Transform(
-            translation = self._translation + other._translation,
-            scale = self.scale * other.scale,
-            rotation = self.rotation + other.rotation
-        )
+    # def __add__(self, other: Self):
+    #     assert isinstance(other, Transform)
+    #     return Transform(
+    #         translation = self._translation + other._translation,
+    #         scale = self.scale * other.scale,
+    #         rotation = self.rotation + other.rotation
+    #     )
     
-    def __mul__(self, other: float):
-        return Transform(
-            translation = self._translation * other,
-            scale = self.scale**other,
-            rotation = self.rotation * other
-        )
-    def __rmul__(self, other: float):
-        return self * other
-    def __truediv__(self, other: float):
-        return self * (1/other)
+    # def __mul__(self, other: float):
+    #     return Transform(
+    #         translation = self._translation * other,
+    #         scale = self.scale**other,
+    #         rotation = self.rotation * other
+    #     )
+    # def __rmul__(self, other: float):
+    #     return self * other
+    # def __truediv__(self, other: float):
+    #     return self * (1/other)
     
     def interpolate(self, other: Self, alpha: float):
         np.clip(alpha, 0.0, 1.0)
-        return self * (1-alpha) + other * alpha
+        return Transform(
+            translation = self.translation * (1 - alpha) + other.translation * alpha,
+            scale = self.scale * (1 - alpha) + other.scale * alpha,
+            rotation = self.rotation * (1 - alpha) + other.rotation * alpha
+        )
     
     def update(self, other: Self):
         self.translation = other.translation

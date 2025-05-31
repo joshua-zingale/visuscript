@@ -13,6 +13,8 @@ def quintic_easing(x: float) -> float:
     return 6 * x**5 - 15 * x**4 + 10 * x**3
 def sin_easing(a: float) -> float:
     return float(1 - np.cos(a*np.pi))/2
+def sin_easing2(a: float) -> float:
+    return sin_easing(sin_easing(a))
 
 class LockedPropertyError(ValueError):
     def __init__(self, obj: object, property: str):
@@ -181,7 +183,9 @@ class AnimationSequence(Animation):
     
 
     def push(self, animation: Animation | Iterable[Animation], _call_method: str ="push"):
-        if isinstance(animation, Animation):
+        if animation is None:
+            pass
+        elif isinstance(animation, Animation):
             self._locker.update(animation.locker, ignore_conflicts=True)
             self._animations.append(animation)
         elif isinstance(animation, Iterable):
@@ -221,14 +225,16 @@ class AnimationBundle(Animation):
         return advance_made
     
     def push(self, animation: Animation | Iterable[Animation], _call_method: str ="push"):
-        if isinstance(animation, Animation):
+        if animation is None:
+            pass
+        elif isinstance(animation, Animation):
             self._locker.update(animation.locker)
             self._animations.append(animation)
         elif isinstance(animation, Iterable):
             for animation_ in animation:
                 self.push(animation_)
         else:
-            raise TypeError(f"'{_call_method}' is only implemented for types Animation and Iterable[Animation], not for '{type(animation)}'")
+            raise TypeError(f"'{_call_method}' is only implemented for types Animation, Iterable[Animation], and None, not for '{type(animation)}'")
 
 
     def clear(self):
@@ -278,7 +284,7 @@ class TimeDeltaAnimation(Animation):
 
 
 class AlphaAnimation(Animation):
-    def __init__(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG, easing_function: Callable[[float], float] = sin_easing):
+    def __init__(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG, easing_function: Callable[[float], float] = sin_easing2):
 
         fps = config.fps if fps is DEFER_TO_CONFIG else fps
         duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
@@ -419,7 +425,7 @@ class TransformAnimation(AlphaAnimation):
         self._source_transform = deepcopy(self._transform)
 
     def update(self, alpha: float):
-        self._transform.update(self._transform * (1 - alpha) + self._target * alpha)
+        self._transform.update(self._transform.interpolate(self._target, alpha))
 
 class OpacityAnimation(AlphaAnimation):
     def __init__(self, color: Color | Element, target_opacity: float, **kwargs):

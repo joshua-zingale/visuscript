@@ -202,6 +202,7 @@ class AnimatedCollection(Collection[Var]):
     def organize(self, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
         animation_bundle = AnimationBundle(NoAnimation(duration=duration))
         for var in self:
+            # transform, target = self.element_for(var).transform, self.target_for(var)
             animation_bundle << TransformAnimation(self.element_for(var).transform, self.target_for(var), duration=duration)
         return animation_bundle
         
@@ -386,7 +387,7 @@ class AnimatedBinaryTreeArray(AnimatedList):
             return BlankContainer(var)
         
         n = Node(var=var, radius=self._radius)
-        n.element.set_transform(self.transform)
+        # n.element.set_transform(self.transform)
         return n
 
     def get_parent_index(self, var: int | Var):

@@ -4,7 +4,7 @@ from visuscript.segment import Segment
 from visuscript.primatives import Vec2, Transform
 from visuscript.constants import LineTarget
 from visuscript.config import *
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import numpy as np
 
 
