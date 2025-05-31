@@ -44,29 +44,18 @@ def main():
         random.shuffle(vars)
         vars = vars[:31]
         vars = insertion_order(vars)
-
-        # tree = AnimatedBinaryTreeArray(vars, radius=RADIUS, transform=[0,-75])
-
-        # tree.organize().finish()
-
-        # s << tree.structure_element
-
-        # s.print()
-
-        # raise RuntimeError()
-
         
         for speed, var in zip([1,1,1,1,2,3,6] + [20]*len(vars), vars):
             s.player << flash_text(f"insert({var.value})", animate_insert(var, tree, edges)).set_speed(speed)
         
-        find_vars = map(Var, [15,8])
+        find_vars = map(Var, [23,41])
         for var in find_vars:
             s.player << flash_text(f"find({var.value})", animate_find(var, tree))
 
-        remove_vars = map(Var, [14,26])
+        remove_vars = list(map(Var, [12,11,43,46,40]))
         FIND = False
         NO_FIND = True
-        for find, var in zip([FIND, FIND, NO_FIND], remove_vars):
+        for find, var in zip([FIND,FIND,FIND,FIND,FIND] + [NO_FIND]*len(remove_vars), remove_vars):
             s.player << flash_text(f"remove({var.value})", AnimationSequence(
                 animate_find(var, tree) if find == FIND else None,
                 animate_remove(var, tree, edges)
@@ -272,6 +261,7 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
 
     sequence = AnimationSequence()
 
+    parent = NilVar
     node = tree.root
 
     glass = magnifying_glass().set_transform(tree.element_for(node).transform).set_opacity(0.0)
@@ -294,6 +284,7 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
 
     while True:
 
+
         if node == var:
             sequence << RunFunction(lambda: check.set_text(found_text))
             sequence << RunFunction(lambda: check.set_fill(Color('green', 0.0)))
@@ -302,6 +293,7 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
         else:
             sequence << OpacityAnimation(check.fill, 1.0)
 
+        parent = node
         if node < var:
             node = tree.get_right(node)
             sequence << AnimationBundle(
@@ -312,6 +304,7 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
                 OpacityAnimation(comparison, 1.0),
             )
         else:
+            node = tree.get_left(node)
             sequence << AnimationBundle(
                 RunFunction(lambda: less_than_check.set_fill('red')),
                 RunFunction(lambda: less_than_check.set_text("X")),
@@ -319,9 +312,14 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
                 RunFunction(lambda: less_than.set_text(go_left_text)),
                 OpacityAnimation(comparison, 1.0),
             )
-            node = tree.get_left(node)
 
-        if not node is NilVar:
+        if node is NilVar and parent:
+            sequence << AnimationBundle(
+                TranslationAnimation(glass.transform, tree.target_for(parent).translation + [0, 3*RADIUS,0]),
+                OpacityAnimation(check.fill, 0.0),
+                OpacityAnimation(comparison, 0.0),
+                )
+        elif not node is NilVar:
             sequence << AnimationBundle(
                 TransformAnimation(glass.transform, tree.element_for(node).transform),
                 OpacityAnimation(check.fill, 0.0),
@@ -392,8 +390,12 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray, edges: Edges):
         
         sequence << RgbAnimation(tree.element_for(swap_node).stroke, 'off_white')
 
-    else:
-        sequence << edges.disconnect(tree.element_for(tree.get_parent(removal_node)), tree.element_for(removal_node)) if removal_node_parent else None
+    elif tree.get_parent(removal_node):
+        sequence << AnimationBundle(
+            edges.disconnect(tree.element_for(tree.get_parent(removal_node)), tree.element_for(removal_node)),
+            edges.connect(tree.element_for(tree.get_parent(removal_node)), tree.element_for(tree.get_left(removal_node))) if tree.get_left(removal_node) else None,
+            edges.connect(tree.element_for(tree.get_parent(removal_node)), tree.element_for(tree.get_right(removal_node))) if tree.get_right(removal_node) else None,
+            )
     
     ## Reorganize tree if needed
 

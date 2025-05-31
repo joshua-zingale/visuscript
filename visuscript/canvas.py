@@ -178,6 +178,8 @@ class Scene(Canvas):
 
         self._updater_bundle: UpdaterBundle = UpdaterBundle()
         self._number_of_frames_animated: int = 0
+
+        # TODO the PropertLockers for the animation and updater bundles should be linked to ensure no contradictions
     
     @property
     def animations(self):
