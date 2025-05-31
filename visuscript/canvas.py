@@ -6,7 +6,7 @@ from visuscript.primatives import *
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 from typing import Iterable, Generator
 from copy import copy
-from visuscript.output import print_svg, print_png
+from visuscript.output import print_svg
 import numpy as np
 import svg
 
