@@ -24,7 +24,7 @@ def main():
     parser.add_argument("--height", default=1080, type=int,help="Height in pixels of the output video.")
     parser.add_argument("--logical_width", default=480, type=int,help="Logical width of the output video.")
     parser.add_argument("--logical_height", default=270, type=int,help="Logical height of the output video.")
-    parser.add_argument("--downscale", default=1, type=int,help="Both the output video's dimensions are scaled down by this factor.")
+    parser.add_argument("--downscale", default=1, type=int,help="Both the output-video's dimensions are scaled down by this factor.")
     parser.add_argument("--fps", default=30, type=int,help="Frames Per Second of the output video file.")
     parser.add_argument("--mode", default="video", choices=MODES)
     parser.add_argument("--theme", default="dark", choices=THEME)

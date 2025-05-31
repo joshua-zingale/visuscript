@@ -1,6 +1,7 @@
 from visuscript.drawable import Drawable
 from visuscript.constants import Anchor, OutputFormat
-from visuscript import Rect, Pivot
+from visuscript.element import Rect
+from visuscript.updater import Updater, UpdaterBundle
 from visuscript.primatives import *
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 from typing import Iterable, Generator
@@ -85,15 +86,6 @@ class Canvas(Drawable):
                 self << drawable
         else:
             raise TypeError(f"'<<' is not implemented for {type(other)}, only for types Drawable and Iterable[Drawable]")
-    
-
-    # def __rshift__(self, other: Drawable | list[Drawable]):
-    #     if isinstance(other, list):
-    #         self.remove_drawables(other)
-    #     elif isinstance(other, Drawable):
-    #         self.remove_drawable(other)
-    #     else:
-    #         raise TypeError("'<<' is implemented only for types Drawable and list[Drawable]")
 
     def a(self, percentage: float) -> float:
         """
@@ -131,8 +123,8 @@ class Canvas(Drawable):
         inv_rotation = Transform(rotation=-self.transform.rotation)
 
         transform = Transform(
-            translation = -inv_rotation(self.transform.translation*self.transform.scale*self.logical_scaling) - self.anchor_offset.extend(0)*self.logical_scaling,
-            scale = self.transform.scale*self.logical_scaling,
+            translation = -inv_rotation(self.transform.translation*self.logical_scaling/self.transform.scale) - self.anchor_offset.extend(0)*self.logical_scaling,
+            scale = self.logical_scaling/self.transform.scale,
             rotation = -self.transform.rotation
         )
         
@@ -174,42 +166,56 @@ class _Player:
 
 class Scene(Canvas):
 
-    def __init__(self, **kwargs):
+    def __init__(self, print_initial=True, **kwargs):
+        super().__init__(**kwargs)
+        self._print_initial = print_initial
         self._animation_bundle: AnimationBundle = AnimationBundle()
         self._player = _Player(self)
+
         self._original_drawables = []
         self._original_animation_bundle = []
-        super().__init__(**kwargs)
+        self._original_updater_bundle = []
+
+        self._updater_bundle: UpdaterBundle = UpdaterBundle()
+        self._number_of_frames_animated: int = 0
     
     @property
     def animations(self):
-        #TODO check if the drawables to be animated are drawables of this scene and not already being animated
         return self._animation_bundle
+    
+    @property
+    def updaters(self):
+        return self._updater_bundle
     
     @property
     def player(self):
         return self._player
         
         
-    @property
-    def frames(self) -> Generator[Self]:
+    def iter_frames(self) -> Generator[Self]:
         while self._animation_bundle.advance():
+            time_since_beginning = self._number_of_frames_animated/config.fps
+            self.updaters.update(time_since_beginning, 1/config.fps)
+            self._number_of_frames_animated += 1
             yield self
 
         self._animation_bundle.clear()
 
 
     def print_frames(self):
-        for _ in self.frames:
+        for _ in self.iter_frames():
             self.print()
 
     def __enter__(self) -> Self:
         self._original_drawables.append(copy(self._drawables))
         self._original_animation_bundle.append(self._animation_bundle)
+        self._original_updater_bundle.append(self._updater_bundle)
         self._animation_bundle = AnimationBundle()
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # self.print()
+        if self._print_initial:
+            self.print()
         self.print_frames()
         self._drawables = self._original_drawables.pop()
         self._animation_bundle = self._original_animation_bundle.pop()
+        self._updater_bundle = self._original_updater_bundle.pop()
