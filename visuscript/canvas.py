@@ -195,7 +195,7 @@ class Scene(Canvas):
     def iter_frames(self) -> Generator[Self]:
         while self._animation_bundle.advance():
             time_since_beginning = self._number_of_frames_animated/config.fps
-            self.updaters.update(time_since_beginning, 1/config.fps)
+            self._updater_bundle.update(time_since_beginning, 1/config.fps)
             self._number_of_frames_animated += 1
             yield self
 

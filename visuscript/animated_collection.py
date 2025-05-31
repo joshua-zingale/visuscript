@@ -1,4 +1,4 @@
-from visuscript.animation import NoAnimation, PathAnimation, AnimationBundle, TransformAnimation
+from visuscript.animation import NoAnimation, PathAnimation, AnimationBundle, TransformAnimation, LazyAnimation
 from visuscript.segment import Path
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
 from visuscript.element import Element
@@ -225,9 +225,9 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     def __init__(self, variables: Iterable = [], *, transform: Transform | None = None):
         self._transform = Transform() if transform is None else Transform(transform)
         variables = map(lambda v: v if isinstance(v, Var) else Var(v), variables)
-        self._list: list[Var] = []
+        self._list: list[VarContainer] = []
         for var in variables:
-            self.insert(-1, var).finish()
+            self.insert(len(self), var).finish()
         
 
     @property
@@ -298,7 +298,45 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         self._list[a] = self._list[b]
         self._list[b] = tmp
 
-    def swap(self, a: int | Var, b: int | Var) -> AnimationBundle:
+    def swap(self, a: int, b: int) -> LazyAnimation:
+        if a == b:
+            return NoAnimation()
+
+        if isinstance(a, Var):
+            a = self.is_index(a)
+        if isinstance(b, Var):
+            b = self.is_index(b)
+
+        element_a = self.element_for(self[a])
+        element_b = self.element_for(self[b])
+
+        self._swap(a,b)
+        
+        return LazyAnimation(lambda: AnimationBundle(
+            TransformAnimation(element_a.transform, element_b.transform),
+            TransformAnimation(element_b.transform, element_a.transform)
+        ))
+
+
+
+        self._swap(self, a, b)
+        
+    
+    def extend(self, values: Iterable, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
+        super().extend(values)
+        return self.organize(duration=duration)
+    
+
+    def _var_iter(self):
+        return map(lambda x: x.var, self._list)
+    def is_index(self, var: Var) -> int:
+        return list(map(lambda x: x is var, self._var_iter())).index(True)
+    def is_contains(self, var: Var):
+        return sum(map(lambda x: x is var, self._var_iter())) > 0
+
+
+class QuadraticSwapAnimatedList(AnimatedList):
+    def swap(self, a: int | Var, b: int | Var) -> LazyAnimation:
 
         if isinstance(a, Var):
             a = self.is_index(a)
@@ -320,24 +358,12 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
 
         self._swap(a,b)
         
-        return AnimationBundle(
+        return LazyAnimation(lambda: AnimationBundle(
             PathAnimation(element_a.transform, Path().M(*element_a.transform.translation.xy).Q(*(mid - lift), *element_b.transform.translation.xy)),
             PathAnimation(element_b.transform, Path().M(*element_b.transform.translation.xy).Q(*(mid + lift), *element_a.transform.translation.xy))
-        )
-    
-    def extend(self, values: Iterable, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
-        super().extend(values)
-        return self.organize(duration=duration)
-    
+        ))
 
-    def _var_iter(self):
-        return map(lambda x: x.var, self._list)
-    def is_index(self, var: Var) -> int:
-        return list(map(lambda x: x is var, self._var_iter())).index(True)
-    def is_contains(self, var: Var):
-        return sum(map(lambda x: x is var, self._var_iter())) > 0
-
-class AnimatedArray(AnimatedList):
+class AnimatedArray(QuadraticSwapAnimatedList):
 
     def __init__(self, variables: Iterable, *, font_size: float, **kwargs):
 
@@ -352,9 +378,11 @@ class AnimatedArray(AnimatedList):
         if var.is_none:
             return BlankContainer(var)
         return TextContainer(var=var, font_size=self._font_size)
+    
+    
 
 
-class AnimatedBinaryTreeArray(AnimatedList):
+class AnimatedBinaryTreeArray(QuadraticSwapAnimatedList):
 
     def __init__(self, variables: Iterable[Var], *, radius: float, level_heights: float | None = None, node_width: float | None = None, **kwargs):
 

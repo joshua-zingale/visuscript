@@ -1,4 +1,4 @@
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Type
 from abc import ABC, abstractmethod, ABCMeta
 from visuscript.config import *
 from visuscript.element import Element
@@ -20,8 +20,9 @@ def sin_easing2(a: float) -> float:
 class AnimationMetaClass(ABCMeta):
     def __new__(mcs, name, bases, namespace):
         cls = super().__new__(mcs, name, bases, namespace)
-        cls._animation_speed = 1
 
+        ## Animation speed
+        cls._animation_speed = 1
         def set_speed(self, speed: float) -> Self:
             if not isinstance(speed, (int, float)) or speed <= 0:
                 raise ValueError("Animation speed must be a positive number.")
@@ -99,11 +100,29 @@ class CompressedAnimation(AnimationABC):
         while self._animation.advance():
             advanced = True
         return advanced
+    
+
 
 class Animation(AnimationABC):
     def compress(self) -> CompressedAnimation:
         return CompressedAnimation(self)
+
+class LazyAnimation(Animation):
+    def __init__(self, animation_function: Callable[[], Animation]):
+        self._animation_function = animation_function
+        self._locker = animation_function().locker
+
+    @property
+    def locker(self):
+        return self._locker
     
+    def advance(self):
+        if not hasattr(self, "_animation"):
+            self._animation: Animation = self._animation_function()
+        return self._animation.advance()
+    
+
+
         
 class NoAnimation(Animation):
 
@@ -164,7 +183,6 @@ class AnimationSequence(Animation):
             self._animation_index += 1
 
         if self._animation_index == len(self._animations):
-            self.clear()
             return False
         return True
     
@@ -326,7 +344,6 @@ class PathAnimation(AlphaAnimation):
 
     def first_advance_initializer(self):
         self._source_translation = self._transform.translation
-
 
     def update(self, alpha: float):
         assert 0 <= alpha <= 1

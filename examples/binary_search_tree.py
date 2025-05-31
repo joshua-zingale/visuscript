@@ -26,7 +26,7 @@ def main():
 
         tree = AnimatedBinaryTreeArray([Var(None) for _ in range(NUM_NODES)], radius=RADIUS, transform=[0,-75])
 
-        s << tree.structure_element
+        s << tree.collection_element
 
         operation_text = Text("").set_anchor(Anchor.TOP_RIGHT).translate(*s.shape.top_right + [-10, 10])
         s << operation_text

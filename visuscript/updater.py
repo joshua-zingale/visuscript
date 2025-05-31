@@ -54,9 +54,11 @@ class UpdaterBundle(Updater):
         for updater in updaters:
             self.push(updater)
 
-    def update(self, t: float, dt: float):
+    def update(self, t: float, dt: float) -> Self:
+        i = 0
         for updater in filter(lambda u: u.active, self._updaters):
             updater.update(t, dt)
+        return self
 
     @property
     def locker(self):
@@ -83,7 +85,7 @@ class UpdaterBundle(Updater):
 
 
 class FunctionUpdater(Updater):
-    def __init__(self, function: Callable[[None], None]):
+    def __init__(self, function: Callable[[float, float], None]):
         self._function = function
         self._locker = PropertyLocker()
     
@@ -91,8 +93,10 @@ class FunctionUpdater(Updater):
     def locker(self):
         return self._locker
     
-    def update(self, t, dt):
-        self._function()
+    def update(self, t, dt) -> Self:
+        self._function(t, dt)
+        return self
+
 
 
 class TranslationUpdater(Updater):
