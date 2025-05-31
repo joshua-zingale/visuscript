@@ -1,7 +1,7 @@
 from visuscript.drawable import Drawable
 from visuscript.constants import Anchor, OutputFormat
 from visuscript.element import Rect
-from visuscript.updater import Updater, UpdaterBundle
+from visuscript.updater import UpdaterBundle
 from visuscript.primatives import *
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 from typing import Iterable, Generator
