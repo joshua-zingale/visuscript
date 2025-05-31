@@ -53,9 +53,9 @@ class AnimationMetaClass(ABCMeta):
             cls.advance = wrapped_advance
 
         return cls
+    
 
-class Animation(ABC, metaclass=AnimationMetaClass):
-
+class AnimationABC(ABC, metaclass=AnimationMetaClass):
     @abstractmethod
     def advance(self) -> bool:
         """
@@ -73,7 +73,7 @@ class Animation(ABC, metaclass=AnimationMetaClass):
         """
         ...
 
-    def finish(self):
+    def finish(self) -> None:
         """
         Brings the animation to a finish instantly, leaving everything controlled by the animation in the state in which it would have been had the animation completed naturally.
         """
@@ -83,6 +83,27 @@ class Animation(ABC, metaclass=AnimationMetaClass):
     def set_speed(self, speed: float) -> Self:
         """Sets the playback speed for this Animation."""
         ... # Implementation in AnimationMetaClass
+
+class CompressedAnimation(AnimationABC):
+    """CompressedAnimation wraps around another Animation, compressing it into an Animation with a single advance that makes all of the advances in the original Animation."""
+    def __init__(self, animation: AnimationABC):
+        self._animation = animation
+        self._locker = animation.locker
+
+    @property
+    def locker(self):
+        return self._locker
+    
+    def advance(self):
+        advanced = False
+        while self._animation.advance():
+            advanced = True
+        return advanced
+
+class Animation(AnimationABC):
+    def compress(self) -> CompressedAnimation:
+        return CompressedAnimation(self)
+    
         
 class NoAnimation(Animation):
 
@@ -190,17 +211,17 @@ class AnimationBundle(Animation):
 
         return advance_made
     
-    def push(self, animation: Animation | Iterable[Animation], _call_method: str ="push"):
+    def push(self, animation: AnimationABC | Iterable[AnimationABC], _call_method: str ="push"):
         if animation is None:
             pass
-        elif isinstance(animation, Animation):
+        elif isinstance(animation, AnimationABC):
             self._locker.update(animation.locker)
             self._animations.append(animation)
         elif isinstance(animation, Iterable):
             for animation_ in animation:
                 self.push(animation_)
         else:
-            raise TypeError(f"'{_call_method}' is only implemented for types Animation, Iterable[Animation], and None, not for '{type(animation)}'")
+            raise TypeError(f"'{_call_method}' is only implemented for types AnimationABC, Iterable[AnimationABC], and None, not for '{type(animation)}'")
 
 
     def clear(self):
@@ -441,10 +462,11 @@ def fade_in(element: Element, **kwargs) -> Animation:
 def fade_out(element: Element, **kwargs) -> Animation:
     return OpacityAnimation(element, 0.0, **kwargs)
 
-def flash(color: Color, rgb: str | Tuple[int, int, int], **kwargs):
+def flash(color: Color, rgb: str | Tuple[int, int, int], duration: float | ConfigurationDeference = DEFER_TO_CONFIG, **kwargs):
+    duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
     original_rgb = color.rgb
     return AnimationSequence(
-        RgbAnimation(color, rgb, **kwargs),
-        RgbAnimation(color, original_rgb, **kwargs)
-    ).set_speed(2)
+        RgbAnimation(color, rgb, duration=duration/2, **kwargs),
+        RgbAnimation(color, original_rgb, duration=duration/2, **kwargs)
+    )
 

@@ -70,6 +70,9 @@ class Element(Drawable):
         self.opacity = value
         return self
     
+    def set_stroke_width(self, value: float) -> Self:
+        self.stroke_width = value
+        return self
     def set_global_transform(self, transform: Transform) -> Self:
         """
         The global transform on this Element.

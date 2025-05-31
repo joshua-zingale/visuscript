@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from visuscript.primatives import Transform
 from visuscript.property_locker import PropertyLocker
-from typing import Iterable, Self
+from typing import Iterable, Self, Callable
 import numpy as np
 
 class UpdaterActivityError(ValueError):
@@ -81,6 +81,18 @@ class UpdaterBundle(Updater):
         self._updaters = []
         self._locker = PropertyLocker()
 
+
+class FunctionUpdater(Updater):
+    def __init__(self, function: Callable[[None], None]):
+        self._function = function
+        self._locker = PropertyLocker()
+    
+    @property
+    def locker(self):
+        return self._locker
+    
+    def update(self, t, dt):
+        self._function()
 
 
 class TranslationUpdater(Updater):

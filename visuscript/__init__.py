@@ -10,7 +10,7 @@ from .constants import (
     UP, RIGHT, DOWN, LEFT, FORWARD, BACKWARD, 
     )
 from .animated_collection import Var, NilVar
-from .updater import TranslationUpdater
+from .updater import TranslationUpdater, FunctionUpdater
 from .animation import (
     ScaleAnimation,
     TranslationAnimation,
