@@ -106,58 +106,40 @@ NilVar = Var(None)
 
 class VarContainer(ABC):
 
-    @property
-    @abstractmethod
-    def var(self) -> Var:
-        ...
-
-    @property
-    @abstractmethod
-    def element(self) -> Element:
-        ...
-
-class BlankContainer(VarContainer):
-
-    def __init__(self, var: Var):
+    def __init__(self, var: Var, *args, **kwargs):
         self._var = var
-        self._element = Pivot()
+        self._element = self.element_from_var(var, *args, **kwargs)
 
     @property
     def var(self) -> Var:
         return self._var
-    
+
     @property
     def element(self) -> Element:
         return self._element
+
+    @abstractmethod
+    def element_from_var(self, var: Var) -> Element:
+        ...
+
+class BlankContainer(VarContainer):
+    def element_from_var(self, var: Var) -> Element:
+        return Pivot()
     
 
 class Node(VarContainer):
     def __init__(self, *, var: Var, radius: float):
-
-        self._var = var
-
-        self._element = Circle(radius).with_child(Text(str(self._var.value), font_size=radius))
-
-    @property
-    def var(self) -> Var:
-        return self._var
-
-    @property
-    def element(self) -> Element:
-        return self._element
+        super().__init__(var=var, radius=radius)
+    
+    def element_from_var(self, var: Var, radius: float) -> Element:
+        return Circle(radius).with_child(Text(str(var.value), font_size=radius))
     
 class TextContainer(VarContainer):
     def __init__(self, *, var: Var, font_size: float):
-        self._var = var
-        self._element = Text(str(self._var.value), font_size=font_size)
-
-    @property
-    def var(self) -> Var:
-        return self._var
-
-    @property
-    def element(self) -> Element:
-        return self._element
+        super().__init__(var=var, font_size=font_size)
+        
+    def element_from_var(self, var: Var, font_size: float):
+        return Text(str(var.value), font_size=font_size)
 
 # TODO Fix this hack, which allows the canvas to reflect the current elements of the AnimatedCollection
 # This should be replaced with something that does not depend on implementational details like _children
@@ -219,7 +201,7 @@ class AnimatedCollection(Collection[Var]):
         yield from self.elements
 
     @property
-    def structure_element(self):
+    def collection_element(self):
         return _AnimatedCollectionElement(self)
     
     @property
@@ -243,7 +225,9 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     def __init__(self, variables: Iterable = [], *, transform: Transform | None = None):
         self._transform = Transform() if transform is None else Transform(transform)
         variables = map(lambda v: v if isinstance(v, Var) else Var(v), variables)
-        self._list = list(map(lambda v: self.new_container_for(v), variables))
+        self._list: list[Var] = []
+        for var in variables:
+            self.insert(-1, var).finish()
         
 
     @property
@@ -256,6 +240,10 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
 
     @property
     def organizer(self) -> Organizer:
+        return self.get_organizer()
+    
+    @abstractmethod
+    def get_organizer() -> Organizer:
         ...
 
     @property
@@ -264,7 +252,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
 
     def target_for(self, var: Var):
         index = next(index for index, container in enumerate(self._list) if container.var is var)
-        return self.organizer[index]
+        return self._transform(self.organizer[index])
 
     def element_for(self, var: Var):
         for container in self._list:
@@ -357,9 +345,8 @@ class AnimatedArray(AnimatedList):
 
         super().__init__(variables, **kwargs)
    
-    @property
-    def organizer(self):
-        return GridOrganizer((1,len(self)), (self._font_size*2, self._font_size*2), transform = self.transform)
+    def get_organizer(self):
+        return GridOrganizer((1,len(self)), (self._font_size*2, self._font_size*2))
     
     def new_container_for(self, var):
         if var.is_none:
@@ -377,10 +364,9 @@ class AnimatedBinaryTreeArray(AnimatedList):
 
         super().__init__(variables, **kwargs)
    
-    @property
-    def organizer(self):
+    def get_organizer(self):
         num_levels = int(np.log2(len(self))) + 1
-        return BinaryTreeOrganizer(num_levels=num_levels, level_heights=self.level_heights, node_width=self.node_width, transform = self.transform)
+        return BinaryTreeOrganizer(num_levels=num_levels, level_heights=self.level_heights, node_width=self.node_width)
     
     def new_container_for(self, var):
         if var.is_none:

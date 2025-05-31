@@ -37,7 +37,7 @@ class Organizer(ABC):
 class GridOrganizer(Organizer):
     """GridOrganizer arranges its output Transform objects into a three dimensional grid."""
 
-    def __init__(self, shape: Collection[int], sizes: Collection[int], transform: Transform | None = None):
+    def __init__(self, shape: Collection[int], sizes: Collection[int]):
         if len(shape) == 2:
             shape = tuple(shape) + (1,)
         elif len(shape) == 3:
@@ -50,8 +50,6 @@ class GridOrganizer(Organizer):
             sizes = tuple(sizes)
         else:
             raise ValueError("sizes must be of length 2 or 3")
-
-        self._transform = Transform() if transform is None else Transform(transform)
 
         self._shape = shape
         self._sizes = sizes
@@ -80,14 +78,14 @@ class GridOrganizer(Organizer):
 
         translation = [translation[1], translation[0], translation[2]]
 
-        return self._transform(Transform(translation=translation))
+        return Transform(translation=translation)
 
 
 
 class BinaryTreeOrganizer(Organizer):
     """BinaryTreeOrganizer arranges its Transform objects into a binary tree."""
 
-    def __init__(self, *, num_levels: int, level_heights: float | Iterable[float], node_width: float, transform: Transform | None = None):
+    def __init__(self, *, num_levels: int, level_heights: float | Iterable[float], node_width: float):
         assert num_levels >= 1
         self._len = int(2**(num_levels) - 1)
         self._num_levels = num_levels
@@ -98,9 +96,6 @@ class BinaryTreeOrganizer(Organizer):
             self._heights = [level_heights * l for l in range(num_levels)]
    
         self._node_width = node_width
-
-        self._transform = Transform() if transform is None else Transform(transform)
-
 
         self._leftmost = -(2**(num_levels-2) - 1/2)*self._node_width
 
@@ -118,4 +113,4 @@ class BinaryTreeOrganizer(Organizer):
         start_x = self._leftmost + (2**(self._num_levels - level - 1) - 1) * self._node_width/2
         start_y = self._heights[level]
         start_of_row = Vec3(start_x, start_y, 0)
-        return self._transform(Transform(translation=start_of_row + row_index*horizontal_separation))
+        return Transform(translation=start_of_row + row_index*horizontal_separation)
