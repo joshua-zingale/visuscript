@@ -70,7 +70,7 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
     @abstractmethod
     def locker(self) -> PropertyLocker:
         """
-        Returns a PropertyLocker identifying all objects/properties updated by this Animation.
+        The PropertyLocker identifying all objects/properties updated by this Animation.
         """
         ...
 
@@ -86,7 +86,7 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
         ... # Implementation in AnimationMetaClass
 
 class CompressedAnimation(AnimationABC):
-    """CompressedAnimation wraps around another Animation, compressing it into an Animation with a single advance that makes all of the advances in the original Animation."""
+    """CompressedAnimation wraps around another Animation, compressing it into an Animation with a single advance that runs all of the advances in the original Animation."""
     def __init__(self, animation: AnimationABC):
         self._animation = animation
         self._locker = animation.locker
@@ -104,10 +104,32 @@ class CompressedAnimation(AnimationABC):
 
 
 class Animation(AnimationABC):
+    """
+    An Animation can be used to modify properties of objects in a programatic manner.
+
+
+    Example
+    ::
+        from visuscript import *
+
+        with Scene() as s:
+            circle = Circle(20)
+            s << circle
+            s.animations << TransformAnimation(circle.transform, Transform(translation=[40,20], scale=2))
+        
+    """
     def compress(self) -> CompressedAnimation:
+        """Returns a compressed version of this Animation.
+        
+        The CompressedAnimation will have only a single advance (or frame), during which all of the advances (or frames) for this Animation will complete.
+        """
         return CompressedAnimation(self)
 
 class LazyAnimation(Animation):
+    """A LazyAnimation allows the initialization of an Animation to be delayed until its first advance.
+    
+    A LazyAnimation can be useful when chaining together multiple animations in an AnimationSequence, where the initial state of one object being animated should not be determined until the previous animation completes.
+    """
     def __init__(self, animation_function: Callable[[], Animation]):
         self._animation_function = animation_function
         self._locker = animation_function().locker
@@ -125,6 +147,10 @@ class LazyAnimation(Animation):
 
         
 class NoAnimation(Animation):
+    """A NoAnimation makes no changes to any object's state.
+    
+    A NoAnimation can be used to rest at the current state for a specified duration.
+    """
 
     def __init__(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
 
@@ -149,14 +175,16 @@ class NoAnimation(Animation):
         return False
     
 class RunFunction(Animation):
+    """A RunFunction Animation runs only a single advance, during which it calls a function."""
 
     def __init__(self, function: Callable[[], None]):
         self._function = function
         self._has_been_run = False
+        self._locker = PropertyLocker()
 
     @property
     def locker(self) -> PropertyLocker:
-        return PropertyLocker()
+        return self._locker
 
     def advance(self) -> bool:
         if not self._has_been_run:
@@ -165,6 +193,10 @@ class RunFunction(Animation):
         return False
     
 class AnimationSequence(Animation):
+    """An AnimationSequence runs through Animations in sequence.
+    
+    An AnimationSequence can be used to play multiple animation, one before another.
+    """
 
     def __init__(self, *animations: Animation):
         self._animations: list[Animation] = []
@@ -210,6 +242,10 @@ class AnimationSequence(Animation):
 
 
 class AnimationBundle(Animation):
+    """An AnimationBundle combines multiple Animation instances into one concurrent Animation.
+
+    An AnimationBundle can be used to play multiple Animation concurrently.
+    """
     def __init__(self, *animations: Animation):
         self._animations: list[Animation] = []
 
@@ -230,6 +266,12 @@ class AnimationBundle(Animation):
         return advance_made
     
     def push(self, animation: AnimationABC | Iterable[AnimationABC], _call_method: str ="push"):
+        """Adds an animation to this AnimationBundle.
+
+        :param animation: The animation to be added to this AnimationBundle
+        :type animation: AnimationABC | Iterable[AnimationABC]
+        :raises TypeError: The animation must inherit from AnimationABC or be an Iterable containing AnimationABC-inheriting instances.
+        """
         if animation is None:
             pass
         elif isinstance(animation, AnimationABC):
@@ -243,10 +285,12 @@ class AnimationBundle(Animation):
 
 
     def clear(self):
+        """Removes all Animations from this AnimationBundle."""
         self._animations = []
         self._locker = PropertyLocker()
     
     def __lshift__(self, other: Animation | Iterable[Animation]):
+        """See :func:AnimationBundle.push"""
         self.push(other, _call_method="<<")
 
 class TimeDeltaAnimation(Animation):
@@ -263,6 +307,8 @@ class TimeDeltaAnimation(Animation):
         self._dt: float = 1/(fps * updates_per_frame)
 
         self._updates_per_frame: int = updates_per_frame
+
+        raise NotImplementedError()
 
 
     def advance(self) -> bool:
@@ -283,7 +329,7 @@ class TimeDeltaAnimation(Animation):
     @abstractmethod
     def update(self, dt: float):
         """
-        Makes the change for the time `dt` in seconds of this animation.
+        Makes the change for the time dt in seconds of this animation.
         """
         ...
 
@@ -324,7 +370,7 @@ class AlphaAnimation(Animation):
     @abstractmethod
     def update(self, alpha: float):
         """
-        Updates the object to be percentage `alpha` through the animation.
+        Updates the object to be percentage alpha through the animation.
         """
         ...
 
@@ -473,13 +519,16 @@ class RgbAnimation(AlphaAnimation):
         self._color.rgb = self._source_rgb * (1 - alpha) + self._target_rgb * alpha
 
 
-def fade_in(element: Element, **kwargs) -> Animation:
+def fade_in(element: Element, **kwargs) -> OpacityAnimation:
+    """Returns an Animation to fade an Element in."""
     return OpacityAnimation(element, 1.0, **kwargs)
 
 def fade_out(element: Element, **kwargs) -> Animation:
+    """Returns an Animation to fade an Element out."""
     return OpacityAnimation(element, 0.0, **kwargs)
 
 def flash(color: Color, rgb: str | Tuple[int, int, int], duration: float | ConfigurationDeference = DEFER_TO_CONFIG, **kwargs):
+    """Returns an Animation to flash a Color's rgb to another and then back to its original rgb.."""
     duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
     original_rgb = color.rgb
     return AnimationSequence(
