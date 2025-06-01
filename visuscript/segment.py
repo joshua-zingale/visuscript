@@ -2,6 +2,7 @@ import numpy as np
 from typing import Self
 from abc import ABC, abstractmethod
 from visuscript.primatives import Vec2
+from visuscript.math_utility import magnitude
 
 class Segment(ABC):
 
@@ -16,7 +17,9 @@ class Segment(ABC):
         """
         The (x,y) point along this segment at `length` from the start.
         """
-        assert 0 <= length and length <= self.arc_length
+        assert 0 <= length and length <= self.arc_length + 1e-8, f"length={length}; arc_length={self.arc_length}"
+        if length > self.arc_length and length - self.arc_length <= 1e-8:
+            length = self.arc_length
         if self.arc_length == 0:
             return self.start
         return self.point_percentage(length/self.arc_length)
@@ -118,7 +121,7 @@ class LSegment(Segment):
     def point_percentage(self, p: float):
         if self._x1 == self._x2 and self._y1 == self._y2:
             return self.start
-        assert 0 <= p and p <= 1, f"Got {p}"
+        # assert 0 <= p and p <= 1, f"Got {p}"
         return Vec2(
             self._x2 * p + self._x1 * (1 - p),
             self._y2 * p + self._y1 * (1 - p)
@@ -126,7 +129,7 @@ class LSegment(Segment):
 
     @property
     def arc_length(self) -> float:
-        return np.sqrt( (self._x2 - self._x1)**2 + (self._y2 - self._y1)**2)
+        return ((self._x2 - self._x1)**2 + (self._y2 - self._y1)**2)**0.5
     
     @property
     def start(self):
@@ -195,7 +198,7 @@ class QSegment(Segment):
             derivative1 = self.derivative(t1)
             derivative2 = self.derivative(t2)
 
-            segment_length = (np.linalg.norm(derivative1) + np.linalg.norm(derivative2)) / 2 * dt
+            segment_length = (magnitude(derivative1) + magnitude(derivative2)) / 2 * dt
             total_length += segment_length
 
         return float(total_length)

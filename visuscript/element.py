@@ -290,14 +290,14 @@ class Drawing(Element, Segment):
 
         self._path: Path = path
 
-    def point(self, length: float) -> np.ndarray:
-        return self.transform(Transform(self._path.set_offset(*self.anchor_offset).point(length))).xy
+    def point(self, length: float) -> Vec2:
+        return self.transform(Transform(self._path.set_offset(*self.anchor_offset).point(length))).translation.xy
     
-    def point_percentage(self, p: float) -> np.ndarray:
-        return self.transform(Transform(self._path.set_offset(*self.anchor_offset).point_percentage(p))).xy
+    def point_percentage(self, p: float) -> Vec2:
+        return self.transform(Transform(self._path.set_offset(*self.anchor_offset).point_percentage(p))).translation.xy
     
-    def global_point(self, length: float) -> np.ndarray:
-        return self.global_transform(Transform(self._path.set_offset(*self.anchor_offset).point(length))).xy
+    def global_point(self, length: float) -> Vec2:
+        return self.global_transform(Transform(self._path.set_offset(*self.anchor_offset).point(length))).translation.xy
 
     @property
     def top_left(self) -> Vec2:

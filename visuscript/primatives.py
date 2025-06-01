@@ -322,7 +322,7 @@ class Transform:
     def __repr__(self):
         return str(self)
 
-    def __call__(self, other: Self) -> Self:
+    def __call__(self, other: Self | Vec2 | Vec3) -> Self | Vec2 | Vec3:
         return self @ other
     
     def __matmul__(self, other: Self | Vec2 | Vec3) -> Self | Vec2 | Vec3:

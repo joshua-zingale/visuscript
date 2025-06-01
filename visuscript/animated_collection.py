@@ -368,7 +368,7 @@ class QuadraticSwapAnimatedList(AnimatedList):
         element_b = self.element_for(self[b])
 
         diff = element_b.transform.translation.xy - element_a.transform.translation.xy
-        distance = np.linalg.norm(diff)
+        distance = magnitude(diff)
         direction = diff / distance
         ortho = Vec2(-direction.y, direction.x)
 

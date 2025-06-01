@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from visuscript.primatives import Transform
 from visuscript.property_locker import PropertyLocker
+from visuscript.math_utility import magnitude
 from typing import Iterable, Self, Callable
 import numpy as np
 
@@ -125,7 +126,7 @@ class TranslationUpdater(Updater):
             return
 
         diff = self._target.translation - self._transform.translation
-        dist = np.linalg.norm(diff)
+        dist = magnitude(diff)
         unit = diff/max(dist, 1e-16)
         
 

@@ -4,6 +4,7 @@ from visuscript.segment import Segment
 from visuscript.primatives import Vec2, Transform
 from visuscript.constants import LineTarget
 from visuscript.config import *
+from visuscript.math_utility import magnitude
 from abc import abstractmethod
 import numpy as np
 
@@ -37,7 +38,7 @@ class Connector(Element):
     def _unit_between(self) -> Vec2:
         diff = self._destination.global_shape.center - self._source.global_shape.center
         eps = 1e-16
-        return diff/max(np.linalg.norm(diff), eps)
+        return diff/max(magnitude(diff), eps)
 
 
     def _get_vec2(self, vec2_or_element: Vec2 | Element, target: LineTarget, offset_sign: int):
@@ -69,7 +70,7 @@ class Connector(Element):
         if self._destination_target == LineTarget.RADIAL:
             distance += self._destination.global_shape.circumscribed_radius
 
-        return np.linalg.norm(self._destination.global_shape.center - self._source.global_shape.center) < distance
+        return magnitude(self._destination.global_shape.center - self._source.global_shape.center) < distance
 
     def draw_self(self, transform: Transform):
         return self.get_connector(
@@ -108,7 +109,7 @@ class Arrow(Connector):
     def get_connector(self, source: Vec2, destination: Vec2, stroke: Color, stroke_width: float, fill: Color, opacity: float, overlapped: bool) -> Drawing:
         unit = self._unit_between
         diff = destination - source
-        dist = max(np.linalg.norm(diff), 1e-16)
+        dist = max(magnitude(diff), 1e-16)
         unit = diff/dist
         ortho = Vec2(-unit.y, unit.x)
 
