@@ -1,3 +1,5 @@
+"""This module contains the abstract base class for all Drawable objects."""
+
 from .primatives import *
 from .constants import Anchor
 from .config import *

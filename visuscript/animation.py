@@ -1,4 +1,6 @@
-from typing import Callable, Iterable, Type
+"""This module contains the abstract base class of all Animation objects alongside a bevy of basic animations and easing functions."""
+
+from typing import Callable, Iterable
 from abc import ABC, abstractmethod, ABCMeta
 from visuscript.config import *
 from visuscript.element import Element
