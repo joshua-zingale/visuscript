@@ -1,3 +1,4 @@
+"""This module contains Canvas and Scene, which allow display of Drawable and animation thereof."""
 from visuscript.drawable import Drawable
 from visuscript.constants import Anchor, OutputFormat
 from visuscript.element import Rect
@@ -6,7 +7,6 @@ from visuscript.primatives import *
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 from typing import Iterable, Generator
 from copy import copy
-from visuscript.output import print_svg
 import numpy as np
 import svg
 
@@ -259,3 +259,14 @@ class Scene(Canvas):
         self._drawables = self._original_drawables.pop()
         self._animation_bundle = self._original_animation_bundle.pop()
         self._updater_bundle = self._original_updater_bundle.pop()
+
+
+def print_svg(canvas: Canvas, file = None) -> None:
+    """
+    Prints `canvas` to the standard output as an SVG file.
+    """
+    print(canvas.draw(), file=file)
+
+def save_svg(canvas: Canvas, filename: str) -> None:
+    with open(filename, 'w') as f:
+        f.write(canvas.draw())
