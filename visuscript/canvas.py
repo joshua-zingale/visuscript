@@ -116,11 +116,11 @@ class Canvas(Drawable):
         return self._logical_width * x_percentage + self.anchor_offset.x
     def y(self, y_percentage: float) -> float:
         return self._logical_height * y_percentage + self.anchor_offset.y
-    def xy(self, x_percentage: float, y_percentage: float) -> np.ndarray:
-        return np.array([
+    def xy(self, x_percentage: float, y_percentage: float) -> Vec2:
+        return Vec2(
             self.x(x_percentage),
             self.y(y_percentage)
-        ])
+        )
     
     @property
     def top_left(self) -> Vec2:

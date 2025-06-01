@@ -88,8 +88,8 @@ class Text(Element):
           self._font_size = value
 
      @property
-     def top_left(self) -> np.ndarray:
-          return np.array([0, -self.height], dtype=float)
+     def top_left(self) -> Vec2:
+          return Vec2(0, -self.height)
 
 
      @property

@@ -1,95 +1,127 @@
 import numpy as np
-from typing import Self, Collection, Tuple
+from typing import Self, Collection, Tuple, Generator, Type, Sequence, Callable, Iterable
+from operator import add, mul, sub, truediv, neg
+from array import array
 from copy import deepcopy
 from ast import literal_eval
 
-class Vec2(np.ndarray):
 
-    def __new__(cls, x: float, y: float):
-        obj = super().__new__(cls, (2,), dtype=float)
-        obj[:] = x, y
-        return obj
+#TODO Stop inheriting from ndarray. Either use composition ro reimplement the features.
 
-    def extend(self, z: float) -> "Vec3":
-        """
-        Get a Vec3 with the same first and second values and input `z` as the third value.
-        """
+class SizeMismatch(ValueError):
+    def __init__(self, size1: int, size2: int, operation: str):
+        super().__init__(f"Size mismatch for {operation}: Size {size1} is not compatible with Size {size2}.")
+
+
+class Vec(Sequence[float]):
+
+    def __init__(self, *args):
+        self._arr = array('d', [*args])
+
+    # @staticmethod
+    # def size_check(operation):
+    #     def size_check_function(self, other):
+    #         if len(self) != len(other):
+    #             raise SizeMismatch(len(self, len(other), operation))
+    #         return operation(self, other)
+    #     return size_check_function
+    
+    def _element_wise(self, operation: Callable[[float, float], float], other: "Vec"):
+        if not hasattr(other, "__len__"):
+            return self.__class__(*(operation(s, other) for s in self))
+        
+        if len(self) != len(other):
+            raise SizeMismatch(len(self), len(other), f"__{operation.__name__}__")
+        
+        return self.__class__(*(operation(s, o) for s,o in zip(self, other)))
+
+    def dot(self, other: "Vec") -> float:
+        prods = self._element_wise(mul, other)
+        return sum(prods)
+
+    def __getitem__(self, index: int | slice) -> float:
+        if isinstance(index, slice):
+            return Vec(*self._arr[index])
+        return self._arr[index]
+    def __len__(self) -> int:
+        return len(self._arr)
+    
+    def __matmul__(self, other) -> Self:
+        return self.__class__(*np.matmul(self, other))
+    def __rmatmul__(self, other):
+        return self.__class__(*np.matmul(other, self))
+    
+    def __add__(self, other: "Vec") -> Self:
+        return self._element_wise(add, other)
+    def __radd__(self, other: "Vec") -> Self:
+        return self._element_wise(add, other)
+    
+    def __sub__(self, other: "Vec") -> Self:
+        return self._element_wise(sub, other)
+    def __rsub__(self, other: "Vec") -> Self:
+        vec = self.__class__(*map(lambda x: -x, self))
+        return vec._element_wise(add, other)
+
+    def __mul__(self, other: "Vec") -> Self:
+        return self._element_wise(mul, other)
+    def __rmul__(self, other: "Vec") -> Self:
+        return self._element_wise(mul, other)
+    
+    def __truediv__(self, other: "Vec") -> Self:
+        return self._element_wise(truediv, other)
+    def __rtruediv__(self, other: "Vec") -> Self:
+        vec = self.__class__(*map(lambda x: 1/x, self))
+        return vec._element_wise(mul, other)
+    
+    def __neg__(self) -> Self:
+        return self.__class__(*map(neg, self))
+    
+
+    def __str__(self):
+        return f"Vec{(*self,)}"
+    def __repr__(self):
+        return str(self)
+    
+    def astype(self, type: Type):
+        return list(map(type, self))
+
+
+    def max(self):
+        return max(self)
+
+
+class Vec2(Vec):
+    def __init__(self, x: float, y: float):
+        super().__init__(x,y)
+
+    def extend(self, z: float):
+        """Get a Vec3 with the same x,y as this Vec2, where the parameter sets z."""
         return Vec3(*self, z)
     
     @property
     def x(self) -> float:
         return self[0]
 
-    @x.setter
-    def x(self, value: float):
-        self[0] = value
-
     @property
     def y(self) -> float:
         return self[1]
 
-    @y.setter
-    def y(self, value: float):
-        self[1] = value
-
-
-    def __matmul__(self, other):
-        return self.view(np.ndarray).__matmul__(other.view(np.ndarray))
-    def __rmatmul__(self, other):
-        return self.view(np.ndarray).__rmatmul__(other.view(np.ndarray))
-
-    # These are added to help intellisense
-    def __mul__(self, other) -> Self:
-        return super().__mul__(other)
-    def __rmul__(self, other) -> Self:
-        return super().__rmul__(other)
-    def __truediv__(self, other) -> Self:
-        return super().__truediv__(other)
-    def __rtruediv__(self, other) -> Self:
-        return super().__rtruediv__(other)
-    def __floordiv__(self, other) -> Self:
-        return super().__floordiv__(other)
-    def __rfloordiv__(self, other) -> Self:
-        return super().__rfloordiv__(other)
-    def __sub__(self, other) -> Self:
-        return super().__sub__(other)
-    def __rsub__(self, other) -> Self:
-        return super().__rsub__(other)
-    def __add__(self, other) -> Self:
-        return super().__add__(other)
-    def __radd__(self, other) -> Self:
-        return super().__radd__(other)
-
-class Vec3(np.ndarray):
-
-    def __new__(cls, x: float, y: float, z: float):
-        obj = super().__new__(cls, (3,), dtype=float)
-        obj[:] = x,y,z
-        return obj
     
+class Vec3(Vec):
+    def __init__(self, x: float, y: float, z: float):
+        super().__init__(x,y,z)
+
     @property
     def x(self) -> float:
         return self[0]
 
-    @x.setter
-    def x(self, value: float):
-        self[0] = value
-
     @property
     def y(self) -> float:
         return self[1]
 
-    @y.setter
-    def y(self, value: float):
-        self[1] = value
-
     @property
     def z(self) -> float:
         return self[2]
-
-    @z.setter
-    def z(self, value: float):
-        self[2] = value
 
     @property
     def xy(self) -> Vec2:
@@ -97,116 +129,9 @@ class Vec3(np.ndarray):
         Get a Vec2 with the same first and second value as this Vec3.
         """
         return Vec2(*self[:2])
-    
-    @xy.setter
-    def xy(self, other: Collection):
-        assert len(other) == 2
-        self[:2] = other
-
-    def __matmul__(self, other):
-        return self.view(np.ndarray).__matmul__(other.view(np.ndarray))
-    def __rmatmul__(self, other):
-        return self.view(np.ndarray).__rmatmul__(other.view(np.ndarray))
-
-    # These are added to help intellisense
-    def __mul__(self, other) -> Self:
-        return super().__mul__(other)
-    def __rmul__(self, other) -> Self:
-        return super().__rmul__(other)
-    def __truediv__(self, other) -> Self:
-        return super().__truediv__(other)
-    def __rtruediv__(self, other) -> Self:
-        return super().__rtruediv__(other)
-    def __floordiv__(self, other) -> Self:
-        return super().__floordiv__(other)
-    def __rfloordiv__(self, other) -> Self:
-        return super().__rfloordiv__(other)
-    def __sub__(self, other) -> Self:
-        return super().__sub__(other)
-    def __rsub__(self, other) -> Self:
-        return super().__rsub__(other)
-    def __add__(self, other) -> Self:
-        return super().__add__(other)
-    def __radd__(self, other) -> Self:
-        return super().__radd__(other)
-
-
-# class Vec2(np.ndarray):
-
-#     def __new__(cls, x: float, y: float):
-#         obj = super().__new__(cls, (2,), dtype=float)
-#         obj[:] = x, y
-#         return obj
-
-#     def extend(self, z: float) -> "Vec3":
-#         """
-#         Get a Vec3 with the same first and second values and input `z` as the third value.
-#         """
-#         return Vec3(*self, z)
-    
-#     @property
-#     def x(self) -> float:
-#         return self[0]
-
-#     @x.setter
-#     def x(self, value: float):
-#         self[0] = value
-
-#     @property
-#     def y(self) -> float:
-#         return self[1]
-
-#     @y.setter
-#     def y(self, value: float):
-#         self[1] = value
-
-
-#     def __matmul__(self, other):
-#         return self.view(np.ndarray).__matmul__(other.view(np.ndarray))
-#     def __rmatmul__(self, other):
-#         return self.view(np.ndarray).__rmatmul__(other.view(np.ndarray))
-
-#     # These are added to help intellisense
-#     def __mul__(self, other) -> Self:
-#         if isinstance(other, Vec3):
-#             return other * self
-#         return super().__mul__(other)
-#     def __rmul__(self, other) -> Self:
-#         return super().__rmul__(other)
-#     def __truediv__(self, other) -> Self:
-#         if isinstance(other, Vec3):
-#             return other.__rtruediv__(self)
-#         return super().__truediv__(other)
-#     def __rtruediv__(self, other) -> Self:
-#         return super().__rtruediv__(other)
-#     def __floordiv__(self, other) -> Self:
-#         if isinstance(other, Vec3):
-#             return other.__rfloordiv__(self)
-#         return super().__floordiv__(other)
-#     def __rfloordiv__(self, other) -> Self:
-#         return super().__rfloordiv__(other)
-#     def __sub__(self, other) -> Self:
-#         if isinstance(other, Vec3):
-#             return other.__rsub__(self)
-#         return super().__sub__(other)
-#     def __rsub__(self, other) -> Self:
-#         return super().__rsub__(other)
-#     def __add__(self, other) -> Self:
-#         if isinstance(other, Vec3):
-#             return other + self
-#         return super().__add__(other)
-#     def __radd__(self, other) -> Self:
-#         return super().__radd__(other)
 
 # class Vec3(np.ndarray):
-#     @staticmethod
-#     def coerce(foo):
-#         def coerced(self, other):
-#             if isinstance(other, np.ndarray) and other.shape==(2,):
-#                 other = other.view(Vec2)
-#                 other = other.extend(0.0)
-#             return foo(self, other)
-#         return coerced
+
 #     def __new__(cls, x: float, y: float, z: float):
 #         obj = super().__new__(cls, (3,), dtype=float)
 #         obj[:] = x,y,z
@@ -248,45 +173,48 @@ class Vec3(np.ndarray):
 #         assert len(other) == 2
 #         self[:2] = other
 
-#     @coerce
 #     def __matmul__(self, other):
 #         return self.view(np.ndarray).__matmul__(other.view(np.ndarray))
-    
-#     @coerce
 #     def __rmatmul__(self, other):
 #         return self.view(np.ndarray).__rmatmul__(other.view(np.ndarray))
 
 #     # These are added to help intellisense
-#     @coerce
 #     def __mul__(self, other) -> Self:
 #         return super().__mul__(other)
-#     @coerce
 #     def __rmul__(self, other) -> Self:
 #         return super().__rmul__(other)
-#     @coerce
 #     def __truediv__(self, other) -> Self:
 #         return super().__truediv__(other)
-#     @coerce
 #     def __rtruediv__(self, other) -> Self:
 #         return super().__rtruediv__(other)
-#     @coerce
 #     def __floordiv__(self, other) -> Self:
 #         return super().__floordiv__(other)
-#     @coerce
 #     def __rfloordiv__(self, other) -> Self:
 #         return super().__rfloordiv__(other)
-#     @coerce
 #     def __sub__(self, other) -> Self:
 #         return super().__sub__(other)
-#     @coerce
 #     def __rsub__(self, other) -> Self:
 #         return super().__rsub__(other)
-#     @coerce
 #     def __add__(self, other) -> Self:
 #         return super().__add__(other)
-#     @coerce
 #     def __radd__(self, other) -> Self:
 #         return super().__radd__(other)
+
+
+class Rgb:
+    def __init__(self, r: int, g: int, b: int):
+        for v in [r,g,b]:
+            if not isinstance(v, int):
+                raise TypeError("RGB values must be of type int")
+            if v < 0 or v > 255:
+                raise ValueError("RGB values must be between 0 and 255, includsive.")
+        self._rgb: list[int] = [r,g,b]
+    def interpolate(self, other: "Rgb", alpha: float):
+        assert 0 <= alpha and alpha <= 1
+        return Rgb(*( round(s*(1-alpha) + o*alpha) for s,o in zip(self._rgb, other._rgb) ))
+    
+    def __iter__(self) -> Generator[int]:
+        yield from self._rgb
 
 
 def get_vec3(values: Collection[float], z_fill: float = 0.0) -> Vec3:
@@ -328,11 +256,11 @@ class Transform:
         self._rotation = value
 
     def rotate(self, vec3: Vec3) -> Vec3:
-        r_matrix = np.array([
+        r_matrix = [
             [np.cos(self.rotation*np.pi/180), -np.sin(self.rotation*np.pi/180),0],
             [np.sin(self.rotation*np.pi/180), np.cos(self.rotation*np.pi/180), 0],
             [0, 0, 1]
-        ])
+        ]
 
         return Vec3(*(r_matrix @ vec3))
 
@@ -399,20 +327,17 @@ class Transform:
     
     def __matmul__(self, other: Self | Vec2 | Vec3) -> Self | Vec2 | Vec3:
         t = (self.rotation * np.pi/180)
-        r_matrix = np.array([
+        r_matrix = [
             [np.cos(t), -np.sin(t),0],
             [np.sin(t), np.cos(t), 0],
             [0, 0, 1]
-        ])
+        ]
 
-        if isinstance(other, np.ndarray):
-            vec3 = get_vec3(other)
-            result = ((r_matrix@(vec3*self.scale)) + self._translation)
-
-            if len(other) == 2:
-                return result[:2].view(Vec2)
-            if len(other) == 3:
-                return result.view(Vec3)       
+        if isinstance(other, Vec2):
+            return ((r_matrix@(other.extend(0.0)*self.scale)) + self._translation).xy
+        
+        if isinstance(other, Vec3):
+            return (r_matrix@(other*self.scale)) + self._translation
 
         return Transform(
             translation = r_matrix@(other._translation * self.scale) + self._translation,
@@ -420,27 +345,7 @@ class Transform:
             rotation = self.rotation + other.rotation
             )
     
-    # def __add__(self, other: Self):
-    #     assert isinstance(other, Transform)
-    #     return Transform(
-    #         translation = self._translation + other._translation,
-    #         scale = self.scale * other.scale,
-    #         rotation = self.rotation + other.rotation
-    #     )
-    
-    # def __mul__(self, other: float):
-    #     return Transform(
-    #         translation = self._translation * other,
-    #         scale = self.scale**other,
-    #         rotation = self.rotation * other
-    #     )
-    # def __rmul__(self, other: float):
-    #     return self * other
-    # def __truediv__(self, other: float):
-    #     return self * (1/other)
-    
     def interpolate(self, other: Self, alpha: float):
-        np.clip(alpha, 0.0, 1.0)
         return Transform(
             translation = self.translation * (1 - alpha) + other.translation * alpha,
             scale = self.scale * (1 - alpha) + other.scale * alpha,
@@ -468,45 +373,43 @@ class Transform:
 class Color():
 
     PALETTE: dict = {
-    "dark_slate": np.array([28, 28, 28]),
-    "soft_blue": np.array([173, 216, 230]),
-    "vibrant_orange": np.array([255, 165, 0]),
-    "pale_green": np.array([144, 238, 144]),
-    "bright_yellow": np.array([255, 255, 0]),
-    "steel_blue": np.array([70, 130, 180]),
-    "forest_green": np.array([34, 139, 34]),
-    "burnt_orange": np.array([205, 127, 50]),
-    "light_gray": np.array([220, 220, 220]),
-    "off_white": np.array([245, 245, 220]),
-    "medium_gray": np.array([150, 150, 150]),
-    "slate_gray": np.array([112, 128, 144]),
-    "crimson": np.array([220, 20, 60]),
-    "gold": np.array([255, 215, 0]),
-    "sky_blue": np.array([135, 206, 235]),
-    "light_coral": np.array([240, 128, 128]),
-    "red": np.array([255, 99, 71]),
-    "orange": np.array([255, 165, 0]),
-    "yellow": np.array([255, 215, 0]),
-    "green": np.array([124, 252, 0]),
-    "blue": np.array([65, 105, 225]),
-    "purple": np.array([138, 43, 226]),
-    "white": np.array([255,255,255])
+    "dark_slate": Rgb(*[28, 28, 28]),
+    "soft_blue": Rgb(*[173, 216, 230]),
+    "vibrant_orange": Rgb(*[255, 165, 0]),
+    "pale_green": Rgb(*[144, 238, 144]),
+    "bright_yellow": Rgb(*[255, 255, 0]),
+    "steel_blue": Rgb(*[70, 130, 180]),
+    "forest_green": Rgb(*[34, 139, 34]),
+    "burnt_orange": Rgb(*[205, 127, 50]),
+    "light_gray": Rgb(*[220, 220, 220]),
+    "off_white": Rgb(*[245, 245, 220]),
+    "medium_gray": Rgb(*[150, 150, 150]),
+    "slate_gray": Rgb(*[112, 128, 144]),
+    "crimson": Rgb(*[220, 20, 60]),
+    "gold": Rgb(*[255, 215, 0]),
+    "sky_blue": Rgb(*[135, 206, 235]),
+    "light_coral": Rgb(*[240, 128, 128]),
+    "red": Rgb(*[255, 99, 71]),
+    "orange": Rgb(*[255, 165, 0]),
+    "yellow": Rgb(*[255, 215, 0]),
+    "green": Rgb(*[124, 252, 0]),
+    "blue": Rgb(*[65, 105, 225]),
+    "purple": Rgb(*[138, 43, 226]),
+    "white": Rgb(*[255,255,255])
 }
 
     def __init__(self, color: str | Collection[int] | Self = "off_white", opacity: float = 1.0):
 
         self.opacity: float = color.opacity if isinstance(color, Color) else opacity
-        self._rgb: np.ndarray
+        self._rgb: Rgb
 
         if isinstance(color, Color):
             self._rgb = deepcopy(color._rgb)
-        elif isinstance(color, str) and color[:3] == "rgb":
-            self._rgb = np.array(literal_eval(color[4:])).astype(int)
         elif isinstance(color, str):
             self._rgb = Color.PALETTE[color]
         elif isinstance(color, Collection):
             assert len(color) == 3, f"length was {len(color)}"
-            self._rgb = np.array(color, dtype=int)
+            self._rgb = Rgb(*color, dtype=int)
         else:
             raise TypeError(f"{type(color)} is not accepted.")
         
@@ -521,14 +424,14 @@ class Color():
 
 
     @property
-    def rgb(self) -> np.ndarray:
-        return deepcopy(self._rgb)
+    def rgb(self) -> Rgb:
+        return self._rgb
     
     @rgb.setter
     def rgb(self, value: str | Tuple[int, int, int]):
         if isinstance(value, str):
             value = Color.PALETTE[value]
-        self._rgb[:] = (*value,)
+        self._rgb = value
 
     @property
     def svg_rgb(self):

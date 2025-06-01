@@ -487,13 +487,13 @@ class OpacityAnimation(AlphaAnimation):
         self._color.opacity = self._source_opacity * (1 - alpha) + self._target_opacity * alpha
 
 class RgbAnimation(AlphaAnimation):
-    def __init__(self, color: Color, target_rgb: str | Tuple[int, int, int], **kwargs):
+    def __init__(self, color: Color, target_rgb: Rgb, **kwargs):
         super().__init__(**kwargs)
         self._color = color
         
         if isinstance(target_rgb, str):
             target_rgb = Color.PALETTE[target_rgb]
-        self._target_rgb = np.array(target_rgb)
+        self._target_rgb = target_rgb
 
         self._locker = PropertyLocker()
         self._locker.add(self._color, "rgb")
@@ -506,7 +506,7 @@ class RgbAnimation(AlphaAnimation):
         self._source_rgb = self._color.rgb
 
     def update(self, alpha: float):
-        self._color.rgb = self._source_rgb * (1 - alpha) + self._target_rgb * alpha
+        self._color.rgb = self._source_rgb.interpolate(self._target_rgb, alpha)
 
 
 def fade_in(element: Element, **kwargs) -> OpacityAnimation:

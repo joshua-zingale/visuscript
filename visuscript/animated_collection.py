@@ -9,7 +9,7 @@ from visuscript.organizer import BinaryTreeOrganizer, Organizer, GridOrganizer
 from visuscript.element import Circle, Pivot
 from visuscript.primatives import Transform
 from visuscript.drawable import Drawable
-
+from visuscript.math_utility import magnitude
 
 from abc import ABC, abstractmethod
 from visuscript.primatives import Vec2
