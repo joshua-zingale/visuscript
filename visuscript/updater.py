@@ -1,3 +1,5 @@
+"""This module contains the abstract base class of all updaters alongside a bevy of basic updaters"""
+
 from abc import ABC, abstractmethod
 from visuscript.primatives import Transform
 from visuscript.property_locker import PropertyLocker

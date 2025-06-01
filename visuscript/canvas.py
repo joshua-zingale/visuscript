@@ -16,7 +16,6 @@ from visuscript.animation import AnimationBundle, Animation
 class Canvas(Drawable):
     """A Canvas can display multiple Drawable objects at once and provides functionality to output the composite image.
     
-    
     A Canvas can receive :class:`~visuscript.drawable.Drawable` objects with :code:`canvas << element`
 
     Example using the context manager (recommended)::
