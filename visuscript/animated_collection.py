@@ -1,3 +1,5 @@
+"""This module contains functionality for AnimatedCollections"""
+
 from visuscript.animation import NoAnimation, PathAnimation, AnimationBundle, TransformAnimation, LazyAnimation
 from visuscript.segment import Path
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
@@ -18,6 +20,7 @@ import numpy as np
 
 
 class Var:
+    """A wrapper around any other type: the foundational bit of data to be stored in an AnimatedCollection."""
 
     def __init__(self, value, *, type_: type | None = None):
 
@@ -105,21 +108,36 @@ NilVar = Var(None)
 
 
 class VarContainer(ABC):
+    """A container for variable"""
 
     def __init__(self, var: Var, *args, **kwargs):
+        """Initializes self.
+
+        :param var: The Var to be contained.
+        :type var: Var
+        """
         self._var = var
         self._element = self.element_from_var(var, *args, **kwargs)
 
     @property
     def var(self) -> Var:
+        """Returns the Var contained by the VarContainer."""
         return self._var
 
     @property
     def element(self) -> Element:
+        """Returns the Element for the Var contained by the VarContainer"""
         return self._element
 
     @abstractmethod
     def element_from_var(self, var: Var) -> Element:
+        """Initializes a new Element to be used by this VarContainer to represent the contained Var.
+
+        :param var: The Var used to initialize the Element.
+        :type var: Var
+        :return: The initialized Element.
+        :rtype: Element
+        """
         ...
 
 class BlankContainer(VarContainer):
@@ -141,8 +159,6 @@ class TextContainer(VarContainer):
     def element_from_var(self, var: Var, font_size: float):
         return Text(str(var.value), font_size=font_size)
 
-# TODO Fix this hack, which allows the canvas to reflect the current elements of the AnimatedCollection
-# This should be replaced with something that does not depend on implementational details like _children
 class _AnimatedCollectionElement(Drawable):
     def __init__(self, animated_collection: "AnimatedCollection", **kwargs):
         super().__init__(**kwargs)
@@ -164,6 +180,10 @@ class _AnimatedCollectionElement(Drawable):
    
     
 class AnimatedCollection(Collection[Var]):
+    """The Base class for all AnimatedCollections.
+    
+    An AnimatedCollection stores data in form of Var instances alongside corresponding Element instances.
+    """
 
     # @property
     # @abstractmethod
@@ -184,7 +204,6 @@ class AnimatedCollection(Collection[Var]):
     def organize(self, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
         animation_bundle = AnimationBundle(NoAnimation(duration=duration))
         for var in self:
-            # transform, target = self.element_for(var).transform, self.target_for(var)
             animation_bundle << TransformAnimation(self.element_for(var).transform, self.target_for(var), duration=duration)
         return animation_bundle
         

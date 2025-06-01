@@ -24,55 +24,17 @@ def get_base64_from_pil_image(pil_image: PILImage) -> str:
     return img_str
 
 class Element(Drawable):
-    def __init__(self,
-                 stroke: Color | ConfigurationDeference = DEFER_TO_CONFIG,
-                 stroke_width: float | ConfigurationDeference = DEFER_TO_CONFIG,
-                 fill: Color | ConfigurationDeference = DEFER_TO_CONFIG,
-                 opacity: float = 1.0,
-                 **kwargs):
-        
-        stroke = config.element_stroke if stroke is DEFER_TO_CONFIG else stroke
-        stroke_width = config.element_stroke_width if stroke_width is DEFER_TO_CONFIG else stroke_width
-        fill = config.element_fill if fill is DEFER_TO_CONFIG else fill
-
+    """An Element is a Drawable that can be placed in a hierarcy, where ancestor's transforms are applied to an Element for the Element to be drawn."""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self._children: list["Element"] = []
         self._parent: "Element" | None = None
         self._svg_pivot = None
         self._deleted = False
 
-        # if fill is not None and stroke is None:
-        #     self.stroke: Color = Color(fill)
-        # else:
-        #     self.stroke: Color = Color(stroke) if stroke is not None else Color()
-
-        self.stroke: Color = Color(stroke)
-        self.stroke_width: float = stroke_width
-        self.fill: Color = Color(fill)
-
-        self._opacity = opacity
-    
-        super().__init__(**kwargs)
-
-
     def iter_children(self) -> Generator["Element"]:
         yield from self._children
 
-
-    @property
-    def opacity(self) -> float:
-        return self._opacity
-
-    @opacity.setter
-    def opacity(self, value: float):
-        self._opacity = value
-
-    def set_opacity(self, value: float) -> Self:
-        self.opacity = value
-        return self
-    
-    def set_stroke_width(self, value: float) -> Self:
-        self.stroke_width = value
-        return self
     def set_global_transform(self, transform: Transform) -> Self:
         """
         The global transform on this Element.
@@ -150,19 +112,6 @@ class Element(Drawable):
         return self
     
     with_children = add_children
-
-
-    def set_fill(self, color: Color) -> Self:
-        color = Color(color)
-        self.fill.rgb = color.rgb
-        self.fill.opacity = color.opacity
-        return self
-    
-    def set_stroke(self, color: Color) -> Self:
-        color = Color(color)
-        self.stroke.rgb = color.rgb
-        self.stroke.opacity = color.opacity
-        return self
     
     @property
     def global_transform(self) -> Transform:
@@ -313,46 +262,10 @@ class Image(Element):
             href=f"data:image/png;base64,{self._file_data}",
         ).as_str()
 
-# class VectorImage(Element):
-#     def __init__(self, *, filename: str, width: float, **kwargs):
-#         super().__init__(**kwargs)
-        
-#         data = np.array(PILImage.open(filename))
-
-#         assert len(data.shape) == 3
-#         assert data.shape[-1] == 4
-
-#         resolution = (data.shape[0], data.shape[1])
-#         pixel_width = width / data.shape[1]
-
-#         self._width = data.shape[1] * pixel_width
-#         self._height = data.shape[0] * pixel_width
-
-#         grid = GridOrganizer(resolution, sizes=[pixel_width, pixel_width])
-
-#         self._pixels: list[Element] = []
-#         for (r,g,b,o), transform in zip(data.reshape(-1,4), grid):
-#             self._pixels.append(Rect(pixel_width, pixel_width, anchor=Anchor.TOP_LEFT, fill=Color([r,g,b], opacity=o))
-#                           .set_transform(transform))
-            
-#         self.add_children(*self._pixels)
-
-#     @property
-#     def top_left(self):
-#         return Vec2(0,0)
-#     @property
-#     def width(self) -> float:
-#         return self._width
-#     @property
-#     def height(self) -> float:
-#         return self._height
-
-#     def draw_self(self):
-#         return ""
-    
-                            
-
 class Pivot(Element):
+    """A Pivot is an Element with no display for itself.
+    
+    A Pivot can be used to construct more complex object by adding children."""
     @property
     def top_left(self):
         return Vec2(0,0)
@@ -366,6 +279,7 @@ class Pivot(Element):
         return ""
 
 class Drawing(Element, Segment):
+    """A Drawing is an Element for which the self-display is defined by a Path."""
     def __init__(self,
                  path: Path,
                  *,
@@ -383,7 +297,6 @@ class Drawing(Element, Segment):
         return self.transform(Transform(self._path.set_offset(*self.anchor_offset).point_percentage(p))).xy
     
     def global_point(self, length: float) -> np.ndarray:
-
         return self.global_transform(Transform(self._path.set_offset(*self.anchor_offset).point(length))).xy
 
     @property
@@ -426,13 +339,12 @@ class Drawing(Element, Segment):
                 stroke_width=self.stroke_width).as_str()
     
 
-class Circle(Drawing):
+#TODO Make Circle a Drawing by adding a Path that approximates the circle
+class Circle(Element):
+    """A Circle"""
 
     def __init__(self, radius: float, **kwargs):
-        # TODO replace path with circle approximate
-        path = Path().L(radius, 0).L(radius, radius).Z()
-        super().__init__(path = path, **kwargs)
-
+        super().__init__(**kwargs)
         self.radius = radius
 
     @property
@@ -449,7 +361,6 @@ class Circle(Drawing):
     @property
     def circumscribed_radius(self):
         return self.radius
-        
 
     def draw_self(self, transform: Transform):
         x, y = self.anchor_offset
@@ -467,25 +378,7 @@ class Circle(Drawing):
             ).as_str()
 
 
-def Rect(width, height, anchor: Anchor = Anchor.CENTER, **kwargs):
-
-    path = Path().l(width, 0).l(0, height).l(-width, 0).Z()
-
-    return Drawing(path=path, anchor=anchor, **kwargs)
-
-
-# TODO Finish this
-class Box(Drawing):
-
-    def __init__(self, element: Element):
-        super().__init__(path=None)
-
-        self._element = element
-
-    @property
-    def _path(self) -> Path:
-        return Path().l(self._element.width, 0).l(0,self._element.height).l(-self._element.width,0).Z()
-
-    @_path.setter
-    def _path(self, value):
-        pass
+class Rect(Drawing):
+    """A Rectangle"""
+    def __init__(self, width, height, anchor: Anchor = Anchor.CENTER, **kwargs):
+        super().__init__(Path().l(width, 0).l(0, height).l(-width, 0).Z(), anchor=anchor, **kwargs)
