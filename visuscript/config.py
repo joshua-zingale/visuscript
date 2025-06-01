@@ -61,7 +61,7 @@ class _AnimationConfig:
 
 config: _AnimationConfig = _AnimationConfig()
 """
-The singleton configuration object for Visuscript, which sets defaults for various Visuscript features.
+The global singleton configuration object for Visuscript, which sets defaults for various Visuscript features.
 """
 
 ConfigurationDeference: TypeAlias = object
