@@ -9,24 +9,11 @@ import numpy as np
 
 
 class Connector(Element):
-    """
-    Visually connects one Element to another or one location to another.
-    The source and destination of a Connector are automatically updated to match the Elements' positions whenever the Elements are transformed.
-    """
+    """A connector visually connects one Element to another or one location to another."""
 
     POSITIVE = 1
     NEGATIVE = -1
 
-
-    @property
-    def height(self):
-        return abs(self._destination.global_shape.center[1] - self._source.global_shape.center[1])
-    @property
-    def width(self):
-        return abs(self._destination.global_shape.center[0] - self._source.global_shape.center[0])
-    @property
-    def top_left(self):
-        return Vec2(min(self._destination.global_shape.center[0], self._source.global_shape.center[0]), min(self._destination.global_shape.center[1], self._source.global_shape.center[1]))
 
     def __init__(self, *, source: Vec2 | Element, destination: Vec2 | Element, source_target: LineTarget = LineTarget.RADIAL, destination_target: LineTarget = LineTarget.RADIAL, **kwargs):
         super().__init__(**kwargs)
@@ -36,6 +23,15 @@ class Connector(Element):
         self._source_target = source_target
         self._destination_target = destination_target
 
+    @property
+    def height(self) -> float:
+        return abs(self._destination.global_shape.center[1] - self._source.global_shape.center[1])
+    @property
+    def width(self) -> float:
+        return abs(self._destination.global_shape.center[0] - self._source.global_shape.center[0])
+    @property
+    def top_left(self) -> float:
+        return Vec2(min(self._destination.global_shape.center[0], self._source.global_shape.center[0]), min(self._destination.global_shape.center[1], self._source.global_shape.center[1]))
 
     @property
     def _unit_between(self) -> Vec2:
@@ -56,14 +52,17 @@ class Connector(Element):
 
     @property
     def source(self) -> Vec2:
+        """The (x,y) source for this Connector, updated to the source's global Shape."""
         return self._get_vec2(self._source, self._source_target, Line.POSITIVE)
     
     @property
     def destination(self) -> Vec2:
+        """The (x,y) destination for this Connector, updated to the destination's global Shape."""
         return self._get_vec2(self._destination, self._destination_target, Line.NEGATIVE)
     
     @property
     def overlapped(self) -> bool:
+        """True if and only if the source and destination are overlapped."""
         distance = 0
         if self._source_target == LineTarget.RADIAL:
             distance += self._source.global_shape.circumscribed_radius
@@ -88,6 +87,7 @@ class Connector(Element):
         ...
 
 class Line(Connector):
+    """A Line is a straight-line Connector."""
     def get_connector(self, source: Vec2, destination: Vec2, stroke: Color, stroke_width: float, fill: Color, opacity: float, overlapped: bool) -> Drawing:
         return Drawing(
             path=Path().M(*source).L(*destination),
@@ -98,6 +98,8 @@ class Line(Connector):
             )
     
 class Arrow(Connector):
+    """An Arrow is a straight-line Connector with an optional arrowhead on either side."""
+
     def __init__(self, *, start_size: float | ConfigurationDeference = DEFER_TO_CONFIG, end_size: float | ConfigurationDeference = DEFER_TO_CONFIG, source: Vec2 | Element, destination: Vec2 | Element, source_target: LineTarget = LineTarget.RADIAL, destination_target: LineTarget = LineTarget.RADIAL, **kwargs):
         super().__init__(source=source, destination=destination, source_target=source_target, destination_target=destination_target, **kwargs)
         self._start_size = 0.0 if start_size is DEFER_TO_CONFIG else start_size
@@ -133,40 +135,3 @@ class Arrow(Connector):
                 .L(*(line_end - ortho*self._end_size/2))
                 .L(*line_end)
             ))
-
-
-
-# def line_with_head(source: Vec2, destination: Vec2, stroke=None, stroke_width = 1, head_size = 2, fill=None):
-
-    # distance = np.linalg.norm(destination - source)
-    # direction = (destination - source) / distance
-    
-    # ortho = Vec2(-direction.y, direction.x)
-
-    # line_end =source + direction*(distance-head_size)
-    # return Drawing(
-    #     stroke=stroke,
-    #     stroke_width=stroke_width,
-    #     fill=fill,
-    #     path=(
-    #         Path()
-    #         .M(*source)
-    #         .L(*line_end)
-    #         .L(*(line_end + ortho*head_size/2))
-    #         .L(*(source + direction*distance))
-    #         .L(*(line_end - ortho*head_size/2))
-    #         .L(*line_end)
-    #     ))
-
-
-# def arrow(source: Element, destination: Element, stroke=None, stroke_width = 1, head_size = 2, fill='off_white'):
-
-#     s_xy = source.shape.center
-#     d_xy = destination.shape.center
-
-#     direction = (d_xy - s_xy) / np.linalg.norm(d_xy - s_xy)
-
-#     start_xy = s_xy + direction * source.shape.circumscribed_radius
-#     end_xy = d_xy - direction * destination.shape.circumscribed_radius
-
-#     return line_with_head(start_xy, end_xy, stroke=stroke, stroke_width=stroke_width, head_size=head_size, fill=fill)
