@@ -106,20 +106,7 @@ class CompressedAnimation(AnimationABC):
 
 
 class Animation(AnimationABC):
-    """
-    An Animation can be used to modify properties of objects in a programatic manner.
-
-
-    Example
-    ::
-        from visuscript import *
-
-        with Scene() as s:
-            circle = Circle(20)
-            s << circle
-            s.animations << TransformAnimation(circle.transform, Transform(translation=[40,20], scale=2))
-        
-    """
+    """An Animation can be used to modify properties of objects in a programatic manner."""
     def compress(self) -> CompressedAnimation:
         """Returns a compressed version of this Animation.
         
@@ -460,6 +447,7 @@ class RotationAnimation(AlphaAnimation):
         self._transform.rotation = self._source_rotation * (1 - alpha) + self._target_rotation * alpha
 
 class TransformAnimation(AlphaAnimation):
+    """Animates a Transform linearly toward a target."""
     def __init__(self, transform: Transform, target: Transform, **kwargs):
         super().__init__(**kwargs)
 

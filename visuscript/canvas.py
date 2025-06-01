@@ -14,6 +14,27 @@ from visuscript.animation import AnimationBundle, Animation
 
 
 class Canvas(Drawable):
+    """A Canvas can display multiple Drawable objects at once and provides functionality to output the composite image.
+    
+    
+    A Canvas can receive :class:`~visuscript.drawable.Drawable` objects with :code:`canvas << element`
+
+    Example using the context manager (recommended)::
+
+        from visuscript import *
+        with Canvas() as c:
+            c << Circle(20)
+            c << Rect(40,40)
+
+    Example without the context manager::
+
+        from visuscript import *
+        c = Canvas()
+        c << Circle(20)
+        c << Rect(40,40)
+        c.print()  
+    """
+
     def __init__(self, *,
                  drawables: list[Drawable] | None = None,
                  width: int | ConfigurationDeference = DEFER_TO_CONFIG,
@@ -163,7 +184,25 @@ class _Player:
             self._scene.print()
 
 class Scene(Canvas):
+    """A Scene can display Drawable objects under various Animations and Updaters and provides functionality to output the composite image(s).
 
+    A Scene can receive:
+
+    * :class:`~visuscript.drawable.Drawable` objects with :code:`scene << element`
+    * :class:`~visuscript.animation.Animation` objects with :code:`scene.animations << animation`
+    * :class:`~visuscript.updater.Updater` objects with :code:`scene.updaters << updater`
+
+    Additionally, a scene can run through a single :class:`~visuscript.animations.Animation` with :code:`scene.player << animation`
+
+    Example::
+
+        from visuscript import *
+
+        with Scene() as s:
+            rect = Rect(20,20)
+            s << rect
+            s.animations << TransformAnimation(circle.transform, Transform(translation=[40,20], scale=2, rotation=45))
+    """
     def __init__(self, print_initial=True, **kwargs):
         super().__init__(**kwargs)
         self._print_initial = print_initial
@@ -203,6 +242,7 @@ class Scene(Canvas):
 
 
     def print_frames(self):
+        """Runs through all animations and prints the frames to the output stream."""
         for _ in self.iter_frames():
             self.print()
 
