@@ -1,6 +1,7 @@
-"""This module contains functionality for AnimatedCollections"""
+"""This module contains functionality for :class:`~AnimatedCollection`.
+"""
 
-from visuscript.animation import NoAnimation, PathAnimation, AnimationBundle, TransformAnimation, LazyAnimation
+from visuscript.animation import NoAnimation, PathAnimation, AnimationBundle, TransformAnimation, LazyAnimation, Animation
 from visuscript.segment import Path
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
 from visuscript.element import Element
@@ -13,16 +14,25 @@ from visuscript.math_utility import magnitude
 
 from abc import ABC, abstractmethod
 from visuscript.primatives import Vec2
-from typing import Collection, Iterable, MutableSequence, Self
+from typing import Collection, Iterable, MutableSequence, Self, Any, Generator
 
 
 import numpy as np
 
 
 class Var:
-    """A wrapper around any other type: the foundational bit of data to be stored in an AnimatedCollection."""
+    """An immutable wrapper around any other type: the foundational bit of data to be stored in an :class:`AnimatedCollection`.
+    """
 
-    def __init__(self, value, *, type_: type | None = None):
+    def __init__(self, value: Any, *, type_: type | None = None):
+        """
+        :param value: The value to be stored.
+        :type value: Any
+        :param type_: The type of the stored value.
+            If None, which is the default, the type is of the value is inferred;
+            else, the stored value is cast to this parameter's argument.
+        :type type_: type | None, optional
+        """
 
         if isinstance(value, Var):
             self._value = value.value
@@ -41,10 +51,13 @@ class Var:
     
     @property
     def value(self):
+        """The value stored in this :class:`Var`."""
         return self._value
     
     @property
-    def is_none(self):
+    def is_none(self) -> bool:
+        """True if and only if None is the value stored herein.
+        """
         return self.value is None
     
     def __add__(self, other: "Var"):
@@ -104,48 +117,67 @@ class Var:
         return self.value is not None and self.value is not False
 
 NilVar = Var(None)
-"""A Var representing no value."""
+"""A :class:`Var` representing no value."""
 
-
+# TODO Refactor VarContainer to inherit from Drawable.
 class VarContainer(ABC):
-    """A container for variable"""
+    """A container for a :class:`Var` that stores an :class:`~visuscript.element.Element` therewith."""
 
     def __init__(self, var: Var, *args, **kwargs):
-        """Initializes self.
-
+        """
         :param var: The Var to be contained.
         :type var: Var
+        :param args: Arbitrary positional arguments to be passed to :meth:`~VarContainer.element_from_var`.
+        :type args: tuple
+        :param kwargs: Arbitrary keyword arguments to be passed to :meth:`~VarContainer.element_from_var`.
+        :type kwargs: dict
         """
         self._var = var
         self._element = self.element_from_var(var, *args, **kwargs)
 
     @property
     def var(self) -> Var:
-        """Returns the Var contained by the VarContainer."""
+        """The :class:`Var` contained by this :class:`VarContainer`.
+        """
         return self._var
 
     @property
     def element(self) -> Element:
-        """Returns the Element for the Var contained by the VarContainer"""
+        """The :class:`~visuscript.element.Element` for the :class:`Var` contained by this :class:`VarContainer`.
+        """
         return self._element
 
     @abstractmethod
     def element_from_var(self, var: Var) -> Element:
-        """Initializes a new Element to be used by this VarContainer to represent the contained Var.
+        """Initializes a new :class:`~visuscript.element.Element` to be used by this :class:`VarContainer` to represent the contained :class:`Var`.
 
-        :param var: The Var used to initialize the Element.
+        This is an abstract method that must be implemented by subclasses. Subclasses
+        should define the parameters that :attr:`~VarContainer.element_from_var`
+        requires to properly construct the element.
+
+        :param var: The :class:`Var` used to initialize the :class:`~visuscript.element.Element`.
         :type var: Var
-        :return: The initialized Element.
+        :param args: Arbitrary positional arguments passed through from :meth:`~VarContainer.__init__`.
+                     Subclasses may define these as explicit positional parameters.
+        :type args: tuple
+        :param kwargs: Arbitrary keyword arguments passed through from :meth:`~VarContainer.__init__`.
+                       Subclasses may define these as explicit keyword-only parameters.
+        :type kwargs: dict
+        :return: The initialized :class:`~visuscript.element.Element`.
         :rtype: Element
         """
         ...
+        ...
 
 class BlankContainer(VarContainer):
-    def element_from_var(self, var: Var) -> Element:
+    """A :class:`VarContainer` that has an invisible :class:`~visuscript.element.Element`.
+    """
+    def element_from_var(self, var: Var) -> Pivot:
         return Pivot()
     
 
 class Node(VarContainer):
+    """A :class:`VarContainer` that displays the :class:`Var`'s value inside a circle."""
     def __init__(self, *, var: Var, radius: float):
         super().__init__(var=var, radius=radius)
     
@@ -153,6 +185,7 @@ class Node(VarContainer):
         return Circle(radius).with_child(Text(str(var.value), font_size=radius))
     
 class TextContainer(VarContainer):
+    """A :class:`VarContainer` that displays the :class:`Var`'s value only with characters."""
     def __init__(self, *, var: Var, font_size: float):
         super().__init__(var=var, font_size=font_size)
         
@@ -180,23 +213,26 @@ class _AnimatedCollectionElement(Drawable):
    
     
 class AnimatedCollection(Collection[Var]):
-    """The Base class for all AnimatedCollections.
-    
-    An AnimatedCollection stores data in form of Var instances alongside corresponding Element instances.
+    """Stores data in form of :class:`Var` instances alongside corresponding :class:`~visuscript.element.Element` instances
+    and organizational functionality to transform the elements according to the rules of the given :class:`AnimatedCollection`.
     """
+
 
     @abstractmethod
     def element_for(self, var: Var) -> Element:
+        """Returns the :class:`~visuscript.element.Element` for a :class:`Var` stored in this collection."""
         ...
 
     @abstractmethod
     def target_for(self, var: Var) -> Transform:
+        """Returns the :class:`~visuscript.primatives.Transform` that the input :class:`Var`'s :class:`~visuscript.element.Element`
+        should have to be positioned according to this :class:`AnimatedCollection`'s rules.
+        """
         ...
-
-    def transform_for(self, var: Var) -> Transform:
-        return self.element_for(var).transform
     
     def organize(self, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
+        """Returns an :class:`~visuscript.animation.Animation` that positions all of the :class:`~visuscript.element.Element` instances
+        corresponding to :class:`Var` instances in this :class:`AnimatedCollection` according to its rules."""
         animation_bundle = AnimationBundle(NoAnimation(duration=duration))
         for var in self:
             animation_bundle << TransformAnimation(self.element_for(var).transform, self.target_for(var), duration=duration)
@@ -206,30 +242,43 @@ class AnimatedCollection(Collection[Var]):
     @property
     @abstractmethod
     def elements(self) -> Iterable[Element]:
+        """An iterable over the :class:`~visuscript.element.Element` instances managed by this collection
+        that correspond to the :class:`Var` instances stored herein."""
         ...
 
 
     @property
-    def all_elements(self) -> Iterable[Element]:
+    def all_elements(self) -> Generator[Element]:
+        """An iterable over all :class:`~visuscript.element.Element` instances that comprise
+        this :class:`AnimatedCollection`'s visual component."""
         yield from self.auxiliary_elements
         yield from self.elements
 
     @property
-    def collection_element(self):
+    def collection_element(self) -> Drawable:
+        """A :class:`~visuscript.drawable.Drawable` that, when drawn,
+        draws all :class:`~visuscript.element.Element` instances that comprise this
+        :class:`AnimatedCollection`'s visual component."""
         return _AnimatedCollectionElement(self)
     
     @property
     def auxiliary_elements(self) -> list[Element]:
+        """A list of all auxiliary :class:`~visuscript.element.Element` instances that comprise this
+        :class:`AnimatedCollection`'s visual component.
+        """
         if not hasattr(self, "_auxiliary_elements"):
             self._auxiliary_elements: list[Element] = []
         return self._auxiliary_elements
     
 
     def add_auxiliary_element(self, element: Element) -> Self:
+        """Adds an :class:`~visuscript.element.Element` to de displayed along with the :class:`~visuscript.element.Element`
+        instances that correspond to the :class:`Var` instances stored herein."""
         self.auxiliary_elements.append(element)
         return self
     
     def remove_auxiliary_element(self, element: Element) -> Self:
+        """Removes an auxiliar element form this :class:`AnimatedCollection`."""
         self.auxiliary_elements.remove(element)
         return self
 
@@ -242,7 +291,6 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         self._list: list[VarContainer] = []
         for var in variables:
             self.insert(len(self), var).finish()
-        
 
     @property
     def transform(self) -> Transform:
@@ -250,6 +298,8 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
 
     @abstractmethod
     def new_container_for(self, var: Var) -> VarContainer:
+        """Initializes and returns a :class:`VarContainer` for a :class:`Var` newly inserted into this :class:`AnimatedList`.
+        """
         ...
 
     @property
@@ -258,6 +308,10 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     
     @abstractmethod
     def get_organizer() -> Organizer:
+        """Initializes and returns an :class:`~visuscript.organizer.Organizer` for this :class:`AnimatedList`.
+        The returned :class:`~visuscript.organizer.Organizer` sets the rule for how `animated_list[i]` should
+        be transformed with `organizer[i]`.
+        """
         ...
 
     @property
@@ -312,7 +366,16 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         self._list[a] = self._list[b]
         self._list[b] = tmp
 
-    def swap(self, a: int, b: int) -> LazyAnimation:
+    def swap(self, a: int, b: int) -> Animation:
+        """Swaps the :class:`Var` instances stored at the input indices.
+
+        :param a: The first swap index.
+        :type a: int
+        :param b: The second swap index.
+        :type b: int
+        :return: An Animation swapping each :class:`Var`'s :class:`~visuscript.element.Element`'s respective :class:`~visuscript.primatives.Transform`.
+        :rtype: Animation
+        """
         if a == b:
             return NoAnimation()
 

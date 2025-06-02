@@ -1,5 +1,10 @@
 """
-Creates a video from a Python script that outputs a stream of SVG elements to standard output.
+This is the core Visuscript CLI utility, which creates a movie from a Python script.
+See :class:`~visuscript.canvas.Scene` for writing such a script.
+
+Technically, this utility could create a movie from any Python script that outputs a stream of SVG elements
+to :attr:`visuscript.config.config.canvas_output_stream`;
+however, this is automatically done by :class:`~visuscript.canvas.Scene`.
 """
 
 from argparse import ArgumentParser

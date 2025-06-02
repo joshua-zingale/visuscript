@@ -11,9 +11,8 @@ class Shape:
     """A class that holds geometric properties for a Drawable"""
 
     def __init__(self, drawable: "Drawable", transform: Transform = Transform()):
-        """Initializes self.
-
-        :param drawable: The Drawable for which to initialize a Shape.
+        """
+        :param drawable: The Drawable for which to initialize a Shape
         :type drawable: Drawable
         :param transform: Applies this transform to the Shape of drawable, defaults to Transform()
         :type transform: Transform, optional
@@ -118,7 +117,7 @@ class Drawable(ABC):
     def set_anchor(self, anchor: Anchor, keep_position = False):
         """Sets this Drawable's anchor.
 
-        :param anchor: The anchor to set for this Drawable.
+        :param anchor: The anchor to set for this Drawable
         :type anchor: Anchor
         :param keep_position: If True, updates this Drawable's translation such that the visual position of this Drawable will not change, defaults to False
         :type keep_position: bool, optional

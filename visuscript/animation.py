@@ -64,11 +64,11 @@ class AnimationMetaClass(ABCMeta):
 class AnimationABC(ABC, metaclass=AnimationMetaClass):
     @abstractmethod
     def advance(self) -> bool:
-        """
-        Makes the changes for one frame of the animation.
+        """Makes the changes for one frame of the animation.
 
-        Returns True if there is a next frame for the animation or if the current advance was the last frame; else returns False.
-        """
+        :return: True if this `Animation` had any frames left before it was called.
+        :rtype: bool
+        """        
         ...
 
     @property
@@ -87,11 +87,17 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
             pass
 
     def set_speed(self, speed: float) -> Self:
-        """Sets the playback speed for this Animation."""
+        """Sets the playback speed for this Animation.
+
+        :param speed: The new duration of the :class:`Animation` will be duration*speed.
+        :type speed: float
+        :return: self
+        :rtype: Self
+        """
         ... # Implementation in AnimationMetaClass
 
 class CompressedAnimation(AnimationABC):
-    """CompressedAnimation wraps around another Animation, compressing it into an Animation with a single advance that runs all of the advances in the original Animation."""
+    """:class:`CompressedAnimation` wraps around another :class:`Animation`, compressing it into an :class:`Animation` with a single advance that runs all of the advances in the original :class:`Animation`."""
     def __init__(self, animation: AnimationABC):
         self._animation = animation
         self._locker = animation.locker
@@ -120,7 +126,8 @@ class Animation(AnimationABC):
 class LazyAnimation(Animation):
     """A LazyAnimation allows the initialization of an Animation to be delayed until its first advance.
     
-    A LazyAnimation can be useful when chaining together multiple animations in an AnimationSequence, where the initial state of one object being animated should not be determined until the previous animation completes.
+    A LazyAnimation can be useful when chaining together multiple animations in an AnimationSequence,
+    where the initial state of one object being animated should not be determined until the previous animation completes.
     """
     def __init__(self, animation_function: Callable[[], Animation]):
         self._animation_function = animation_function
