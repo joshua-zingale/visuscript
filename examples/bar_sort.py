@@ -19,7 +19,7 @@ def main():
             s << abl.collection_element
             s << Text(method.__name__, font_size=10).translate(*mid + DOWN*7)
             s << (counts := Text("", font_size=5).translate(*mid + DOWN*18))
-            s.updaters << FunctionUpdater(lambda t,dt,counts=counts,a=abl: counts.set_text(f"{a.num_comparisons:} comparisons || {a.num_swaps} swaps")).update(None, None)
+            s.updaters << FunctionUpdater(lambda t,dt,counts=counts,a=abl: counts.set_text(f"{a.num_comparisons:} comparisons || {a.num_swaps} swaps")).update(0, 0)
 
             s.animations << method(abl).set_speed(12)
 
