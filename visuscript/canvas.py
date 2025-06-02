@@ -74,26 +74,26 @@ class Canvas(Drawable):
     def clear(self):
         self._drawables = set()
 
-    def with_drawable(self, drawable: Drawable) -> Self:
+    def add_drawable(self, drawable: Drawable) -> Self:
+        """Adds a :class:`~visuscript.drawable.Drawable` to the display."""
         self._drawables.append(drawable)
         return self
-    add_drawable = with_drawable
-
-    def with_drawables(self, drawables: Iterable[Drawable]) -> Self:
+    
+    def add_drawables(self, drawables: Iterable[Drawable]) -> Self:
+        """Adds multiple :class:`~visuscript.drawable.Drawable` instances to the display."""
         self._drawables.extend(drawables)
         return self
-    add_drawables = with_drawables
 
-    def without_drawable(self, drawable: Drawable) -> Self:
+    def remove_drawable(self, drawable: Drawable) -> Self:
+        """Removes a :class:`~visuscript.drawable.Drawable` from the display."""
         self._drawables.remove(drawable)
         return self
-    remove_drawable = without_drawable
 
-    def without_drawables(self, drawables: list[Drawable]) -> Self:
+    def remove_drawables(self, drawables: list[Drawable]) -> Self:
+        """Removes multiple :class:`~visuscript.drawable.Drawable` instnaces from the display."""
         for drawable in drawables:
             self._drawables.remove(drawable)
         return self
-    remove_drawables = without_drawables
 
     def __lshift__(self, other: Drawable | Iterable[Drawable]):
         if other is None:
@@ -113,10 +113,14 @@ class Canvas(Drawable):
         """
         return percentage * self._logical_width * self._logical_height
     def x(self, x_percentage: float) -> float:
+        """Returns the logical x-position for the display that is at a percentage across the horizontal dimension from left to right."""
         return self._logical_width * x_percentage + self.anchor_offset.x
     def y(self, y_percentage: float) -> float:
+        """Returns the logical y-position for the display that is at a percentage across the vertical dimension from top to bottom."""
         return self._logical_height * y_percentage + self.anchor_offset.y
     def xy(self, x_percentage: float, y_percentage: float) -> Vec2:
+        """Returns both the logical x- and y-positions that are at each at a respective percentage across the
+        horizontal/vertical dimension from left to right/top to bottom."""
         return Vec2(
             self.x(x_percentage),
             self.y(y_percentage)
@@ -150,7 +154,7 @@ class Canvas(Drawable):
         
         background = Rect(width=self.width*self.logical_scaling, height=self.height*self.logical_scaling, fill = self.color, stroke=self.color, anchor=Anchor.TOP_LEFT)
 
-        # removed deleted drawables
+        # # removed deleted drawables
         # self._drawables = list(filter(lambda x: not x.deleted, self._drawables))
         
         return svg.SVG(
@@ -222,15 +226,21 @@ class Scene(Canvas):
         # TODO the PropertLockers for the animation and updater bundles should be linked to ensure no contradictions
     
     @property
-    def animations(self):
+    def animations(self) -> AnimationBundle:
+        """The :class:`~visuscript.animation.Animation` instances stored herein to be run
+        the next time this :class:`Scene`'s frames are printed."""
         return self._animation_bundle
     
     @property
     def updaters(self):
+        """The :class:`~visuscript.updater.Updater` instances stored herein to be run
+        before each of this :class:`Scene`'s frames is printed."""
         return self._updater_bundle
     
     @property
-    def player(self):
+    def player(self) -> _Player:
+        """Any :class:`~visuscript.animation.Animation` pushed via `<<` into here will be run through instantly with the frames being printed
+        and without running any of the :class:`~visuscript.animation.Animation` instances stored in :attr:`Scene.animations`."""
         return self._player
         
         
@@ -256,7 +266,7 @@ class Scene(Canvas):
         self._animation_bundle = AnimationBundle()
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._print_initial:
+        if self._print_initial and len(self._drawables) == 1:
             self.print()
         self.print_frames()
         self._drawables = self._original_drawables.pop()
