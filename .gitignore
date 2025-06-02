@@ -10,4 +10,3 @@ __pycache__/
 *.profile
 visuscript.egg-info
 old/*
-docs/build
