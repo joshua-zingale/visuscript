@@ -291,8 +291,9 @@ class Scene(Canvas):
         self._animation_bundle = AnimationBundle()
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._print_initial and len(self._drawables) == 1:
+        if self._print_initial:
             self.print()
+            self._print_initial = False
         self.print_frames()
         self._drawables = self._original_drawables.pop()
         self._animation_bundle = self._original_animation_bundle.pop()
