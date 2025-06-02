@@ -2,9 +2,5 @@ from visuscript import *
 with Scene() as s:
     rect = Rect(20,20)
     s << rect
-    s.animations << TransformAnimation(
-        rect.transform,
-        Transform(
-            translation=[40,20],
-            scale=2,
-            rotation=45))
+    s.animations << TranslationAnimation(rect.transform, [-30,-60])
+    s.animations << RotationAnimation(rect.transform, 135)
