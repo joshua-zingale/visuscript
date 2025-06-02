@@ -185,11 +185,6 @@ class AnimatedCollection(Collection[Var]):
     An AnimatedCollection stores data in form of Var instances alongside corresponding Element instances.
     """
 
-    # @property
-    # @abstractmethod
-    # def scaffolding(self) -> Iterable[Element]:
-    #     ...
-
     @abstractmethod
     def element_for(self, var: Var) -> Element:
         ...

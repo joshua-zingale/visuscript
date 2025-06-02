@@ -1,18 +1,15 @@
 import numpy as np
 from typing import Self, Collection, Tuple, Generator, Type, Sequence, Callable, Iterable
-from operator import add, mul, sub, truediv, neg
+from operator import add, mul, sub, truediv, neg, pow, eq
 from array import array
 from copy import deepcopy
-from ast import literal_eval
 
-
-#TODO Stop inheriting from ndarray. Either use composition ro reimplement the features.
 
 class SizeMismatch(ValueError):
     def __init__(self, size1: int, size2: int, operation: str):
         super().__init__(f"Size mismatch for {operation}: Size {size1} is not compatible with Size {size2}.")
 
-
+#TODO Add support for arbitrary dimensions in a base class, which can be used for matrices etc later
 class Vec(Sequence[float]):
 
     def __init__(self, *args):
@@ -43,9 +40,13 @@ class Vec(Sequence[float]):
         if isinstance(index, slice):
             return Vec(*self._arr[index])
         return self._arr[index]
+
     def __len__(self) -> int:
         return len(self._arr)
-    
+
+    def __eq__(self, other: "Vec") -> Self:
+        return sum(self._element_wise(eq, other)) == len(self)
+        
     def __matmul__(self, other) -> Self:
         return self.__class__(*np.matmul(self, other))
     def __rmatmul__(self, other):
@@ -72,6 +73,12 @@ class Vec(Sequence[float]):
     def __rtruediv__(self, other: "Vec") -> Self:
         vec = self.__class__(*map(lambda x: 1/x, self))
         return vec._element_wise(mul, other)
+    
+    def __pow__(self, other: "Vec") -> Self:
+        return self._element_wise(pow, other)
+    # def __rpow__(self, other: "Vec") -> Self:
+    #     vec = self.__class__(*map(lambda x: 1/x, self))
+    #     return vec._element_wise(mul, other)
     
     def __neg__(self) -> Self:
         return self.__class__(*map(neg, self))
@@ -207,7 +214,7 @@ class Rgb:
             if not isinstance(v, int):
                 raise TypeError("RGB values must be of type int")
             if v < 0 or v > 255:
-                raise ValueError("RGB values must be between 0 and 255, includsive.")
+                raise ValueError(f"{v} is not a valid RGB value. RGB values must be between 0 and 255, includsive.")
         self._rgb: list[int] = [r,g,b]
     def interpolate(self, other: "Rgb", alpha: float):
         assert 0 <= alpha and alpha <= 1
@@ -215,6 +222,16 @@ class Rgb:
     
     def __iter__(self) -> Generator[int]:
         yield from self._rgb
+
+    def __add__(self, other: Self) -> Self:
+        return Rgb(*[min(s+o,255) for s,o in zip(self._rgb, other._rgb)])
+    
+    def __mul__(self, other: float) -> Self:
+        return Rgb(*[min(int(s*other),255) for s in self._rgb])
+    def __rmul__(self, other: float) -> Self:
+        return self * other
+    def __truediv__(self, other: float) -> Self:
+        return self * (1/other)
 
 
 def get_vec3(values: Collection[float], z_fill: float = 0.0) -> Vec3:
@@ -234,9 +251,9 @@ class Transform:
     def __init__(self, translation: Vec2 | Vec3 | list | Self = [0,0,0], scale: Vec2 | Vec3 | list | float = [1,1,1], rotation: float = 0.0):
         
         if isinstance(translation, Transform):
-            self.translation = translation.translation
-            self.scale = translation.scale
-            self.rotation = translation.rotation
+            self._translation = translation.translation
+            self._scale = translation.scale
+            self._rotation = translation.rotation
             return 
         
         if isinstance(scale, (int, float)):
@@ -266,13 +283,13 @@ class Transform:
 
     @property
     def translation(self) -> Vec3:
-        return deepcopy(self._translation)
+        return self._translation
     
     @translation.setter
     def translation(self, value: Vec2 | Vec3 | Collection[float]):
         assert 2 <= len(value) and len(value) <= 3
 
-        value = get_vec3(value)
+        value = get_vec3(value, z_fill=self.translation.z)
 
         self._translation = value
 

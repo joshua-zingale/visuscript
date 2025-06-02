@@ -51,7 +51,7 @@ class AnimatedBarList(AnimatedList):
                 )
     
     def add_compare(self):
-        self.num_comparisons +=1
+        self.num_comparisons += 1
     def add_swap(self):
         self.num_swaps += 1
 
@@ -75,6 +75,8 @@ def insertion_sort(abl: AnimatedBarList) -> AnimationSequence:
             sequence << abl.compare(j-1,j)
             if abl[j] < abl[j-1]:
                 sequence << abl.swap(j-1, j)
+            else:
+                break
     return sequence
 
 def quick_sort(abl: AnimatedBarList, low = None, high = None):

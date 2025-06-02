@@ -7,6 +7,7 @@ from visuscript.element import Element
 from visuscript.primatives import *
 from visuscript.segment import Path
 from visuscript.property_locker import PropertyLocker
+from visuscript.updater import Updater
 import numpy as np
 
 from visuscript.config import config
@@ -18,6 +19,8 @@ def sin_easing(a: float) -> float:
     return float(1 - np.cos(a*np.pi))/2
 def sin_easing2(a: float) -> float:
     return sin_easing(sin_easing(a))
+
+#TODO Remove FPS as a parameter for all Animations because set_speed on Updater assumes that the FPS will always match the config
 
 class AnimationMetaClass(ABCMeta):
     def __new__(mcs, name, bases, namespace):
@@ -282,46 +285,32 @@ class AnimationBundle(Animation):
         """See :func:AnimationBundle.push"""
         self.push(other, _call_method="<<")
 
-class TimeDeltaAnimation(Animation):
-    def __init__(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG, updates_per_frame: int = 1):
+class UpdaterAnimation(Animation):
+    """An UpdaterAnimation wraps around an Updater to make an Animation.
+    
+    This Animation runs the Updater's update once every advance (frame) for a specified duration.
+    The first advance is counted as t=0 for the Updater.
+    """
+    def __init__(self, updater: Updater, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
 
-        fps = config.fps if fps is DEFER_TO_CONFIG else fps
-        duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
+        self._duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
+        self._updater = updater
+        self._locker = deepcopy(updater.locker)
 
-        assert updates_per_frame >= 0
+        self._t = 0
+        self._dt = 1/config.fps
 
-        self._frame_number: int = 1
-        self._num_frames: int = round(fps * duration)
-
-        self._dt: float = 1/(fps * updates_per_frame)
-
-        self._updates_per_frame: int = updates_per_frame
-
-        raise NotImplementedError()
-
+    @property
+    def locker(self):
+        return self._locker
 
     def advance(self) -> bool:
-        # TODO handle edge case of the final advance, where less time may need to be taken
-
-        if self._frame_number > self._num_frames:
+        if self._t >= self._duration:
             return False
 
-        for _ in range(self._updates_per_frame):
-            self.update(self._dt)
-
-        self._frame_number += 1
-
-        
+        self._updater.update(self._t, self._dt)
+        self._t += self._dt
         return True
-            
-
-    @abstractmethod
-    def update(self, dt: float):
-        """
-        Makes the change for the time dt in seconds of this animation.
-        """
-        ...
-
 
 class AlphaAnimation(Animation):
     def __init__(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG, easing_function: Callable[[float], float] = sin_easing2):

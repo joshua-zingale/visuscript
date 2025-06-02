@@ -1,5 +1,5 @@
 from .element import Circle, Rect, Image, Pivot, Drawing
-from .primatives import Transform, Color, Vec2, Vec3
+from .primatives import Transform, Color, Vec2, Vec3, Rgb
 from .canvas import Canvas, Scene
 from .organizer import GridOrganizer
 from .text import Text
@@ -10,7 +10,7 @@ from .constants import (
     UP, RIGHT, DOWN, LEFT, FORWARD, BACKWARD, 
     )
 from .animated_collection import Var, NilVar
-from .updater import TranslationUpdater, FunctionUpdater
+from .updater import UpdaterBundle, TranslationUpdater, FunctionUpdater, run_updater
 from .animation import (
     ScaleAnimation,
     TranslationAnimation,
@@ -23,6 +23,7 @@ from .animation import (
     NoAnimation,
     RunFunction,
     RgbAnimation,
+    UpdaterAnimation,
     fade_in,
     fade_out,
     flash

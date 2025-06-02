@@ -1,9 +1,10 @@
 """This module contains the abstract base class of all updaters alongside a bevy of basic updaters"""
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, ABCMeta
 from visuscript.primatives import Transform
 from visuscript.property_locker import PropertyLocker
 from visuscript.math_utility import magnitude
+from visuscript.config import config
 from typing import Iterable, Self, Callable
 import numpy as np
 
@@ -14,7 +15,43 @@ class UpdaterAlreadyActiveError(UpdaterActivityError):
 class UpdaterAlreadyDeactiveError(UpdaterActivityError):
     pass
 
-class Updater(ABC):
+
+class UpdaterMetaClass(ABCMeta):
+    def __new__(mcs, name, bases, namespace):
+        cls = super().__new__(mcs, name, bases, namespace)
+
+        cls._updates_per_second = config.fps
+        def set_update_rate(self, updates_per_second: float) -> Self:
+            if not isinstance(updates_per_second, (int, float)) or updates_per_second <= 0:
+                raise ValueError("Update rate must be a positive number.")
+            self._updates_per_second = updates_per_second
+            return self
+        cls.set_update_rate = set_update_rate
+
+        cls._time_passed = 0
+        cls._num_updates_processed = 0
+
+        if 'update' in namespace and not getattr(namespace['update'], '__isabstractmethod__', False):
+            original_update = namespace['update']
+
+            def wrapped_update(self, t: float, dt: float):
+                self._time_passed += dt
+                num_updates_to_make = round(self._updates_per_second * self._time_passed - self._num_updates_processed)
+
+                sub_dt = dt / max(num_updates_to_make,1)
+                for i in range(num_updates_to_make):
+                    self._base_update(t + i*sub_dt, sub_dt)
+
+                self._num_updates_processed += num_updates_to_make
+
+                return self
+
+            cls._base_update = original_update 
+            cls.update = wrapped_update
+
+        return cls
+
+class Updater(ABC, metaclass=UpdaterMetaClass):
     
     @property
     def active(self) -> bool:
@@ -48,6 +85,15 @@ class Updater(ABC):
         """Makes this Updater's update."""
         ...
 
+    def set_update_rate(self, updates_per_second: float) -> Self:
+        """Sets the rate that updates occur for this Updater.
+        
+        By default, an Updater will execute once for each frame inside of a Scene.
+        If this is set, then the updater can run more
+        or less often than once per frame.
+        """
+        ... # Implementation in UpdaterMetaClass
+
 
 class UpdaterBundle(Updater):
     def __init__(self, *updaters: Updater):
@@ -58,9 +104,8 @@ class UpdaterBundle(Updater):
             self.push(updater)
 
     def update(self, t: float, dt: float) -> Self:
-        i = 0
         for updater in filter(lambda u: u.active, self._updaters):
-            updater.update(t, dt)
+            updater.set_update_rate(config.fps).update(t, dt)
         return self
 
     @property
@@ -150,6 +195,18 @@ class TranslationUpdater(Updater):
                 self._transform.translation = self._target.translation
 
         return self
+
+
+
+def run_updater(updater: Updater, duration: float):
+    t = 0
+    dt = 1/config.fps
+
+    for _ in range(duration*config.fps):
+        updater.update(t, dt)
+        t += dt
+
+
 
 
 
