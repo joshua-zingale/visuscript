@@ -196,11 +196,15 @@ class Scene(Canvas):
     Example::
 
         from visuscript import *
-
         with Scene() as s:
             rect = Rect(20,20)
             s << rect
-            s.animations << TransformAnimation(circle.transform, Transform(translation=[40,20], scale=2, rotation=45))
+            s.animations << TransformAnimation(
+                rect.transform,
+                Transform(
+                    translation=[40,20],
+                    scale=2,
+                    rotation=45))
     """
     def __init__(self, print_initial=True, **kwargs):
         super().__init__(**kwargs)
