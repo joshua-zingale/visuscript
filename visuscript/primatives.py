@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Self, Collection, Tuple, Generator, Type, Sequence, Callable, Iterable, Iterator
+from typing import Self, Collection, Tuple, Type, Sequence, Callable, Iterator
 from operator import add, mul, sub, truediv, neg, pow, eq
 from array import array
 from copy import deepcopy
@@ -46,17 +46,12 @@ class Vec(Sequence[float]):
 
     def __eq__(self, other: "Vec") -> Self:
         return sum(self._element_wise(eq, other)) == len(self)
-        
-    def __matmul__(self, other) -> Self:
-        return self.__class__(*np.matmul(self, other))
-    def __rmatmul__(self, other):
-        return self.__class__(*np.matmul(other, self))
     
     def __add__(self, other: "Vec") -> Self:
         return self._element_wise(add, other)
     def __radd__(self, other: "Vec") -> Self:
         return self._element_wise(add, other)
-    
+
     def __sub__(self, other: "Vec") -> Self:
         return self._element_wise(sub, other)
     def __rsub__(self, other: "Vec") -> Self:
@@ -80,10 +75,15 @@ class Vec(Sequence[float]):
     #     vec = self.__class__(*map(lambda x: 1/x, self))
     #     return vec._element_wise(mul, other)
     
+    
     def __neg__(self) -> Self:
         return self.__class__(*map(neg, self))
     
-
+    def __matmul__(self, other) -> Self:
+        return self.__class__(*np.matmul(self, other))
+    def __rmatmul__(self, other):
+        return self.__class__(*np.matmul(other, self))
+    
     def __str__(self):
         return f"Vec{(*self,)}"
     def __repr__(self):
@@ -136,77 +136,6 @@ class Vec3(Vec):
         Get a Vec2 with the same first and second value as this Vec3.
         """
         return Vec2(*self[:2])
-
-# class Vec3(np.ndarray):
-
-#     def __new__(cls, x: float, y: float, z: float):
-#         obj = super().__new__(cls, (3,), dtype=float)
-#         obj[:] = x,y,z
-#         return obj
-    
-#     @property
-#     def x(self) -> float:
-#         return self[0]
-
-#     @x.setter
-#     def x(self, value: float):
-#         self[0] = value
-
-#     @property
-#     def y(self) -> float:
-#         return self[1]
-
-#     @y.setter
-#     def y(self, value: float):
-#         self[1] = value
-
-#     @property
-#     def z(self) -> float:
-#         return self[2]
-
-#     @z.setter
-#     def z(self, value: float):
-#         self[2] = value
-
-#     @property
-#     def xy(self) -> Vec2:
-#         """
-#         Get a Vec2 with the same first and second value as this Vec3.
-#         """
-#         return Vec2(*self[:2])
-    
-#     @xy.setter
-#     def xy(self, other: Collection):
-#         assert len(other) == 2
-#         self[:2] = other
-
-#     def __matmul__(self, other):
-#         return self.view(np.ndarray).__matmul__(other.view(np.ndarray))
-#     def __rmatmul__(self, other):
-#         return self.view(np.ndarray).__rmatmul__(other.view(np.ndarray))
-
-#     # These are added to help intellisense
-#     def __mul__(self, other) -> Self:
-#         return super().__mul__(other)
-#     def __rmul__(self, other) -> Self:
-#         return super().__rmul__(other)
-#     def __truediv__(self, other) -> Self:
-#         return super().__truediv__(other)
-#     def __rtruediv__(self, other) -> Self:
-#         return super().__rtruediv__(other)
-#     def __floordiv__(self, other) -> Self:
-#         return super().__floordiv__(other)
-#     def __rfloordiv__(self, other) -> Self:
-#         return super().__rfloordiv__(other)
-#     def __sub__(self, other) -> Self:
-#         return super().__sub__(other)
-#     def __rsub__(self, other) -> Self:
-#         return super().__rsub__(other)
-#     def __add__(self, other) -> Self:
-#         return super().__add__(other)
-#     def __radd__(self, other) -> Self:
-#         return super().__radd__(other)
-
 
 class Rgb:
     def __init__(self, r: int, g: int, b: int):
