@@ -46,6 +46,7 @@ from .animation import (
     RunFunction,
     RgbAnimation,
     UpdaterAnimation,
+    LazyAnimation,
     fade_in,
     fade_out,
     flash
