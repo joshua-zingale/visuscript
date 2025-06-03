@@ -4,7 +4,7 @@ from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 from .primatives import *
 from .segment import Path, Segment
 from io import StringIO
-from typing import Self, Generator
+from typing import Self, Generator, Iterator
 import numpy as np
 import svg
 from abc import abstractmethod
@@ -32,7 +32,7 @@ class Element(Drawable):
         self._svg_pivot = None
         self._deleted = False
 
-    def iter_children(self) -> Generator["Element"]:
+    def iter_children(self) -> Iterator["Element"]:
         yield from self._children
 
     def set_global_transform(self, transform: Transform) -> Self:
@@ -159,7 +159,7 @@ class Element(Drawable):
             self.transform = self._parent.global_transform.inv(value)
 
 
-    def __iter__(self) -> Generator["Element"]:
+    def __iter__(self) -> Iterator["Element"]:
         """
         Iterate over this Element and its children in ascending z order, secondarily ordering parents before children.
         """

@@ -248,7 +248,7 @@ class AnimatedCollection(Collection[Var]):
 
 
     @property
-    def all_elements(self) -> Generator[Element]:
+    def all_elements(self) -> Iterable[Element]:
         """An iterable over all :class:`~visuscript.element.Element` instances that comprise
         this :class:`AnimatedCollection`'s visual component."""
         yield from self.auxiliary_elements
