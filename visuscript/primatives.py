@@ -3,7 +3,7 @@ from typing import Self, Collection, Tuple, Generator, Type, Sequence, Callable,
 from operator import add, mul, sub, truediv, neg, pow, eq
 from array import array
 from copy import deepcopy
-
+from visuscript._invalidator import Invalidator, Invalidatable, invalidates
 
 class SizeMismatch(ValueError):
     def __init__(self, size1: int, size2: int, operation: str):
@@ -246,7 +246,7 @@ def get_vec3(values: Collection[float], z_fill: float = 0.0) -> Vec3:
         raise ValueError(f"Cannot make Vec3 out of collection of length {len(values)}. Must be of length 2 or 3.")
 
 
-class Transform:
+class Transform(Invalidator):
 
     def __init__(self, translation: Vec2 | Vec3 | list | Self = [0,0,0], scale: Vec2 | Vec3 | list | float = [1,1,1], rotation: float = 0.0):
         
@@ -263,12 +263,20 @@ class Transform:
         self._scale: Vec3 = get_vec3(scale, 1)
         self._rotation: float = rotation
 
+        self._invalidatables: set[Invalidatable]  = set()
+
+
+    def _add_invalidatable(self, invalidatable: Invalidatable):
+        self._invalidatables.add(invalidatable)
+    def _iter_invalidatables(self):
+        yield from self._invalidatables
 
     @property
     def rotation(self):
-        return deepcopy(self._rotation)
+        return self._rotation
     
     @rotation.setter
+    @invalidates
     def rotation(self, value: float):
         self._rotation = value
 
@@ -286,6 +294,7 @@ class Transform:
         return self._translation
     
     @translation.setter
+    @invalidates
     def translation(self, value: Vec2 | Vec3 | Collection[float]):
         assert 2 <= len(value) and len(value) <= 3
 
@@ -299,6 +308,7 @@ class Transform:
         return deepcopy(self._scale)
     
     @scale.setter
+    @invalidates
     def scale(self, value: int | float | Collection[float]):
         if not isinstance(value, Collection):
             self._scale = Vec3(value, value, 1.0)
@@ -362,18 +372,38 @@ class Transform:
             rotation = self.rotation + other.rotation
             )
     
-    def interpolate(self, other: Self, alpha: float):
+    def interpolate(self, other: Self, alpha: float) -> Self:
+        """Initializes and returns a new :class:`Transform` by interpolating between this :class:`Transform` and another.
+
+        :param other: The other :class:`Transform` between which this :class:`Transform` is to be interpolated.
+        :type other: Self
+        :param alpha: The progress of the interpolation between this :class:`Transform` and another.
+            If 0, returns an equivalent :class:`Transform` to self;
+            if 1, returns an equivalent :class:`Transform` to other.
+        :type alpha: float
+        :return: A newly initialized :class:`Transform`
+        :rtype: Transform
+        """
         return Transform(
             translation = self.translation * (1 - alpha) + other.translation * alpha,
             scale = self.scale * (1 - alpha) + other.scale * alpha,
             rotation = self.rotation * (1 - alpha) + other.rotation * alpha
         )
     
+    # DOUBLE REFERENCES
+    # These double refeences should not be a problem because Vecs are immutable
+    @invalidates
     def update(self, other: Self):
-        self.translation = other.translation
-        self.scale = other.scale
-        self.rotation = other.rotation
+        """Updates this :class:`Transform` with another.
+
+        :param other: The other :class:`Transform` of which the members will update this :class:`Transform`
+        :type other: Self
+        """
+        self._translation = other.translation
+        self._scale = other.scale
+        self._rotation = other.rotation
     
+    # Fix to return an actual Transform
     @property
     def inv(self):
         def inverse_transform(other: Transform):

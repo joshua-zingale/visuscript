@@ -101,13 +101,13 @@ class Text(Element):
      def height(self) -> float:
           return self._height
 
-     def draw_self(self, transform: Transform):
+     def draw_self(self):
           x, y = self.anchor_offset
           return svg.Text(
                x=x,
                y=y,
                text=xml_escape(self.text),
-               transform=transform.svg_transform,
+               transform=self.global_transform.svg_transform,
                font_size=self.font_size,
                font_family=self.font_family,
                font_style="normal",

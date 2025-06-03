@@ -12,4 +12,5 @@ with Scene() as s:
         translation=[100,-30],
         rotation=360,
         scale=2,
-    ))
+    ), duration = 3)
+    

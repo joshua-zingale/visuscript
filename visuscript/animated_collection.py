@@ -182,7 +182,7 @@ class Node(VarContainer):
         super().__init__(var=var, radius=radius)
     
     def element_from_var(self, var: Var, radius: float) -> Element:
-        return Circle(radius).with_child(Text(str(var.value), font_size=radius))
+        return Circle(radius).add_child(Text(str(var.value), font_size=radius))
     
 class TextContainer(VarContainer):
     """A :class:`VarContainer` that displays the :class:`Var`'s value only with characters."""
