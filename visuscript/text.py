@@ -4,6 +4,7 @@ from xml.sax.saxutils import escape
 from .primatives import *
 from PIL import ImageFont
 import svg
+import os
 
 # TODO Figure out why league mono is not centered properly
 fonts: dict[str, str] =  {
@@ -27,9 +28,14 @@ class Text(Element):
                global fonts
                r = foo(self, *args, **kwargs)
 
+               dir_path = os.path.dirname(os.path.realpath(__file__))
+               font_path = os.path.join(dir_path, "fonts", fonts[self.font_family])
+               if not os.path.exists(font_path):
+                    raise FileNotFoundError(f"Font file not found: {font_path}")
+
                # Hack to get bounding box from https://stackoverflow.com/a/46220683
                # TODO Use an appropriate public API from PIL to get these metrics
-               font = ImageFont.truetype(f"fonts/{fonts[self.font_family]}", self.font_size)
+               font = ImageFont.truetype(font_path, self.font_size)
                ascent, descent = font.getmetrics()
                (width, height), (offset_x, offset_y) = font.font.getsize(self.text)
                self._width = width
@@ -130,4 +136,3 @@ def get_multiline_texts(text: str, font_size: float, **kwargs) -> Text:
 
      return head
 
-     

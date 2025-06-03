@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Self, Collection, Tuple, Generator, Type, Sequence, Callable, Iterable
+from typing import Self, Collection, Tuple, Generator, Type, Sequence, Callable, Iterable, Iterator
 from operator import add, mul, sub, truediv, neg, pow, eq
 from array import array
 from copy import deepcopy
@@ -220,7 +220,7 @@ class Rgb:
         assert 0 <= alpha and alpha <= 1
         return Rgb(*( round(s*(1-alpha) + o*alpha) for s,o in zip(self._rgb, other._rgb) ))
     
-    def __iter__(self) -> Generator[int]:
+    def __iter__(self) -> Iterator[int]:
         yield from self._rgb
 
     def __add__(self, other: Self) -> Self:
