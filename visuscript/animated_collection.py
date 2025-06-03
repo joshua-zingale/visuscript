@@ -167,7 +167,6 @@ class VarContainer(ABC):
         :rtype: Element
         """
         ...
-        ...
 
 class BlankContainer(VarContainer):
     """A :class:`VarContainer` that has an invisible :class:`~visuscript.element.Element`.
@@ -393,12 +392,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
             TransformAnimation(element_a.transform, element_b.transform),
             TransformAnimation(element_b.transform, element_a.transform)
         ))
-
-
-
-        self._swap(self, a, b)
         
-    
     def extend(self, values: Iterable, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
         super().extend(values)
         return self.organize(duration=duration)
@@ -407,8 +401,21 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     def _var_iter(self):
         return map(lambda x: x.var, self._list)
     def is_index(self, var: Var) -> int:
-        return list(map(lambda x: x is var, self._var_iter())).index(True)
-    def is_contains(self, var: Var):
+        """Returns the index herein for a specific :class:`Var`, not just a :class:`Var` with an equivalent value.
+
+        :param var: The :class:`Var` for which the index is found.
+        :type var: Var
+        :raises ValueError: If the input :class:`Var` is not herein contained.
+        :return: The index.
+        :rtype: int
+        """
+        try:
+            return list(map(lambda x: x is var, self._var_iter())).index(True)
+        except ValueError:
+            raise ValueError(f"Var is not present in this {self.__class__.__name__}.")
+    def is_contains(self, var: Var) -> bool:
+        """Returns True if a specific :class:`Var`, not just a :class:`Var` with an equivalent value, is herein contained.
+        """
         return sum(map(lambda x: x is var, self._var_iter())) > 0
 
 
