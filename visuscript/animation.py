@@ -115,7 +115,7 @@ class CompressedAnimation(AnimationABC):
 
 
 class Animation(AnimationABC):
-    """An Animation can be used to modify properties of objects in a programatic manner."""
+    """An Animation can be used to modify properties of objects in a programmatic manner."""
     def compress(self) -> CompressedAnimation:
         """Returns a compressed version of this Animation.
         

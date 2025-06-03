@@ -272,7 +272,7 @@ class Scene(Canvas):
             animation_to_use = animation
         else:
             animation_to_use = self._animation_bundle
-            
+
         while animation_to_use.advance():
             time_since_beginning = self._number_of_frames_animated/config.fps
             self._updater_bundle.update(time_since_beginning, 1/config.fps)
