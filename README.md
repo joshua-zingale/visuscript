@@ -25,6 +25,8 @@ I will try my best to keep a small set of working examples through these changes
 
 I shall now walk you through setup/installation and the creation of a very basic animation.
 
+I have tested this package with `Python 3.13.3`.
+
 ### External Dependencies
 
 [ffmpeg](https://ffmpeg.org/) and [librsvg](https://gitlab.gnome.org/GNOME/librsvg) must be installed. You should be able to download these through a package manager. To download with Homebrew, use
