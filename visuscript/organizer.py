@@ -1,6 +1,6 @@
 from visuscript.drawable import Drawable
 from visuscript.primatives import Transform, Vec3
-from typing import Collection, Tuple, Generator, Iterable
+from typing import Collection, Tuple, Generator, Iterable, Iterator
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -17,7 +17,7 @@ class Organizer(ABC):
         """Gets a Transform for a given index."""
         ...
 
-    def __iter__(self) -> Generator[Transform]:
+    def __iter__(self) -> Iterator[Transform]:
         """Iterates over all Transform objects herein contained in order."""
         for i in range(len(self)):
             yield self[i]
