@@ -451,7 +451,7 @@ class TransformAnimation(AlphaAnimation):
         self._target = Transform(target)
 
         self._locker = PropertyLocker()
-        self._locker.add(self._transform, "*")
+        self._locker.add(self._transform, PropertyLocker.ALL_PROPERTIES)
 
     @property
     def locker(self) -> PropertyLocker:
