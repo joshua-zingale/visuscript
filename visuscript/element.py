@@ -11,6 +11,7 @@ from abc import abstractmethod
 from PIL import Image as PILImage
 from io import BytesIO
 import base64
+from functools import cached_property
 
 def get_base64_from_pil_image(pil_image: PILImage) -> str:
     """
@@ -34,6 +35,16 @@ class Element(Drawable):
 
     def iter_children(self) -> Iterator["Element"]:
         yield from self._children
+
+    def _invalidate(self):
+        super()._invalidate()
+        if hasattr(self, 'global_shape'):
+            del self.global_shape
+        if hasattr(self, 'global_transform'):
+            del self.global_transform
+
+        for child in self.iter_children():
+            child._invalidate()
 
     def set_global_transform(self, transform: Transform) -> Self:
         """
@@ -89,8 +100,6 @@ class Element(Drawable):
         """
         child.set_parent(self, preserve_global_transform=preserve_global_transform)
         return self
-
-    with_child = add_child
     
     def remove_child(self, child: "Element", preserve_global_transform: bool = True) -> Self:
         """
@@ -109,27 +118,9 @@ class Element(Drawable):
         """
         for child in children:
             self.add_child(child, preserve_global_transform=preserve_global_transform)
-        return self
-    
-    with_children = add_children
-    
-    @property
-    def global_transform(self) -> Transform:
-        """
-        The global transform of this Element.
-        
-        Returns the composition of all ancestor transforms and this Element's transform.
-        """
-        curr = self
+        return self    
 
-        transform = self.transform
 
-        while curr._parent is not None:
-            transform = curr._parent.transform(transform)
-            curr = curr._parent
-
-        return transform
-    
     @property
     def global_opacity(self) -> float:
         """
@@ -146,17 +137,35 @@ class Element(Drawable):
             curr = curr._parent
 
         return opacity
+    
+    @cached_property
+    def global_transform(self) -> Transform:
+        """
+        The global transform of this Element. Do NOT update this value manually.
+        
+        Returns the composition of all ancestor transforms and this Element's transform.
+
+        """
+        curr = self
+
+        transform = self.transform
+
+        if self._parent:
+            transform = self._parent.global_transform(transform)
+            curr = curr._parent
+
+        return transform
 
     
-    @global_transform.setter
-    def global_transform(self, value: Transform):
-        """
-        Sets the global transform of this Element.
-        """
-        if self._parent is None:
-            self.transform = value
-        else:
-            self.transform = self._parent.global_transform.inv(value)
+    # @global_transform.setter
+    # def global_transform(self, value: Transform):
+    #     """
+    #     Sets the global transform of this Element.
+    #     """
+    #     if self._parent is None:
+    #         self.transform = value
+    #     else:
+    #         self.transform = self._parent.global_transform.inv(value)
 
 
     def __iter__(self) -> Iterator["Element"]:
@@ -170,19 +179,7 @@ class Element(Drawable):
         yield from sorted(elements, key=lambda d: d.global_transform.translation.z)
 
     def draw(self) -> str:
-        string_builder = StringIO()
-
-        drawlist = [(self, Transform())]
-
-        while drawlist:
-            element, inherited_transform = drawlist.pop(0)
-            transform = inherited_transform @ element.transform
-            string_builder.write(element.draw_self(transform))
-
-            for child in element.iter_children():
-                drawlist.append((child, transform))
-            
-        return string_builder.getvalue()
+        return "".join(map(lambda element: element.draw_self(), self))
     
     @property
     def deleted(self) -> bool:
@@ -193,7 +190,7 @@ class Element(Drawable):
             element._deleted = True
             element.set_parent(None)
 
-    @property
+    @cached_property
     def global_shape(self):
         return Shape(self, self.global_transform)
     
@@ -203,7 +200,7 @@ class Element(Drawable):
     
 
     @abstractmethod
-    def draw_self(self, transform: Transform) -> str:
+    def draw_self(self) -> str:
         """
         Returns the SVG representation for this Element but not for its children.
         """
@@ -249,7 +246,7 @@ class Image(Element):
     def height(self) -> float:
         return self._height * self._resize_scale
 
-    def draw_self(self, transform: Transform):
+    def draw_self(self):
         x, y = self.anchor_offset
 
         transform = deepcopy(transform)
@@ -258,7 +255,7 @@ class Image(Element):
             x=x,
             y=y,
             opacity=self.global_opacity,
-            transform=transform.svg_transform,
+            transform=self.global_transform.svg_transform,
             href=f"data:image/png;base64,{self._file_data}",
         ).as_str()
 
@@ -275,7 +272,7 @@ class Pivot(Element):
     @property
     def height(self) -> float:
         return 0.0
-    def draw_self(self, transform: Transform):
+    def draw_self(self):
         return ""
 
 class Drawing(Element, Segment):
@@ -326,11 +323,11 @@ class Drawing(Element, Segment):
     def height(self):
         return self._path.height
     
-    def draw_self(self, transform: Transform):
+    def draw_self(self):
         self._path.set_offset(*self.anchor_offset)
         return svg.Path(
                 d=self._path.path_str,
-                transform=transform.svg_transform,
+                transform=self.global_transform.svg_transform,
                 stroke=self.stroke.svg_rgb,
                 stroke_opacity=self.stroke.opacity,
                 fill=self.fill.svg_rgb,
@@ -362,13 +359,13 @@ class Circle(Element):
     def circumscribed_radius(self):
         return self.radius
 
-    def draw_self(self, transform: Transform):
+    def draw_self(self):
         x, y = self.anchor_offset
         return svg.Circle(
             cx = x,
             cy = y,
             r=self.radius,
-            transform=transform.svg_transform,
+            transform=self.global_transform.svg_transform,
             stroke=self.stroke.svg_rgb,
             stroke_opacity=self.stroke.opacity,
             stroke_width=self.stroke_width,

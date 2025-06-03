@@ -1,7 +1,7 @@
 from visuscript import *
 from visuscript.animated_collection import AnimatedList, Var, VarContainer
 import random
-
+from visuscript.updater import Updater
 N = 20
 WIDTH = 2
 STROKE_WIDTH = 0.25
