@@ -5,6 +5,8 @@ from .constants import Anchor
 from .config import *
 from typing import Self
 from abc import ABC, abstractmethod
+from visuscript._invalidator import Invalidatable
+from functools import cached_property
 
 
 class Shape:
@@ -56,7 +58,7 @@ class Shape:
         self.center: Vec2 = transform @ (top_left + [drawable.width/2, drawable.height/2])
         """The center coordinate of the drawable's rectangular circumscription."""
 
-class Drawable(ABC):
+class Drawable(ABC, Invalidatable):
     """The base class of all Drawables."""
 
     def __init__(self, *,
@@ -72,8 +74,10 @@ class Drawable(ABC):
         stroke_width = config.element_stroke_width if stroke_width is DEFER_TO_CONFIG else stroke_width
         fill = config.element_fill if fill is DEFER_TO_CONFIG else fill
         
-        self.transform: Transform = Transform() if transform is None else Transform(transform)
-        self.anchor: Anchor = anchor
+        self._transform: Transform = Transform() if transform is None else Transform(transform)
+        self._transform._add_invalidatable(self)
+        
+        self.anchor: Anchor = anchor # TODO make Anchor an unmodifiable property
 
         self.stroke: Color = Color(stroke)
         self.stroke_width: float = stroke_width
@@ -81,7 +85,15 @@ class Drawable(ABC):
 
         self.opacity: float = opacity
 
-        
+
+    def _invalidate(self):
+        if hasattr(self, 'transformed_shape'):
+            del self.transformed_shape
+
+
+    @property
+    def transform(self):
+        return self._transform    
 
     def translate(self, x: float | None = None, y: float | None = None, z: float | None = None) -> Self:
         """Sets the translation on this Drawable's Transform.
@@ -111,7 +123,7 @@ class Drawable(ABC):
     
     def set_transform(self, transform: Transform) -> Self:
         """Sets this Drawable's Transform."""
-        self.transform = Transform(transform)
+        self._transform.update(Transform(transform))
         return self
     
     def set_anchor(self, anchor: Anchor, keep_position = False):
@@ -130,6 +142,11 @@ class Drawable(ABC):
 
         if keep_position:
             self.translate(*old_anchor_offset - self.anchor_offset)
+            # Invalidate shapes
+            if hasattr(self, 'shape'):
+                del self.shape
+            if hasattr(self, 'transformed_shape'):
+                del self.transformed_shape
         return self
     
     @property
@@ -209,13 +226,14 @@ class Drawable(ABC):
         """The radius of the smallest circle centered at this un-transformed Drawable's center that can circumscribe this Drawable."""
         return (self.width**2 + self.height**2)**0.5/2    
     
-    
-    @property
+    #TODO use a more robust caching system.
+    # As of writing, Shape is invalidated by updating the Anchor position
+    @cached_property
     def shape(self):
         """The un-transformed Shape for this Drawable."""
         return Shape(self)
     
-    @property
+    @cached_property
     def transformed_shape(self):
         """The Shape for this Drawable when it has been transformed by its Transform."""
         return Shape(self, self.transform)

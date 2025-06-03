@@ -71,7 +71,7 @@ class Connector(Element):
 
         return magnitude(self._destination.global_shape.center - self._source.global_shape.center) < distance
 
-    def draw_self(self, transform: Transform):
+    def draw_self(self):
         return self.get_connector(
             source=self.source,
             destination=self.destination,
