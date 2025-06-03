@@ -13,54 +13,53 @@ NUM_NODES = 31
 
 
 def main():
-    scene = Scene()
+    s = Scene()
 
-    with scene as s:
-        text = Text("Binary Search Trees", font_size=50).set_opacity(0.0)
-        s << text
-        s.player << fade_in(text)
-        s.player << AnimationBundle(
-            RunFunction(lambda: text.set_anchor(Anchor.TOP_LEFT, keep_position=True)),
-            TransformAnimation(text.transform, Transform(s.shape.top_left + [10,10], scale=0.5))
-            )
-
-        tree = AnimatedBinaryTreeArray([Var(None) for _ in range(NUM_NODES)], radius=RADIUS, transform=[0,-75])
-
-        s << tree.collection_element
-
-        operation_text = Text("").set_anchor(Anchor.TOP_RIGHT).translate(*s.shape.top_right + [-10, 10])
-        s << operation_text
-
-        flash_text = lambda text, other_animation: AnimationSequence(
-            RunFunction(lambda: operation_text.set_text(text)),
-            fade_in(operation_text, duration = 0.5),
-            other_animation,
-            fade_out(operation_text, duration = 0.5)
+    text = Text("Binary Search Trees", font_size=50).set_opacity(0.0)
+    s << text
+    s.player << fade_in(text)
+    s.player << AnimationBundle(
+        RunFunction(lambda: text.set_anchor(Anchor.TOP_LEFT, keep_position=True)),
+        TransformAnimation(text.transform, Transform(s.shape.top_left + [10,10], scale=0.5))
         )
-        s << (edges := Edges())
 
-        random.seed(316)
-        vars = list(map(Var, range(1,65)))
-        random.shuffle(vars)
-        vars = vars[:31]
-        vars = insertion_order(vars)
-        
-        for speed, var in zip([1,1,1,1,2,3,6] + [20]*len(vars), vars):
-            s.player << flash_text(f"insert({var.value})", animate_insert(var, tree, edges)).set_speed(speed)
-        
-        find_vars = map(Var, [23,41])
-        for var in find_vars:
-            s.player << flash_text(f"find({var.value})", animate_find(var, tree))
+    tree = AnimatedBinaryTreeArray([Var(None) for _ in range(NUM_NODES)], radius=RADIUS, transform=[0,-75])
 
-        remove_vars = list(map(Var, [12,11,43,46,40]))
-        FIND = False
-        NO_FIND = True
-        for find, var in zip([FIND,FIND,FIND,FIND,FIND] + [NO_FIND]*len(remove_vars), remove_vars):
-            s.player << flash_text(f"remove({var.value})", AnimationSequence(
-                animate_find(var, tree) if find == FIND else None,
-                animate_remove(var, tree, edges)
-                )
-                )
+    s << tree.collection_element
+
+    operation_text = Text("").set_anchor(Anchor.TOP_RIGHT).translate(*s.shape.top_right + [-10, 10])
+    s << operation_text
+
+    flash_text = lambda text, other_animation: AnimationSequence(
+        RunFunction(lambda: operation_text.set_text(text)),
+        fade_in(operation_text, duration = 0.5),
+        other_animation,
+        fade_out(operation_text, duration = 0.5)
+    )
+    s << (edges := Edges())
+
+    random.seed(316)
+    vars = list(map(Var, range(1,65)))
+    random.shuffle(vars)
+    vars = vars[:31]
+    vars = insertion_order(vars)
+    
+    for speed, var in zip([1,1,1,1,2,3,6] + [20]*len(vars), vars):
+        s.player << flash_text(f"insert({var.value})", animate_insert(var, tree, edges)).set_speed(speed)
+    
+    find_vars = map(Var, [23,41])
+    for var in find_vars:
+        s.player << flash_text(f"find({var.value})", animate_find(var, tree))
+
+    remove_vars = list(map(Var, [12,11,43,46,40]))
+    FIND = False
+    NO_FIND = True
+    for find, var in zip([FIND,FIND,FIND,FIND,FIND] + [NO_FIND]*len(remove_vars), remove_vars):
+        s.player << flash_text(f"remove({var.value})", AnimationSequence(
+            animate_find(var, tree) if find == FIND else None,
+            animate_remove(var, tree, edges)
+            )
+            )
 
 def to_balanced_tree(sequence: Sequence):
     sequence = sorted(sequence)

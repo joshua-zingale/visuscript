@@ -13,5 +13,4 @@ Visuscript Documentation
    visuscript.cli
 
    visuscript
-   
 
