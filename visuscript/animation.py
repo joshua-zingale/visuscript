@@ -461,7 +461,7 @@ class TransformAnimation(AlphaAnimation):
         self._source_transform = deepcopy(self._transform)
 
     def update(self, alpha: float):
-        self._transform.update(self._transform.interpolate(self._target, alpha))
+        self._transform.update(self._source_transform.interpolate(self._target, alpha))
 
 class OpacityAnimation(AlphaAnimation):
     def __init__(self, color: Color | Element, target_opacity: float, **kwargs):
