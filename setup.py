@@ -21,4 +21,11 @@ setup(
         'scripts/visuscript-animate',
         'scripts/visuscript-slideshow'
     ],
+    include_package_data=True,
+    package_data={
+        'visuscript': [
+            'fonts/Arimo/*',
+            'fonts/LeagueMono-2.300/*',
+        ],
+    },
 )
