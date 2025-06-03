@@ -1,7 +1,16 @@
+"""An Example where Updater is used to implement some physics.
+
+The resultant animation has little didactic value, but this animation
+nonetheless demonstrates the use of Updater to create a physical system.
+
+Updater here is used to move nodes away from each other in a way that
+ideally would create a graph with neatly spaced nodes.
+(This method does not work very well, but it tries.)
+"""
+
 from visuscript import *
 from visuscript.connector import Edges
 from visuscript.math_utility import unit_diff, magnitude, invert
-from visuscript.config import config
 from typing import Generator
 import random
 RADIUS = 10
@@ -16,45 +25,42 @@ REPULSION_CONSTANT = 300000
 LINE_REPULSION_CONSTANT = 10000
 def main():
     
-    with Scene() as s:
-        random.seed(316)
+    random.seed(316)
+    scene = Scene()
 
-        # Build graph
-        random_adjacency_matrix = [
-            [0 for _ in range(N)] for _ in range(N)
-        ]
-        for row in random_adjacency_matrix:
-            num_edges = max(round(random.normalvariate(AVG_NUM_CONNECTIONS,0.5)),0)
-            indices = random.choices(range(N), k=num_edges)
-            for index in indices:
-                row[index] = 1
-        for i in range(N):
-            random_adjacency_matrix[i][i] = 0
-        nodes, edges = get_nodes_and_edges(random_adjacency_matrix)
-
-
-        s << nodes
-        s << edges
-
-        with s as s:
-            s.animations << UpdaterAnimation(UpdaterBundle(
-                FunctionUpdater(get_graph_updater(nodes, edges)),
-                FunctionUpdater(get_velocity_mover(nodes))
-                ).set_update_rate(60), duration=8)
-        
-        sequence = AnimationSequence()
+    # Build graph
+    random_adjacency_matrix = [
+        [0 for _ in range(N)] for _ in range(N)
+    ]
+    for row in random_adjacency_matrix:
+        num_edges = max(round(random.normalvariate(AVG_NUM_CONNECTIONS,0.5)),0)
+        indices = random.choices(range(N), k=num_edges)
+        for index in indices:
+            row[index] = 1
+    for i in range(N):
+        random_adjacency_matrix[i][i] = 0
+    nodes, edges = get_nodes_and_edges(random_adjacency_matrix)
 
 
-        red = Color('red').rgb
-        white = Color('white').rgb
-        colors = {i: red.interpolate(white, i/8) for i in range(8)}
+    scene << nodes
+    scene << edges
 
-        for distance, source, destination in bfs(nodes, edges):
-            sequence << AnimationBundle(
-                RgbAnimation(destination.stroke, colors[distance]),
-                RgbAnimation(edges.get_edge(source, destination).stroke, 'red') if source else None,
-                )
-        s.animations << sequence
+    scene.player << UpdaterAnimation(UpdaterBundle(
+        FunctionUpdater(get_graph_updater(nodes, edges)),
+        FunctionUpdater(get_velocity_mover(nodes))
+        ).set_update_rate(60), duration=8)
+    
+    sequence = AnimationSequence()
+    red = Color('red').rgb
+    white = Color('white').rgb
+    colors = {i: red.interpolate(white, i/8) for i in range(8)}
+
+    for distance, source, destination in bfs(nodes, edges):
+        sequence << AnimationBundle(
+            RgbAnimation(destination.stroke, colors[distance]),
+            RgbAnimation(edges.get_edge(source, destination).stroke, 'red') if source else None,
+            )
+    scene.player << sequence
 
 
 def get_nodes_and_edges(adjacency_matrix):
