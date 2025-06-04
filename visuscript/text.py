@@ -54,6 +54,8 @@ class Text(Element):
                self._text: str = text
                self._font_size: float = font_size
                self._font_family: str = font_family
+               self._width: float
+               self._height: float
 
                super().__init__(fill=fill, **kwargs)
                
@@ -119,7 +121,7 @@ class Text(Element):
                font_style="normal",
                fill=self.fill.svg_rgb,
                fill_opacity=self.fill.opacity,
-               opacity=self.global_opacity
+               opacity=self.global_opacity,
                ).as_str() + "<text/>" # The extra tag is to skirt a bug in the rendering of the SVG
 
 
