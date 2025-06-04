@@ -1,0 +1,61 @@
+from visuscript.element import Element
+from visuscript.primatives import Vec2
+from pygments import highlight
+from pygments.lexers import PythonLexer as _PythonLexer
+from pygments.formatters import SvgFormatter as _SvgFormatter
+from pygments.styles import get_style_by_name as _get_style_by_name
+import re
+
+class PythonText(Element):
+
+    def __init__(self, text: str, *, font_size: float, style="monokai",**kwargs):
+        super().__init__(**kwargs)
+        self._text = text
+        self._font_size = font_size
+        self._style = style
+
+        self._max_len = 0
+        self._n_lines = 0
+        for line in self._text.split("\n"):
+            if len(line) == 0:
+                continue
+            self._max_len = max(self._max_len, len(line))
+            self._n_lines += 1
+        
+    @property
+    def _spacing(self):
+        return self._font_size*1.357
+    @property
+    def width(self):
+        return self._font_size * self._max_len/2
+    @property
+    def height(self):
+        return self._spacing*(self._n_lines - 1) + self._font_size*2
+    @property
+    def top_left(self):
+        return Vec2(0,0)
+
+    def draw_self(self):
+        x_offset, y_offset = self.anchor_offset
+        code = highlight(
+            self._text, _PythonLexer(),
+            _SvgFormatter(
+                style=_get_style_by_name(self._style),
+                font_size=self._font_size,
+                nowrap=True,
+                xoffset=x_offset,
+                yoffset=y_offset, hackspace=True)).replace('\n', '')
+        
+        def line_counter():
+            count = [-1]
+            def line_number():
+                count[0] += 1
+                return count[0]
+            return line_number
+        
+        line_number = line_counter()
+        fix_y_coordinate = lambda _: f'x="{x_offset}" y="{line_number()*(self._spacing) + self._font_size + y_offset}"' 
+        code = re.sub(r'x="([-\d\.]+)" y="([-\d\.]+)"', fix_y_coordinate, code)
+
+        element = f'<g font-family="monospace" font-size="{self._font_size}" transform="{self.global_transform.svg_transform}">{code}</g>'
+        return element
