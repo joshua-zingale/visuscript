@@ -219,7 +219,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
 
     @property
     def elements(self) -> list[Element]:
-        return self._elements
+        return list(self._elements)
 
     @property
     def transform(self) -> Transform:
