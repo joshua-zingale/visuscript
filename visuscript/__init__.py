@@ -31,7 +31,6 @@ from .constants import (
     OutputFormat,
     UP, RIGHT, DOWN, LEFT, FORWARD, BACKWARD, 
     )
-from .animated_collection import Var, NilVar
 from .updater import UpdaterBundle, TranslationUpdater, FunctionUpdater, run_updater
 from .animation import (
     ScaleAnimation,

@@ -3,7 +3,7 @@ from visuscript.connector import *
 from visuscript.element import Element
 import numpy as np
 from visuscript.config import *
-from visuscript.animated_collection import AnimatedBinaryTreeArray, TextContainer
+from visuscript.animated_collection import AnimatedBinaryTreeArray, Var, NilVar
 from typing import Tuple, Sequence
 import random
 
@@ -384,7 +384,7 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray, edges: Edges):
             edges.connect(tree.element_for(swap_node), tree.element_for(tree.get_left(removal_node))),
             edges.connect(tree.element_for(swap_node), tree.element_for(tree.get_right(removal_node))),
             edges.connect(tree.element_for(removal_parent), tree.element_for(swap_node)) if removal_parent else None,
-            tree.swap(removal_node, swap_node),
+            tree.quadratic_swap(removal_node, swap_node),
             )
         
         sequence << RgbAnimation(tree.element_for(swap_node).stroke, 'off_white')
@@ -421,7 +421,7 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray, edges: Edges):
 
         if parent.is_none:
             old_index = tree.is_index(node)
-            tree.swap(0, node)
+            tree.quadratic_swap(0, node)
             tree[old_index] = Var(None)
             continue
 
@@ -430,9 +430,9 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray, edges: Edges):
         
         old_index = tree.is_index(node)
         if is_right_child:
-            tree.swap(tree.get_right(parent), node)
+            tree.quadratic_swap(tree.get_right(parent), node)
         else:
-            tree.swap(tree.get_left(parent), node)
+            tree.quadratic_swap(tree.get_left(parent), node)
 
         tree[old_index] = Var(None)
     

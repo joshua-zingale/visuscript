@@ -1,5 +1,5 @@
 from visuscript import *
-from visuscript.animated_collection import AnimatedList, Var, VarContainer
+from visuscript.animated_collection import AnimatedList, Var
 import random
 
 N = 20
@@ -23,17 +23,14 @@ def main():
 
             s.animations << method(abl).set_speed(12)
 
-    
-class BarContainer(VarContainer):
-    def element_from_var(self, var: Var, width: float = WIDTH, height_per_value: float = 1):
-        return Rect(width, height_per_value*var.value).set_fill("blue").set_anchor(Anchor.BOTTOM).set_stroke_width(STROKE_WIDTH)
 class AnimatedBarList(AnimatedList):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,**kwargs)
         self.num_comparisons = 0
         self.num_swaps = 0
-    def new_container_for(self, var: Var):
-        return BarContainer(var)
+
+    def new_element_for(self, var: Var):
+        return Rect(WIDTH, var.value).set_fill("blue").set_anchor(Anchor.BOTTOM).set_stroke_width(STROKE_WIDTH)
     def get_organizer(self):
         return GridOrganizer((1,len(self)), (1,WIDTH))
     def swap(self, a, b):
