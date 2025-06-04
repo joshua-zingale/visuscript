@@ -1,13 +1,11 @@
 """This module contains functionality for :class:`~AnimatedCollection`.
 """
-
 from visuscript.animation import NoAnimation, PathAnimation, AnimationBundle, TransformAnimation, LazyAnimation, Animation
 from visuscript.segment import Path
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
-from visuscript.element import Element
 from visuscript.text import Text
 from visuscript.organizer import BinaryTreeOrganizer, Organizer
-from visuscript.element import Circle, Pivot
+from visuscript.element import Circle, Pivot, Element
 from visuscript.primatives import Transform
 from visuscript.drawable import Drawable
 from visuscript.math_utility import magnitude
@@ -119,7 +117,7 @@ class Var:
 NilVar = Var(None)
 """A :class:`Var` representing no value."""
 
-class _AnimatedCollectionElement(Drawable):
+class _AnimatedCollectionDrawable(Drawable):
     def __init__(self, animated_collection: "AnimatedCollection", **kwargs):
         super().__init__(**kwargs)
         self._animated_collection = animated_collection
@@ -138,7 +136,8 @@ class _AnimatedCollectionElement(Drawable):
         return "".join(element.draw() for element in self._animated_collection.all_elements)
     
    
-    
+#TODO Consider changing Element in all the below to Drawable.
+# Drawable would be sufficient for the ABC
 class AnimatedCollection(Collection[Var]):
     """Stores data in form of :class:`Var` instances alongside corresponding :class:`~visuscript.element.Element` instances
     and organizational functionality to transform the :class:`~visuscript.element.Element` instances according to the rules of the given :class:`AnimatedCollection`.
@@ -183,7 +182,7 @@ class AnimatedCollection(Collection[Var]):
         """A :class:`~visuscript.drawable.Drawable` that, when drawn,
         draws all :class:`~visuscript.element.Element` instances that comprise this
         :class:`AnimatedCollection`'s visual component."""
-        return _AnimatedCollectionElement(self)
+        return _AnimatedCollectionDrawable(self)
     
     @property
     def auxiliary_elements(self) -> list[Element]:
