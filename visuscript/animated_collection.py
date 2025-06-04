@@ -6,15 +6,15 @@ from visuscript.segment import Path
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
 from visuscript.element import Element
 from visuscript.text import Text
-from visuscript.organizer import BinaryTreeOrganizer, Organizer, GridOrganizer
+from visuscript.organizer import BinaryTreeOrganizer, Organizer
 from visuscript.element import Circle, Pivot
 from visuscript.primatives import Transform
 from visuscript.drawable import Drawable
 from visuscript.math_utility import magnitude
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from visuscript.primatives import Vec2
-from typing import Collection, Iterable, MutableSequence, Self, Any, Generator
+from typing import Collection, Iterable, MutableSequence, Self, Any
 
 
 import numpy as np
@@ -119,78 +119,6 @@ class Var:
 NilVar = Var(None)
 """A :class:`Var` representing no value."""
 
-# TODO Refactor VarContainer to inherit from Drawable.
-class VarContainer(ABC):
-    """A container for a :class:`Var` that stores an :class:`~visuscript.element.Element` therewith."""
-
-    def __init__(self, var: Var, *args, **kwargs):
-        """
-        :param var: The Var to be contained.
-        :type var: Var
-        :param args: Arbitrary positional arguments to be passed to :meth:`~VarContainer.element_from_var`.
-        :type args: tuple
-        :param kwargs: Arbitrary keyword arguments to be passed to :meth:`~VarContainer.element_from_var`.
-        :type kwargs: dict
-        """
-        self._var = var
-        self._element = self.element_from_var(var, *args, **kwargs)
-
-    @property
-    def var(self) -> Var:
-        """The :class:`Var` contained by this :class:`VarContainer`.
-        """
-        return self._var
-
-    @property
-    def element(self) -> Element:
-        """The :class:`~visuscript.element.Element` for the :class:`Var` contained by this :class:`VarContainer`.
-        """
-        return self._element
-
-    @abstractmethod
-    def element_from_var(self, var: Var) -> Element:
-        """Initializes a new :class:`~visuscript.element.Element` to be used by this :class:`VarContainer` to represent the contained :class:`Var`.
-
-        This is an abstract method that must be implemented by subclasses. Subclasses
-        should define the parameters that :attr:`~VarContainer.element_from_var`
-        requires to properly construct the element.
-
-        :param var: The :class:`Var` used to initialize the :class:`~visuscript.element.Element`.
-        :type var: Var
-        :param args: Arbitrary positional arguments passed through from :meth:`~VarContainer.__init__`.
-                     Subclasses may define these as explicit positional parameters.
-        :type args: tuple
-        :param kwargs: Arbitrary keyword arguments passed through from :meth:`~VarContainer.__init__`.
-                       Subclasses may define these as explicit keyword-only parameters.
-        :type kwargs: dict
-        :return: The initialized :class:`~visuscript.element.Element`.
-        :rtype: Element
-        """
-        ...
-
-class BlankContainer(VarContainer):
-    """A :class:`VarContainer` that has an invisible :class:`~visuscript.element.Element`.
-    """
-    def element_from_var(self, var: Var) -> Pivot:
-        return Pivot()
-    
-
-class Node(VarContainer):
-    """A :class:`VarContainer` that displays the :class:`Var`'s value inside a circle."""
-    def __init__(self, *, var: Var, radius: float):
-        super().__init__(var=var, radius=radius)
-    
-    def element_from_var(self, var: Var, radius: float) -> Element:
-        return Circle(radius).add_child(Text(str(var.value), font_size=radius))
-    
-class TextContainer(VarContainer):
-    """A :class:`VarContainer` that displays the :class:`Var`'s value only with characters."""
-    def __init__(self, *, var: Var, font_size: float):
-        super().__init__(var=var, font_size=font_size)
-        
-    def element_from_var(self, var: Var, font_size: float):
-        return Text(str(var.value), font_size=font_size)
-
 class _AnimatedCollectionElement(Drawable):
     def __init__(self, animated_collection: "AnimatedCollection", **kwargs):
         super().__init__(**kwargs)
@@ -213,9 +141,8 @@ class _AnimatedCollectionElement(Drawable):
     
 class AnimatedCollection(Collection[Var]):
     """Stores data in form of :class:`Var` instances alongside corresponding :class:`~visuscript.element.Element` instances
-    and organizational functionality to transform the elements according to the rules of the given :class:`AnimatedCollection`.
+    and organizational functionality to transform the :class:`~visuscript.element.Element` instances according to the rules of the given :class:`AnimatedCollection`.
     """
-
 
     @abstractmethod
     def element_for(self, var: Var) -> Element:
@@ -235,16 +162,14 @@ class AnimatedCollection(Collection[Var]):
         animation_bundle = AnimationBundle(NoAnimation(duration=duration))
         for var in self:
             animation_bundle << TransformAnimation(self.element_for(var).transform, self.target_for(var), duration=duration)
-        return animation_bundle
-        
+        return animation_bundle  
     
     @property
-    @abstractmethod
     def elements(self) -> Iterable[Element]:
         """An iterable over the :class:`~visuscript.element.Element` instances managed by this collection
         that correspond to the :class:`Var` instances stored herein."""
-        ...
-
+        for var in self:
+            yield self.element_for(var)
 
     @property
     def all_elements(self) -> Iterable[Element]:
@@ -287,17 +212,22 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     def __init__(self, variables: Iterable = [], *, transform: Transform | None = None):
         self._transform = Transform() if transform is None else Transform(transform)
         variables = map(lambda v: v if isinstance(v, Var) else Var(v), variables)
-        self._list: list[VarContainer] = []
+        self._vars: list[Var] = []
+        self._elements: list[Element] = []
         for var in variables:
             self.insert(len(self), var).finish()
+
+    @property
+    def elements(self) -> list[Element]:
+        return self._elements
 
     @property
     def transform(self) -> Transform:
         return self._transform
 
     @abstractmethod
-    def new_container_for(self, var: Var) -> VarContainer:
-        """Initializes and returns a :class:`VarContainer` for a :class:`Var` newly inserted into this :class:`AnimatedList`.
+    def new_element_for(self, var: Var) -> Element:
+        """Initializes and returns an :class:`~visuscript.element.Element` for a :class:`Var` newly inserted into this :class:`AnimatedList`.
         """
         ...
 
@@ -313,124 +243,98 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         """
         ...
 
-    @property
-    def elements(self) -> list[Element]:
-        return list(map(lambda x: x.element, self._list))
+    def target_for(self, var: Var) -> Transform:
+        return self._transform(self.organizer[self.is_index(var)])
 
-    def target_for(self, var: Var):
-        index = next(index for index, container in enumerate(self._list) if container.var is var)
-        return self._transform(self.organizer[index])
-
-    def element_for(self, var: Var):
-        for container in self._list:
-            if container.var is var:
-                return container.element
-            
-        raise ValueError(f"Var {var} is not present in this AnimatedList")
-    
-    def container_at(self, index: int) -> VarContainer:
-        return self._list[index]
-    
-
+    def element_for(self, var: Var) -> Element:
+        if var not in self._vars:
+            raise ValueError(f"Var {var} is not present in this {self.__class__.__name__}")
+        return self._elements[self.is_index(var)]
+                
     def __len__(self):
-        return len(self._list)
+        return len(self._vars)
 
     def __getitem__(self, index: int | slice):
-        container = self._list[index]
-        if isinstance(container, list):
-            return list(map(lambda x: x.var, container))
-        else:
-            return container.var
+        return self._vars[index]
         
     def __setitem__(self, index: int | slice, value: Var):
         if not isinstance(value, Var):
             raise TypeError(f"Cannot set value of type {type(value).__name__}: must be of type Var")
         if self.is_contains(value):
             raise ValueError(f"Cannot have the same Var in this AnimatedList twice.")
-        self._list[index] = self.new_container_for(value)
+        self._vars[index] = value
+        self._elements[index] = self.new_element_for(value)
 
     def __delitem__(self, index: int | slice):
-        del self._list[index]
+        del self._vars[index]
+        del self._elements[index]
 
     def insert(self, index: int, value: Var, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
         if not isinstance(value, Var):
             raise TypeError(f"Cannot insert value of type {type(value).__name__}: must be of type Var")
         if self.is_contains(value):
             raise ValueError(f"Cannot have the same Var in this AnimatedList twice.")
-        self._list.insert(index, self.new_container_for(value))
+        self._vars.insert(index, value)
+        self._elements.insert(index, self.new_element_for(value))
         return self.organize(duration=duration)
 
     def _swap(self, a, b):
-        tmp = self._list[a]
-        self._list[a] = self._list[b]
-        self._list[b] = tmp
+        if isinstance(a, Var):
+            a = self.is_index(a)
+        if isinstance(b, Var):
+            b = self.is_index(b)
 
-    def swap(self, a: int, b: int) -> Animation:
+        element_a = self.element_for(self[a])
+        element_b = self.element_for(self[b])
+
+        tmp = self._vars[a]
+        self._vars[a] = self._vars[b]
+        self._vars[b] = tmp
+
+        tmp = self._elements[a]
+        self._elements[a] = self._elements[b]
+        self._elements[b] = tmp
+        return element_a, element_b
+
+    def swap(self, a: int | Var, b: int | Var) -> Animation:
         """Swaps the :class:`Var` instances stored at the input indices.
 
-        :param a: The first swap index.
-        :type a: int
-        :param b: The second swap index.
-        :type b: int
-        :return: An Animation swapping each :class:`Var`'s :class:`~visuscript.element.Element`'s respective :class:`~visuscript.primatives.Transform`.
+        If :class:`Var` is used instead of an index, the index herein of :class:`Var` is used for the index.
+
+        :param a: The first swap index or a specific Var.
+        :type a: int | Var
+        :param b: The second swap index or a specific Var.
+        :type b: int | Var
+        :return: An Animation linearly swapping each :class:`Var`'s :class:`~visuscript.element.Element`'s respective :class:`~visuscript.primatives.Transform`.
         :rtype: Animation
         """
         if a == b:
             return NoAnimation()
 
-        if isinstance(a, Var):
-            a = self.is_index(a)
-        if isinstance(b, Var):
-            b = self.is_index(b)
-
-        element_a = self.element_for(self[a])
-        element_b = self.element_for(self[b])
-
-        self._swap(a,b)
+        element_a, element_b = self._swap(a,b)
         
         return LazyAnimation(lambda: AnimationBundle(
             TransformAnimation(element_a.transform, element_b.transform),
             TransformAnimation(element_b.transform, element_a.transform)
         ))
-        
-    def extend(self, values: Iterable, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
-        super().extend(values)
-        return self.organize(duration=duration)
     
+    def quadratic_swap(self, a: int | Var, b: int | Var) -> LazyAnimation:
+        """Swaps the :class:`Var` instances stored at the input indices.
 
-    def _var_iter(self):
-        return map(lambda x: x.var, self._list)
-    def is_index(self, var: Var) -> int:
-        """Returns the index herein for a specific :class:`Var`, not just a :class:`Var` with an equivalent value.
+        If :class:`Var` is used instead of an index, the index herein of :class:`Var` is used for the index.
 
-        :param var: The :class:`Var` for which the index is found.
-        :type var: Var
-        :raises ValueError: If the input :class:`Var` is not herein contained.
-        :return: The index.
-        :rtype: int
+        :param a: The first swap index or a specific Var.
+        :type a: int | Var
+        :param b: The second swap index or a specific Var.
+        :type b: int | Var
+        :return: An Animation along a quadratic curve swapping each :class:`Var`'s :class:`~visuscript.element.Element`'s respective :class:`~visuscript.primatives.Transform`.
+        :rtype: Animation
         """
-        try:
-            return list(map(lambda x: x is var, self._var_iter())).index(True)
-        except ValueError:
-            raise ValueError(f"Var is not present in this {self.__class__.__name__}.")
-    def is_contains(self, var: Var) -> bool:
-        """Returns True if a specific :class:`Var`, not just a :class:`Var` with an equivalent value, is herein contained.
-        """
-        return sum(map(lambda x: x is var, self._var_iter())) > 0
 
+        if a == b:
+            return NoAnimation()
 
-class QuadraticSwapAnimatedList(AnimatedList):
-    def swap(self, a: int | Var, b: int | Var) -> LazyAnimation:
-
-        if isinstance(a, Var):
-            a = self.is_index(a)
-        if isinstance(b, Var):
-            b = self.is_index(b)
-
-        assert a != b
-
-        element_a = self.element_for(self[a])
-        element_b = self.element_for(self[b])
+        element_a, element_b = self._swap(a,b)
 
         diff = element_b.transform.translation.xy - element_a.transform.translation.xy
         distance = magnitude(diff)
@@ -439,34 +343,37 @@ class QuadraticSwapAnimatedList(AnimatedList):
 
         mid = element_a.transform.translation.xy + direction * distance/2
         lift = ortho * element_a.shape.circumscribed_radius*2
-
-        self._swap(a,b)
         
         return LazyAnimation(lambda: AnimationBundle(
             PathAnimation(element_a.transform, Path().M(*element_a.transform.translation.xy).Q(*(mid - lift), *element_b.transform.translation.xy)),
             PathAnimation(element_b.transform, Path().M(*element_b.transform.translation.xy).Q(*(mid + lift), *element_a.transform.translation.xy))
         ))
-
-class AnimatedArray(QuadraticSwapAnimatedList):
-
-    def __init__(self, variables: Iterable, *, font_size: float, **kwargs):
-
-        self._font_size = font_size
-
-        super().__init__(variables, **kwargs)
-   
-    def get_organizer(self):
-        return GridOrganizer((1,len(self)), (self._font_size*2, self._font_size*2))
-    
-    def new_container_for(self, var):
-        if var.is_none:
-            return BlankContainer(var)
-        return TextContainer(var=var, font_size=self._font_size)
-    
+        
+    def extend(self, values: Iterable, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
+        super().extend(values)
+        return self.organize(duration=duration)
     
 
+    def is_index(self, var: Var) -> int:
+        """Returns the index herein for a specific :class:`Var`, not just a :class:`Var` with an equivalent value.
 
-class AnimatedBinaryTreeArray(QuadraticSwapAnimatedList):
+        :param var: The :class:`Var` for which the index is to be found.
+        :type var: Var
+        :raises ValueError: If the input :class:`Var` is not herein contained.
+        :return: The index.
+        :rtype: int
+        """
+        try:
+            return list(map(lambda x: x is var, self)).index(True)
+        except ValueError:
+            raise ValueError(f"Var is not present in this {self.__class__.__name__}.")
+        
+    def is_contains(self, var: Var) -> bool:
+        """Returns True if a specific :class:`Var`, not just a :class:`Var` with an equivalent value, is herein contained.
+        """
+        return sum(map(lambda x: x is var, self)) > 0
+    
+class AnimatedBinaryTreeArray(AnimatedList):
 
     def __init__(self, variables: Iterable[Var], *, radius: float, level_heights: float | None = None, node_width: float | None = None, **kwargs):
 
@@ -480,12 +387,10 @@ class AnimatedBinaryTreeArray(QuadraticSwapAnimatedList):
         num_levels = int(np.log2(len(self))) + 1
         return BinaryTreeOrganizer(num_levels=num_levels, level_heights=self.level_heights, node_width=self.node_width)
     
-    def new_container_for(self, var):
+    def new_element_for(self, var):
         if var.is_none:
-            return BlankContainer(var)
-        
-        n = Node(var=var, radius=self._radius)
-        # n.element.set_transform(self.transform)
+            return Pivot()
+        n = Circle(radius=self._radius).add_child(Text(str(var.value), font_size=self._radius))
         return n
 
     def get_parent_index(self, var: int | Var):
@@ -539,7 +444,3 @@ class AnimatedBinaryTreeArray(QuadraticSwapAnimatedList):
         return int((not self.get_left(var).is_none) + (not self.get_right(var).is_none))
     def get_children(self, var: Var):
         return map(lambda x: not x.is_none, [self.get_left(var), self.get_right(var)])
-    
-    # def insert(self, index, value, *, duration = DEFER_TO_CONFIG):
-    #     self.extend([None]*max(index - len(self), 0))
-    #     return super().insert(index, value, duration=duration)
