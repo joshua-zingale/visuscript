@@ -55,15 +55,16 @@ def main():
         exit()
 
 
+    dir_path = os.path.dirname(os.path.realpath(__file__))
     if mode == "video":
         animate_proc = subprocess.Popen(
-            ["visuscript-animate", f"{fps}", f"{output_filename}"],
+            [f"{dir_path}{os.sep}scripts{os.sep}visuscript-animate", f"{fps}", f"{output_filename}"],
             stdin=subprocess.PIPE,
             text=True
         )
     elif mode == "slideshow":
         animate_proc = subprocess.Popen(
-            ["visuscript-slideshow", f"{output_filename}"],
+            [f"{dir_path}{os.sep}scripts{os.sep}visuscript-slideshow", f"{output_filename}"],
             stdin=subprocess.PIPE,
             text=True
         )
