@@ -1,11 +1,15 @@
 from visuscript.drawable import Drawable
 from visuscript.primatives import Transform, Vec3
-from typing import Collection, Tuple, Generator, Iterable, Iterator
+from typing import Collection, Tuple, Self, Iterable, Iterator
 from abc import ABC, abstractmethod
 import numpy as np
 
 class Organizer(ABC):
     """An Organizer maps integer indices to Transforms."""
+    _transform = Transform()
+    def set_transform(self, transform: Transform) -> Self:
+        self._transform = transform
+        return self
 
     @abstractmethod
     def __len__(self) -> int:
@@ -13,9 +17,15 @@ class Organizer(ABC):
         ...
     
     @abstractmethod
-    def __getitem__(self, index: int) -> Transform:
-        """Gets a Transform for a given index."""
+    def transform_for(self, index: int) -> Transform:
+        """Gets a Transform for a given index.
+        
+        Note that implementors of this base class should NOT transform the output by this :class:`Organizer`'s transform."""
         ...
+    
+    def __getitem__(self, index: int) -> Transform:
+        """Gets a Transform for a given index that is transformed by this :class:`Organizer`'s transform."""
+        return self._transform(self.transform_for(index))
 
     def __iter__(self) -> Iterator[Transform]:
         """Iterates over all Transform objects herein contained in order."""
@@ -57,7 +67,7 @@ class GridOrganizer(Organizer):
     def __len__(self):
         return self._shape[0] * self._shape[1] * self._shape[2]
 
-    def __getitem__(self, indices: int | Tuple[int, int] | Tuple[int, int, int]) -> Transform:
+    def transform_for(self, indices: int | Tuple[int, int] | Tuple[int, int, int]) -> Transform:
         if isinstance(indices, int):
             y = (indices // (self._shape[2] * self._shape[1]))
             x = (indices // self._shape[2]) % self._shape[1]
@@ -104,7 +114,7 @@ class BinaryTreeOrganizer(Organizer):
         return self._len
     
     
-    def __getitem__(self, index: int) -> Transform:
+    def transform_for(self, index: int) -> Transform:
         level = int(np.log2(index+1))
         row_index = index - 2**(level) + 1
         
