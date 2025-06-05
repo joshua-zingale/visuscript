@@ -16,9 +16,11 @@ class PythonText(Element):
 
         self._max_len = 0
         self._n_lines = 0
-        for line in self._text.split("\n"):
-            if len(line) == 0:
-                continue
+        lines = self._text.split("\n")
+        end = len(lines)
+        if len(lines[-1]) == 0:
+            end -= 1
+        for line in lines[:end]:
             self._max_len = max(self._max_len, len(line))
             self._n_lines += 1
         
