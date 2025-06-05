@@ -22,49 +22,34 @@ def sin_easing2(a: float) -> float:
 
 #TODO Remove FPS as a parameter for all Animations because set_speed on Updater assumes that the FPS will always match the config
 
-class AnimationMetaClass(ABCMeta):
-    def __new__(mcs, name, bases, namespace):
-        cls = super().__new__(mcs, name, bases, namespace)
+class AnimationABC(ABC):
+    def __init__(self):
+        self._num_processed_frames = 0
+        self._num_advances = 0
+        self._animation_speed = 1
+        self._keep_advancing = True
 
-        ## Animation speed
-        cls._animation_speed = 1
-        def set_speed(self, speed: float) -> Self:
-            if not isinstance(speed, (int, float)) or speed <= 0:
-                raise ValueError("Animation speed must be a positive number.")
-            self._animation_speed = speed
-            return self
-        cls.set_speed = set_speed
+    def next_frame(self):
+        """Makes the changes for one frame of the animation, accounting for the set animation speed.
 
-        cls._num_processed_frames = 0
-        cls._num_advances = 0
+        :return: True if this `Animation` had any frames left before it was called.
+        :rtype: bool
+        """
+        self._num_advances += 1
+        num_to_advance = round(self._animation_speed * self._num_advances - self._num_processed_frames)
 
-        if 'advance' in namespace and not getattr(namespace['advance'], '__isabstractmethod__', False):
-            original_advance = namespace['advance']
+        if self._keep_advancing:
+            for _ in range(num_to_advance):
+                if self._keep_advancing and not self.advance():
+                    self._keep_advancing = False
+                    break
+            self._num_processed_frames += num_to_advance
 
-            def wrapped_advance(self):
-                self._num_advances += 1
-                num_to_advance = round(self._animation_speed * self._num_advances - self._num_processed_frames)
+        return self._keep_advancing
 
-                keep_advancing = True
-                for _ in range(num_to_advance):
-                    if not self._base_advance():
-                        keep_advancing = False
-                        break
-
-                self._num_processed_frames += num_to_advance
-
-                return keep_advancing
-
-            cls._base_advance = original_advance 
-            cls.advance = wrapped_advance
-
-        return cls
-    
-
-class AnimationABC(ABC, metaclass=AnimationMetaClass):
     @abstractmethod
     def advance(self) -> bool:
-        """Makes the changes for one frame of the animation.
+        """Makes the changes for one frame of the animation when at animation speed 1.
 
         :return: True if this `Animation` had any frames left before it was called.
         :rtype: bool
@@ -75,7 +60,7 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
     @abstractmethod
     def locker(self) -> PropertyLocker:
         """
-        The PropertyLocker identifying all objects/properties updated by this Animation.
+        The :class:`PropertyLocker` identifying all objects/properties updated by this Animation.
         """
         ...
 
@@ -83,7 +68,7 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
         """
         Brings the animation to a finish instantly, leaving everything controlled by the animation in the state in which it would have been had the animation completed naturally.
         """
-        while self.advance():
+        while self.next_frame():
             pass
 
     def set_speed(self, speed: float) -> Self:
@@ -94,11 +79,15 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
         :return: self
         :rtype: Self
         """
-        ... # Implementation in AnimationMetaClass
+        if not isinstance(speed, (int, float)) or speed <= 0:
+            raise ValueError("Animation speed must be a positive number.")
+        self._animation_speed = speed
+        return self
 
 class CompressedAnimation(AnimationABC):
     """:class:`CompressedAnimation` wraps around another :class:`Animation`, compressing it into an :class:`Animation` with a single advance that runs all of the advances in the original :class:`Animation`."""
     def __init__(self, animation: AnimationABC):
+        super().__init__()
         self._animation = animation
         self._locker = animation.locker
 
@@ -108,7 +97,7 @@ class CompressedAnimation(AnimationABC):
     
     def advance(self):
         advanced = False
-        while self._animation.advance():
+        while self._animation.next_frame():
             advanced = True
         return advanced
     
@@ -130,6 +119,7 @@ class LazyAnimation(Animation):
     where the initial state of one object being animated should not be determined until the previous animation completes.
     """
     def __init__(self, animation_function: Callable[[], Animation]):
+        super().__init__()
         self._animation_function = animation_function
         self._locker = animation_function().locker
 
@@ -140,7 +130,7 @@ class LazyAnimation(Animation):
     def advance(self):
         if not hasattr(self, "_animation"):
             self._animation: Animation = self._animation_function()
-        return self._animation.advance()
+        return self._animation.next_frame()
     
 
 
@@ -152,7 +142,7 @@ class NoAnimation(Animation):
     """
 
     def __init__(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
-
+        super().__init__()
         fps = config.fps if fps is DEFER_TO_CONFIG else fps
         duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
 
@@ -172,14 +162,17 @@ class NoAnimation(Animation):
             self._num_frames -= 1
             return True
         return False
-    
+
+# TODO Add an optional parameter to specify what properties are locked by RunFunction
 class RunFunction(Animation):
     """A RunFunction Animation runs only a single advance, during which it calls a function."""
 
-    def __init__(self, function: Callable[[], None]):
+    def __init__(self, function: Callable[[], None], consume_frame=False):
+        super().__init__()
         self._function = function
         self._has_been_run = False
         self._locker = PropertyLocker()
+        self._consume_frame = consume_frame
 
     @property
     def locker(self) -> PropertyLocker:
@@ -189,6 +182,7 @@ class RunFunction(Animation):
         if not self._has_been_run:
             self._function()
             self._has_been_run = True
+            return self._consume_frame
         return False
     
 class AnimationSequence(Animation):
@@ -198,6 +192,7 @@ class AnimationSequence(Animation):
     """
 
     def __init__(self, *animations: Animation):
+        super().__init__()
         self._animations: list[Animation] = []
         self._animation_index = 0
         self._locker = PropertyLocker()
@@ -210,7 +205,7 @@ class AnimationSequence(Animation):
         return self._locker
 
     def advance(self) -> bool:
-        while self._animation_index < len(self._animations) and self._animations[self._animation_index].advance() == False:
+        while self._animation_index < len(self._animations) and self._animations[self._animation_index].next_frame() == False:
             self._animation_index += 1
 
         if self._animation_index == len(self._animations):
@@ -229,11 +224,6 @@ class AnimationSequence(Animation):
                 self.push(animation_)
         else:
             raise TypeError(f"'{_call_method}' is only implemented for types Animation and Iterable[Animation], not for '{type(animation)}'")
-
-
-    def clear(self):
-        self._animations = []
-        self._locker = PropertyLocker()
     
     def __lshift__(self, other: Animation | Iterable[Animation]):
         self.push(other, _call_method="<<")
@@ -246,8 +236,8 @@ class AnimationBundle(Animation):
     An AnimationBundle can be used to play multiple Animation concurrently.
     """
     def __init__(self, *animations: Animation):
+        super().__init__()
         self._animations: list[Animation] = []
-
         self._locker = PropertyLocker()
 
         for animation in animations:
@@ -258,10 +248,7 @@ class AnimationBundle(Animation):
         return self._locker
     
     def advance(self) -> bool:
-        advance_made = sum(map(lambda x: x.advance(), self._animations)) > 0
-        if not advance_made:
-            self.clear()
-
+        advance_made = sum(map(lambda x: x.next_frame(), self._animations)) > 0
         return advance_made
     
     def push(self, animation: AnimationABC | Iterable[AnimationABC], _call_method: str ="push"):
@@ -282,11 +269,6 @@ class AnimationBundle(Animation):
         else:
             raise TypeError(f"'{_call_method}' is only implemented for types AnimationABC, Iterable[AnimationABC], and None, not for '{type(animation)}'")
 
-
-    def clear(self):
-        """Removes all Animations from this AnimationBundle."""
-        self._animations = []
-        self._locker = PropertyLocker()
     
     def __lshift__(self, other: Animation | Iterable[Animation]):
         """See :func:AnimationBundle.push"""
@@ -299,7 +281,7 @@ class UpdaterAnimation(Animation):
     The first advance is counted as t=0 for the Updater.
     """
     def __init__(self, updater: Updater, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
-
+        super().__init__()
         self._duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
         self._updater = updater
         self._locker = deepcopy(updater.locker)
@@ -321,7 +303,7 @@ class UpdaterAnimation(Animation):
 
 class AlphaAnimation(Animation):
     def __init__(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG, easing_function: Callable[[float], float] = sin_easing2):
-
+        super().__init__()
         fps = config.fps if fps is DEFER_TO_CONFIG else fps
         duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
 

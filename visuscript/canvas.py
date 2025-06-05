@@ -273,14 +273,14 @@ class Scene(Canvas):
         else:
             animation_to_use = self._animation_bundle
 
-        while animation_to_use.advance():
+        while animation_to_use.next_frame():
             time_since_beginning = self._number_of_frames_animated/config.fps
             self._updater_bundle.update(time_since_beginning, 1/config.fps)
             self._number_of_frames_animated += 1
             yield self
 
         if animation is None:
-            self._animation_bundle.clear()
+            self._animation_bundle = AnimationBundle()
 
 
     def _print_frames(self, animation=None):
