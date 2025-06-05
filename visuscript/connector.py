@@ -16,7 +16,7 @@ class Connector(Element):
 
 
     def __init__(self, *, source: Vec2 | Element, destination: Vec2 | Element, source_target: LineTarget = LineTarget.RADIAL, destination_target: LineTarget = LineTarget.RADIAL, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(anchor=Anchor.DEFAULT, **kwargs)
         self._source = source
         self._destination = destination
 
