@@ -160,7 +160,7 @@ class AnimatedCollection(Collection[Var]):
         corresponding to :class:`Var` instances in this :class:`AnimatedCollection` according to its rules."""
         animation_bundle = AnimationBundle(NoAnimation(duration=duration))
         for var in self:
-            animation_bundle << TransformAnimation(self.element_for(var).transform, self.target_for(var), duration=duration)
+            animation_bundle << TransformAnimation.lazy(self.element_for(var).transform, self.target_for(var), duration=duration)
         return animation_bundle  
     
     @property
