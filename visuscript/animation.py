@@ -116,9 +116,12 @@ class Animation(AnimationABC):
     
     @classmethod
     def lazy(cls, *args, **kwargs) -> "LazyAnimation":
-        """A constructor for a lazy version of this Animation.
+        """A constructor for a lazy version of this :class:`Animation`,
+        in which the constructor is not called until the first advance.
         
-        See :class:`LazyAnimation` for reference.
+        This differs from :class:`LazyAnimation` in that the arguments are evaluated when
+        passed hereinto, whereas :class:`LazyAnimation` allows even the arguments to be
+        evaluated lazily.
 
         :param *args: Positional arguments to be passed into this :class:`Animation`'s constructor.
         :param **kwargs: Keyword arguments to be passed into this :class:`Animation`'s constructor.
