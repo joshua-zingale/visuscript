@@ -113,11 +113,31 @@ class Animation(AnimationABC):
         The CompressedAnimation will have only a single advance (or frame), during which all of the advances (or frames) for this Animation will complete.
         """
         return CompressedAnimation(self)
+    
+    @classmethod
+    def lazy(cls, *args, **kwargs) -> "LazyAnimation":
+        """A constructor for a lazy version of this Animation.
+        
+        See :class:`LazyAnimation` for reference.
+
+        :param *args: Positional arguments to be passed into this :class:`Animation`'s constructor.
+        :param **kwargs: Keyword arguments to be passed into this :class:`Animation`'s constructor.
+        :return: A lazy version of this :class:`Animation`
+        :rtype: LazyAnimation
+        """
+        lazy_animation = LazyAnimation(lambda: cls(*args, **kwargs))
+        lazy_animation.__class__.__name__ = f"_Lazy{cls.__name__}"
+        return lazy_animation
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}"
+    def __repr__(self) -> str:
+        return str(self)
 
 class LazyAnimation(Animation):
     """A LazyAnimation allows the initialization of an Animation to be delayed until its first advance.
 
-    The passed-in function must have no side effects because it could be called more than once.
+    The passed-in callable must have no side effects because it could be called more than once.
     
     A LazyAnimation can be useful when chaining together multiple animations in an AnimationSequence,
     where the initial state of one object being animated should not be determined until the previous animation completes.
@@ -136,9 +156,6 @@ class LazyAnimation(Animation):
             self._animation: Animation = self._animation_function()
         return self._animation.next_frame()
     
-
-
-        
 class NoAnimation(Animation):
     """A NoAnimation makes no changes to any object's state.
     
@@ -156,7 +173,6 @@ class NoAnimation(Animation):
     def objects(self) -> set[int]:
         return set()
     
-
     @property
     def locker(self) -> PropertyLocker:
         return PropertyLocker()
