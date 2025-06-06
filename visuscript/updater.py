@@ -1,10 +1,10 @@
 """This module contains the abstract base class of all updaters alongside a bevy of basic updaters"""
-
-from abc import ABC, abstractmethod, ABCMeta
 from visuscript.primatives import Transform
 from visuscript._property_locker import PropertyLocker
 from visuscript.math_utility import magnitude
 from visuscript.config import config
+
+from abc import ABC, abstractmethod, ABCMeta
 from typing import Iterable, Self, Callable
 import numpy as np
 
@@ -177,6 +177,11 @@ class TranslationUpdater(Updater):
 
         if self._acceleration is None:
             max_velocity = self._max_velocity
+            if dist > max_velocity * dt:
+                self._transform.translation += unit*max_velocity*dt
+            else:
+                self._transform.translation = self._target.translation
+
         else:
             # Determine whether to increase or decrease velocity
             min_time_to_stop = self._last_speed/self._acceleration
