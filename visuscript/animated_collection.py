@@ -312,10 +312,10 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
 
         element_a, element_b = self._swap(a,b)
         
-        return LazyAnimation(lambda: AnimationBundle(
-            TransformAnimation(element_a.transform, element_b.transform),
-            TransformAnimation(element_b.transform, element_a.transform)
-        ))
+        return AnimationBundle(
+            TransformAnimation.lazy(element_a.transform, element_b.transform),
+            TransformAnimation.lazy(element_b.transform, element_a.transform)
+        )
     
     def quadratic_swap(self, a: int | Var, b: int | Var) -> LazyAnimation:
         """Swaps the :class:`Var` instances stored at the input indices.

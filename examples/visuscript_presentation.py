@@ -192,7 +192,7 @@ def main():
                                       .Q(0,-100, *s.shape.left)
                                       .L(*drawing.shape.center),
                                       duration=2),
-            ScaleAnimation(drawing.transform, 3),
+            ScaleAnimation.lazy(drawing.transform, 3),
             fade_out(drawing),
             )
         s << (PythonText(code_blocks[3], font_size=7.5)
