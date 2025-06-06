@@ -88,6 +88,10 @@ class Vec(Sequence[float], Interpolable):
     def __rmatmul__(self, other):
         return self.__class__(*np.matmul(other, self))
     
+    def __abs__(self):
+        return sum(map(lambda x: x**2, self))**0.5
+
+    
     def __str__(self):
         return f"Vec{(*self,)}"
     def __repr__(self):
