@@ -4,13 +4,13 @@ from operator import add, mul, sub, truediv, neg, pow, eq
 from array import array
 from copy import deepcopy
 from visuscript._invalidator import Invalidator, Invalidatable, invalidates
-
+from visuscript._interpolable import Interpolable
 class SizeMismatch(ValueError):
     def __init__(self, size1: int, size2: int, operation: str):
         super().__init__(f"Size mismatch for {operation}: Size {size1} is not compatible with Size {size2}.")
 
 #TODO Add support for arbitrary dimensions in a base class, which can be used for matrices etc later
-class Vec(Sequence[float]):
+class Vec(Sequence[float], Interpolable):
 
     def __init__(self, *args):
         self._arr = array('d', [*args])
@@ -22,6 +22,10 @@ class Vec(Sequence[float]):
     #             raise SizeMismatch(len(self, len(other), operation))
     #         return operation(self, other)
     #     return size_check_function
+
+    def interpolate(self, other: "Vec", alpha: float) -> Self:
+        element_interpolate = lambda a,b: a*(1 - alpha) + b*alpha
+        return self._element_wise(element_interpolate, other)
     
     def _element_wise(self, operation: Callable[[float, float], float], other: "Vec"):
         if not hasattr(other, "__len__"):
@@ -44,7 +48,7 @@ class Vec(Sequence[float]):
     def __len__(self) -> int:
         return len(self._arr)
 
-    def __eq__(self, other: "Vec") -> Self:
+    def __eq__(self, other: "Vec") -> bool:
         return sum(self._element_wise(eq, other)) == len(self)
     
     def __add__(self, other: "Vec") -> Self:
@@ -91,7 +95,6 @@ class Vec(Sequence[float]):
     
     def astype(self, type: Type):
         return list(map(type, self))
-
 
     def max(self):
         return max(self)

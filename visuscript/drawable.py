@@ -79,9 +79,9 @@ class Drawable(ABC, Invalidatable):
         
         self.anchor: Anchor = anchor # TODO make Anchor an unmodifiable property
 
-        self.stroke: Color = Color(stroke)
+        self._stroke: Color = Color(stroke)
         self.stroke_width: float = stroke_width
-        self.fill: Color = Color(fill)
+        self._fill: Color = Color(fill)
 
         self.opacity: float = opacity
 
@@ -90,7 +90,12 @@ class Drawable(ABC, Invalidatable):
         if hasattr(self, 'transformed_shape'):
             del self.transformed_shape
 
-
+    @property
+    def stroke(self):
+        return self._stroke
+    @property
+    def fill(self):
+        return self._fill
     @property
     def transform(self):
         return self._transform    
