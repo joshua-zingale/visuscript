@@ -4,13 +4,10 @@ class LockedPropertyError(ValueError):
         super().__init__(message)
 
 class PropertyLocker:
-    ALL_PROPERTIES = "!ALL_PROPERTIES!"
-    """Signifies that all properties are locked for this object."""
-
     def __init__(self):
         self._map: dict[object, set[str]] = dict()
 
-    def add(self, obj: object, property: str = ALL_PROPERTIES, ignore_conflicts = False):
+    def add(self, obj: object, property: str, ignore_conflicts = False):
         """Raises LockedPropertyError if the property is already locked by this PropertyLocker."""
         if not ignore_conflicts and self.locks(obj, property):
             raise LockedPropertyError(obj, property)        
@@ -22,7 +19,7 @@ class PropertyLocker:
             for property in other._map[obj]:
                 self.add(obj, property, ignore_conflicts=ignore_conflicts)
 
-    def locks(self, obj: object, property: str = ALL_PROPERTIES) -> bool:
+    def locks(self, obj: object, property: str) -> bool:
         """Returns whether this :class:`PropertyLocker` locks the specified property.
 
         :param obj: The object for which the property's lock is checked.
@@ -32,13 +29,5 @@ class PropertyLocker:
         :return: True if this :class:`PropertyLocker` locks the specified property; else False
         :rtype: bool
         """
-        lock_set = self._map.get(obj, set())
-
-        if PropertyLocker.ALL_PROPERTIES in lock_set:
-            return True
-        if property == PropertyLocker.ALL_PROPERTIES and len(lock_set) > 0:
-            return True
-        if property in lock_set:
-            return True
-        
-        return False
+        lock_set = self._map.get(obj, set())        
+        return property in lock_set
