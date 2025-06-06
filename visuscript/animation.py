@@ -9,6 +9,7 @@ from visuscript.segment import Path
 from visuscript._property_locker import PropertyLocker
 from visuscript.updater import Updater
 from visuscript._interpolable import InterpolableLike, interpolate
+from visuscript._constructors import construct_vec3
 import numpy as np
 
 from visuscript.config import config
@@ -354,18 +355,18 @@ class PathAnimation(AlphaAnimation):
         self._transform.translation = self._path.point_percentage(alpha)
 
 
-T = TypeVar('T')
-_InterpolableLike = TypeVar('_InterpolableLike', bound=InterpolableLike)
 class NotInterpolableError(ValueError):
     def __init__(self, property_name: str):
         super().__init__(f"'{property_name}' is not Interpolable.")
-class PropertyAnimation(AlphaAnimation, Generic[T, _InterpolableLike]):
-    def __init__(self, *, obj: T, destinations: list[_InterpolableLike], properties: list[str], initials: list[_InterpolableLike | None], **kwargs):
+
+T = TypeVar('T')
+class PropertyAnimation(AlphaAnimation, Generic[T]):
+    def __init__(self, *, obj: T, destinations: list[InterpolableLike], properties: list[str], initials: list[InterpolableLike | None], **kwargs):
         super().__init__(**kwargs)
         self._obj = obj
         self._destinations = deepcopy(destinations)
         self._attributes = deepcopy(properties)
-        self._initials: list[_InterpolableLike] = []
+        self._initials: list[InterpolableLike] = []
         self._locker = PropertyLocker()
         for attribute, initial in zip(self._attributes, initials):
             if not isinstance(getattr(obj, attribute), InterpolableLike):
@@ -382,111 +383,76 @@ class PropertyAnimation(AlphaAnimation, Generic[T, _InterpolableLike]):
             setattr(self._obj, attribute, interpolate(initial, destination, alpha))
 
 
-class TranslationAnimation(PropertyAnimation[Transform, Vec2 | Vec3]):
+class TranslationAnimation(PropertyAnimation[Transform]):
     def __init__(self, transform: Transform, target_translation: Vec2 | list, initial_translation: Vec2 | Vec3 | None = None,**kwargs):
-        if isinstance(target_translation, Vec2):
-            target_translation = target_translation.extend(transform.translation.z)
         super().__init__(
             obj=transform,
             properties=['translation'],
-            destinations=[target_translation],
-            initials=[initial_translation],
+            destinations=[construct_vec3(target_translation, transform.translation.z)],
+            initials=[construct_vec3(initial_translation, transform.translation.z)],
             **kwargs)
 
-class ScaleAnimation(AlphaAnimation):
-    def __init__(self, transform: Transform, target_scale: float | Vec3 | list, **kwargs):
-        super().__init__(**kwargs)
+class ScaleAnimation(PropertyAnimation[Transform]):
+    def __init__(self, transform: Transform, target_scale: float | Vec3 | list, initial_scale: int | float | Vec2 | Vec3 | None = None, **kwargs):
+        super().__init__(
+            obj=transform,
+            properties=['scale'],
+            destinations=[construct_vec3(target_scale, transform.translation.z)],
+            initials=[construct_vec3(initial_scale, transform.translation.z)],
+            **kwargs)
 
-        self._transform = transform
-        self._source_scale = self._transform.scale
-
+class RotationAnimation(PropertyAnimation[Transform]):
+    def __init__(self, transform: Transform, target_rotation: float, initial_rotation: int | float | None = None, **kwargs):
+        super().__init__(
+            obj=transform,
+            properties=['rotation'],
+            destinations=[target_rotation, transform.translation.z],
+            initials=[initial_rotation, transform.translation.z],
+            **kwargs)
         
-        self._target_scale = target_scale
-
-        self._locker = PropertyLocker()
-        self._locker.add(self._transform, "scale")
-
-    @property
-    def locker(self) -> PropertyLocker:
-        return self._locker
-
-    def update(self, alpha: float):
-        self._transform.scale = self._source_scale * (1 - alpha) + self._target_scale * alpha
-
-class RotationAnimation(AlphaAnimation):
-    def __init__(self, transform: Transform, target_rotation: float, **kwargs):
-        super().__init__(**kwargs)
-        self._transform = transform
-        self._target_rotation = target_rotation
-        self._source_rotation = self._transform.rotation
-
-        self._locker = PropertyLocker()
-        self._locker.add(self._transform, "rotation")
-
-    @property
-    def locker(self) -> PropertyLocker:
-        return self._locker
-    
-    def update(self, alpha: float):
-        self._transform.rotation = self._source_rotation * (1 - alpha) + self._target_rotation * alpha
-
-class TransformAnimation(AlphaAnimation):
+class TransformAnimation(PropertyAnimation[Transform]):
     """Animates a Transform linearly toward a target."""
-    def __init__(self, transform: Transform, target: Transform, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, transform: Transform, target_transform: Transform, initial_transform: Transform | None = None, **kwargs):
+        if initial_transform:
+            initials = [
+                initial_transform.translation,
+                initial_transform.scale,
+                initial_transform.rotation,
+            ]
+        else:
+            initials = [None]*3
+        super().__init__(
+            obj=transform,
+            properties=['translation','scale','rotation'],
+            destinations=[
+                target_transform.translation,
+                target_transform.scale,
+                target_transform.rotation,
+                ],
+            initials=initials,
+            **kwargs)
 
-        self._transform = transform
-        self._target = Transform(target)
-        self._source_transform = deepcopy(self._transform)
+class OpacityAnimation(PropertyAnimation[Color]):
+    def __init__(self, color: Color | Element, target_opacity: float, initial_opacity: float | None = None, **kwargs):
+        super().__init__(
+            obj=color,
+            properties=['opacity'],
+            destinations=[target_opacity],
+            initials=[initial_opacity],
+            **kwargs)
 
-
-        self._locker = PropertyLocker()
-        self._locker.add(self._transform, PropertyLocker.ALL_PROPERTIES)
-
-    @property
-    def locker(self) -> PropertyLocker:
-        return self._locker
-    
-    def update(self, alpha: float):
-        self._transform.update(self._source_transform.interpolate(self._target, alpha))
-
-class OpacityAnimation(AlphaAnimation):
-    def __init__(self, color: Color | Element, target_opacity: float, **kwargs):
-        super().__init__(**kwargs)
-        self._color = color
-        self._target_opacity = target_opacity
-        self._source_opacity = self._color.opacity
-
-
-        self._locker = PropertyLocker()
-        self._locker.add(self._color, "opacity")
-
-    @property
-    def locker(self) -> PropertyLocker:
-        return self._locker
-    
-    def update(self, alpha: float):
-        self._color.opacity = self._source_opacity * (1 - alpha) + self._target_opacity * alpha
-
-class RgbAnimation(AlphaAnimation):
-    def __init__(self, color: Color, target_rgb: Rgb, **kwargs):
-        super().__init__(**kwargs)
-        self._color = color
-        self._source_rgb = self._color.rgb
-        
+class RgbAnimation(PropertyAnimation[Color]):
+    def __init__(self, color: Color, target_rgb: Rgb, initial_rgb: Rgb | str | None = None, **kwargs):
         if isinstance(target_rgb, str):
             target_rgb = Color.PALETTE[target_rgb]
-        self._target_rgb = target_rgb
-
-        self._locker = PropertyLocker()
-        self._locker.add(self._color, "rgb")
-
-    @property
-    def locker(self) -> PropertyLocker:
-        return self._locker
-    
-    def update(self, alpha: float):
-        self._color.rgb = self._source_rgb.interpolate(self._target_rgb, alpha)
+        if isinstance(initial_rgb, str):
+            initial_rgb = Color.PALETTE[initial_rgb]
+        super().__init__(
+            obj=color,
+            properties=['rgb'],
+            destinations=[target_rgb],
+            initials=[initial_rgb],
+            **kwargs)
 
 
 def fade_in(element: Element, **kwargs) -> OpacityAnimation:

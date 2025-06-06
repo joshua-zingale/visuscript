@@ -140,7 +140,7 @@ class Vec3(Vec):
         """
         return Vec2(*self[:2])
 
-class Rgb:
+class Rgb(Interpolable):
     def __init__(self, r: int, g: int, b: int):
         for v in [r,g,b]:
             if not isinstance(v, int):
@@ -148,9 +148,8 @@ class Rgb:
             if v < 0 or v > 255:
                 raise ValueError(f"{v} is not a valid RGB value. RGB values must be between 0 and 255, includsive.")
         self._rgb: list[int] = [r,g,b]
-    def interpolate(self, other: "Rgb", alpha: float):
-        assert 0 <= alpha and alpha <= 1
-        return Rgb(*( round(s*(1-alpha) + o*alpha) for s,o in zip(self._rgb, other._rgb) ))
+    def interpolate(self, other: "Rgb", alpha: float) -> Self:
+        return Rgb(*(min(max(round(s*(1-alpha) + o*alpha),0),255) for s,o in zip(self._rgb, other._rgb) ))
     
     def __iter__(self) -> Iterator[int]:
         yield from self._rgb
