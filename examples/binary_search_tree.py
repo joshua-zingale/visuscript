@@ -232,7 +232,7 @@ def animate_insert(var: Var, tree: AnimatedBinaryTreeArray, edges: Edges):
     if not parent.is_none:
         sequence << edges.connect(tree.element_for(parent), tree.element_for(var))
 
-    sequence << LazyAnimation(lambda: tree.organize())
+    sequence << tree.organize()
     return sequence
 
 
@@ -439,7 +439,7 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray, edges: Edges):
     
 
     sequence << AnimationBundle(
-        LazyAnimation(lambda: tree.organize()),
+        tree.organize(),
         fade_out(removal_element)
         )
     sequence << RunFunction(lambda: tree.remove_auxiliary_element(removal_element))
