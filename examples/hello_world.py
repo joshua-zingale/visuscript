@@ -4,8 +4,8 @@ with Scene() as s:
     s << text
     s.animations << AnimationSequence(
         RgbAnimation(text.fill, 'red'),
-        RgbAnimation(text.fill, 'white'),
-        RgbAnimation(text.fill, 'blue'),
+        RgbAnimation.lazy(text.fill, 'white'),
+        RgbAnimation.lazy(text.fill, 'blue'),
         )
 
     s.animations << TransformAnimation(text.transform, Transform(
