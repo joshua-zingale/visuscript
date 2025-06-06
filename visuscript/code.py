@@ -27,9 +27,12 @@ class PythonText(Element):
     @property
     def _spacing(self):
         return self._font_size*1.357
+    
+    # TODO This width is slightly off: figure out what the problem is and fix it
     @property
     def width(self):
         return self._font_size * self._max_len/2
+    # TODO This height may be slightly off is slightly off: figure out what the problem is and fix it
     @property
     def height(self):
         return self._spacing*(self._n_lines - 1) + self._font_size*2

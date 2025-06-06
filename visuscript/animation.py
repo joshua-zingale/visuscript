@@ -1,13 +1,14 @@
 """This module contains the abstract base class of all Animations alongside a bevy of basic animations and easing functions."""
 
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Generic, TypeVar
 from abc import ABC, abstractmethod
 from visuscript.config import *
 from visuscript.element import Element
 from visuscript.primatives import *
 from visuscript.segment import Path
-from visuscript.property_locker import PropertyLocker
+from visuscript._property_locker import PropertyLocker
 from visuscript.updater import Updater
+from visuscript._interpolable import InterpolableLike, interpolate
 import numpy as np
 
 from visuscript.config import config
@@ -114,6 +115,8 @@ class Animation(AnimationABC):
 
 class LazyAnimation(Animation):
     """A LazyAnimation allows the initialization of an Animation to be delayed until its first advance.
+
+    The passed-in function must have no side effects because it could be called more than once.
     
     A LazyAnimation can be useful when chaining together multiple animations in an AnimationSequence,
     where the initial state of one object being animated should not be determined until the previous animation completes.
@@ -311,19 +314,7 @@ class AlphaAnimation(Animation):
         self._num_frames: int = round(fps * duration)
         self._easing_function = easing_function
 
-
-    def first_advance_initializer(self):
-        """
-        This function is run the first time advance is called. This can be useful for setting the source value of interpolation.
-        """
-        pass
-
-
     def advance(self) -> bool:
-
-        if self._frame_number == 1:
-            self.first_advance_initializer()
-
         if self._frame_number > self._num_frames:
             return False
 
@@ -345,6 +336,7 @@ class PathAnimation(AlphaAnimation):
     def __init__(self, transform: Transform, path: Path, **kwargs):
         super().__init__(**kwargs)
         self._transform = transform
+        self._source_translation = self._transform.translation
         self._path = path
 
         self._locker = PropertyLocker()
@@ -354,10 +346,6 @@ class PathAnimation(AlphaAnimation):
     def locker(self) -> PropertyLocker:
         return self._locker
     
-
-    def first_advance_initializer(self):
-        self._source_translation = self._transform.translation
-
     def update(self, alpha: float):
         assert 0 <= alpha <= 1
         if alpha == 1:
@@ -365,30 +353,53 @@ class PathAnimation(AlphaAnimation):
 
         self._transform.translation = self._path.point_percentage(alpha)
 
-class TranslationAnimation(AlphaAnimation):
-    def __init__(self, transform: Transform, target_translation: Vec2 | list, **kwargs):
-        super().__init__(**kwargs)
-        self._transform = transform
-        self._target_translation = Transform(target_translation).translation
 
+T = TypeVar('T')
+_InterpolableLike = TypeVar('_InterpolableLike', bound=InterpolableLike)
+class NotInterpolableError(ValueError):
+    def __init__(self, property_name: str):
+        super().__init__(f"'{property_name}' is not Interpolable.")
+class PropertyAnimation(AlphaAnimation, Generic[T, _InterpolableLike]):
+    def __init__(self, *, obj: T, destinations: list[_InterpolableLike], properties: list[str], initials: list[_InterpolableLike | None], **kwargs):
+        super().__init__(**kwargs)
+        self._obj = obj
+        self._destinations = deepcopy(destinations)
+        self._attributes = deepcopy(properties)
+        self._initials: list[_InterpolableLike] = []
         self._locker = PropertyLocker()
-        self._locker.add(self._transform, "translation")
+        for attribute, initial in zip(self._attributes, initials):
+            if not isinstance(getattr(obj, attribute), InterpolableLike):
+                raise NotInterpolableError(attribute)
+            self._initials.append(getattr(obj, attribute) if initial is None else initial)
+            self._locker.add(obj, attribute)
 
     @property
-    def locker(self) -> PropertyLocker:
+    def locker(self):
         return self._locker
 
-    def first_advance_initializer(self):
-        self._source_translation = self._transform.translation
-
     def update(self, alpha: float):
-        self._transform.translation = self._source_translation * (1 - alpha) + self._target_translation * alpha
+        for attribute, initial, destination in zip(self._attributes, self._initials, self._destinations):
+            setattr(self._obj, attribute, interpolate(initial, destination, alpha))
+
+
+class TranslationAnimation(PropertyAnimation[Transform, Vec2 | Vec3]):
+    def __init__(self, transform: Transform, target_translation: Vec2 | list, initial_translation: Vec2 | Vec3 | None = None,**kwargs):
+        if isinstance(target_translation, Vec2):
+            target_translation = target_translation.extend(transform.translation.z)
+        super().__init__(
+            obj=transform,
+            properties=['translation'],
+            destinations=[target_translation],
+            initials=[initial_translation],
+            **kwargs)
 
 class ScaleAnimation(AlphaAnimation):
     def __init__(self, transform: Transform, target_scale: float | Vec3 | list, **kwargs):
         super().__init__(**kwargs)
 
         self._transform = transform
+        self._source_scale = self._transform.scale
+
         
         self._target_scale = target_scale
 
@@ -399,9 +410,6 @@ class ScaleAnimation(AlphaAnimation):
     def locker(self) -> PropertyLocker:
         return self._locker
 
-    def first_advance_initializer(self):
-        self._source_scale = self._transform.scale
-
     def update(self, alpha: float):
         self._transform.scale = self._source_scale * (1 - alpha) + self._target_scale * alpha
 
@@ -410,6 +418,7 @@ class RotationAnimation(AlphaAnimation):
         super().__init__(**kwargs)
         self._transform = transform
         self._target_rotation = target_rotation
+        self._source_rotation = self._transform.rotation
 
         self._locker = PropertyLocker()
         self._locker.add(self._transform, "rotation")
@@ -417,10 +426,7 @@ class RotationAnimation(AlphaAnimation):
     @property
     def locker(self) -> PropertyLocker:
         return self._locker
-
-    def first_advance_initializer(self):
-        self._source_rotation = self._transform.rotation
-
+    
     def update(self, alpha: float):
         self._transform.rotation = self._source_rotation * (1 - alpha) + self._target_rotation * alpha
 
@@ -431,6 +437,8 @@ class TransformAnimation(AlphaAnimation):
 
         self._transform = transform
         self._target = Transform(target)
+        self._source_transform = deepcopy(self._transform)
+
 
         self._locker = PropertyLocker()
         self._locker.add(self._transform, PropertyLocker.ALL_PROPERTIES)
@@ -439,9 +447,6 @@ class TransformAnimation(AlphaAnimation):
     def locker(self) -> PropertyLocker:
         return self._locker
     
-    def first_advance_initializer(self):
-        self._source_transform = deepcopy(self._transform)
-
     def update(self, alpha: float):
         self._transform.update(self._source_transform.interpolate(self._target, alpha))
 
@@ -450,6 +455,8 @@ class OpacityAnimation(AlphaAnimation):
         super().__init__(**kwargs)
         self._color = color
         self._target_opacity = target_opacity
+        self._source_opacity = self._color.opacity
+
 
         self._locker = PropertyLocker()
         self._locker.add(self._color, "opacity")
@@ -458,9 +465,6 @@ class OpacityAnimation(AlphaAnimation):
     def locker(self) -> PropertyLocker:
         return self._locker
     
-    def first_advance_initializer(self):
-        self._source_opacity = self._color.opacity
-
     def update(self, alpha: float):
         self._color.opacity = self._source_opacity * (1 - alpha) + self._target_opacity * alpha
 
@@ -468,6 +472,7 @@ class RgbAnimation(AlphaAnimation):
     def __init__(self, color: Color, target_rgb: Rgb, **kwargs):
         super().__init__(**kwargs)
         self._color = color
+        self._source_rgb = self._color.rgb
         
         if isinstance(target_rgb, str):
             target_rgb = Color.PALETTE[target_rgb]
@@ -480,9 +485,6 @@ class RgbAnimation(AlphaAnimation):
     def locker(self) -> PropertyLocker:
         return self._locker
     
-    def first_advance_initializer(self):
-        self._source_rgb = self._color.rgb
-
     def update(self, alpha: float):
         self._color.rgb = self._source_rgb.interpolate(self._target_rgb, alpha)
 
