@@ -274,8 +274,7 @@ class Scene(Canvas):
             animation_to_use = self._animation_bundle
 
         while animation_to_use.next_frame():
-            time_since_beginning = self._number_of_frames_animated/config.fps
-            self._updater_bundle.update(time_since_beginning, 1/config.fps)
+            self._updater_bundle.update_for_frame()
             self._number_of_frames_animated += 1
             yield self
 

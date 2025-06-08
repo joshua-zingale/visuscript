@@ -15,58 +15,40 @@ class UpdaterAlreadyActiveError(UpdaterActivityError):
 class UpdaterAlreadyDeactiveError(UpdaterActivityError):
     pass
 
+class Updater(ABC):
+    _num_frames = 0
+    _updates_per_second = config.fps
+    _updates_per_frame = 1
+    _num_updates_processed = 0
+    _active = True
 
-class UpdaterMetaClass(ABCMeta):
-    def __new__(mcs, name, bases, namespace):
-        cls = super().__new__(mcs, name, bases, namespace)
-
-        cls._updates_per_second = config.fps
-        def set_update_rate(self, updates_per_second: float) -> Self:
-            if not isinstance(updates_per_second, (int, float)) or updates_per_second <= 0:
-                raise ValueError("Update rate must be a positive number.")
-            self._updates_per_second = updates_per_second
-            return self
-        cls.set_update_rate = set_update_rate
-
-        cls._num_updates_processed = 0
-
-        if 'update' in namespace and not getattr(namespace['update'], '__isabstractmethod__', False):
-            original_update = namespace['update']
-
-            def wrapped_update(self, t: float, dt: float):
-                time_passed = t + dt
-                num_updates_to_make = int(self._updates_per_second * time_passed - self._num_updates_processed)
-                sub_dt = 1 / self._updates_per_second
-                for i in range(num_updates_to_make):
-                    self._base_update(t + i*sub_dt, sub_dt)
-                self._num_updates_processed += num_updates_to_make
-                return self
-
-            cls._base_update = original_update 
-            cls.update = wrapped_update
-
-        return cls
-
-class Updater(ABC, metaclass=UpdaterMetaClass):
-    
     @property
     def active(self) -> bool:
         """Whether this Updater is active or not."""
-        if not hasattr(self, '_active'):
-            self._active = True
         return self._active
     
     def activate(self):
         """Activate this Updater."""
         if self._active:
             raise UpdaterAlreadyActiveError()
-        self._active = True
+        self._active = False
 
     def deactivate(self):
         """Deactivate this Updater."""
         if not self._active:
             raise UpdaterAlreadyDeactiveError()
         self._active = True
+
+    def update_for_frame(self) -> Self:
+        self._num_frames += 1
+        num_updates_to_make = int(self._num_frames * self._updates_per_frame - self._num_updates_processed)
+        sub_dt = 1 / self._updates_per_second
+        for i in range(num_updates_to_make):
+            self.update(self._num_updates_processed/self._updates_per_second, sub_dt)
+
+        self._num_updates_processed += num_updates_to_make
+
+        return self
 
     @property
     @abstractmethod
@@ -88,7 +70,11 @@ class Updater(ABC, metaclass=UpdaterMetaClass):
         If this is set, then the updater can run more
         or less often than once per frame.
         """
-        ... # Implementation in UpdaterMetaClass
+        if not isinstance(updates_per_second, (int, float)) or updates_per_second <= 0:
+            raise ValueError("Update rate must be a positive number.")
+        self._updates_per_second = updates_per_second
+        self._updates_per_frame = updates_per_second/config.fps
+        return self
 
 
 class UpdaterBundle(Updater):

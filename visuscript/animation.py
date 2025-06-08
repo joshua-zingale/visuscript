@@ -321,8 +321,7 @@ class UpdaterAnimation(Animation):
     def advance(self) -> bool:
         if self._t >= self._duration:
             return False
-
-        self._updater.update(self._t, self._dt)
+        self._updater.update_for_frame()
         self._t += self._dt
         return True
 
