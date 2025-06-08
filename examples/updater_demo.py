@@ -17,7 +17,7 @@ with Scene() as s:
 
     s << [rectangle, circle, crosshair]
 
-    s.updaters << TranslationUpdater(rectangle.transform, circle.transform, max_velocity=300, acceleration=200)
+    s.updaters << TranslationUpdater(rectangle.transform, circle.transform, max_speed=300, acceleration=200)
     s.updaters << TranslationUpdater(s.transform, circle.transform, acceleration=500)
     s.updaters << TranslationUpdater(crosshair.transform, s.transform)
 

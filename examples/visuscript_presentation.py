@@ -213,7 +213,7 @@ def main():
         for color, (xp, yp) in zip(['red','blue','green','yellow'], [(.25, .25), (.25, .75), (.75,.25),(.75,.75)]):
             s << Rect(10,10).translate(*s.xy(xp, yp)).set_fill(color)
         s << [rectangle, circle, crosshair]
-        s.updaters << TranslationUpdater(rectangle.transform, circle.transform, max_velocity=300, acceleration=200)
+        s.updaters << TranslationUpdater(rectangle.transform, circle.transform, max_speed=300, acceleration=200)
         s.updaters << TranslationUpdater(s.transform, circle.transform, acceleration=500)
         s.updaters << TranslationUpdater(crosshair.transform, s.transform)
         s.animations << AnimationSequence(
