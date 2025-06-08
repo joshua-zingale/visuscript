@@ -38,7 +38,7 @@ class AnimationABC(ABC):
         :rtype: bool
         """
         self._num_advances += 1
-        num_to_advance = round(self._animation_speed * self._num_advances - self._num_processed_frames)
+        num_to_advance = int(self._animation_speed * self._num_advances - self._num_processed_frames)
 
         if self._keep_advancing:
             for _ in range(num_to_advance):
@@ -49,6 +49,8 @@ class AnimationABC(ABC):
 
         return self._keep_advancing
 
+    # TODO consider changing interface to return True if there is a next frame.
+    # This would allow fractional speed controls
     @abstractmethod
     def advance(self) -> bool:
         """Makes the changes for one frame of the animation when at animation speed 1.
@@ -73,16 +75,16 @@ class AnimationABC(ABC):
         while self.next_frame():
             pass
 
-    def set_speed(self, speed: float) -> Self:
+    def set_speed(self, speed: int) -> Self:
         """Sets the playback speed for this Animation.
 
-        :param speed: The new duration of the :class:`Animation` will be duration*speed.
-        :type speed: float
+        :param speed: The new duration of this :class:`Animation` will be duration*speed.
+        :type speed: int
         :return: self
         :rtype: Self
         """
-        if not isinstance(speed, (int, float)) or speed <= 0:
-            raise ValueError("Animation speed must be a positive number.")
+        if not isinstance(speed, int) or speed <= 0:
+            raise ValueError("Animation speed must be a positive integer.")
         self._animation_speed = speed
         return self
 
