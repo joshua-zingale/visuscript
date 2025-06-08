@@ -28,22 +28,18 @@ class UpdaterMetaClass(ABCMeta):
             return self
         cls.set_update_rate = set_update_rate
 
-        cls._time_passed = 0
         cls._num_updates_processed = 0
 
         if 'update' in namespace and not getattr(namespace['update'], '__isabstractmethod__', False):
             original_update = namespace['update']
 
             def wrapped_update(self, t: float, dt: float):
-                self._time_passed += dt
-                num_updates_to_make = round(self._updates_per_second * self._time_passed - self._num_updates_processed)
-
-                sub_dt = dt / max(num_updates_to_make,1)
+                time_passed = t + dt
+                num_updates_to_make = int(self._updates_per_second * time_passed - self._num_updates_processed)
+                sub_dt = 1 / self._updates_per_second
                 for i in range(num_updates_to_make):
                     self._base_update(t + i*sub_dt, sub_dt)
-
                 self._num_updates_processed += num_updates_to_make
-
                 return self
 
             cls._base_update = original_update 
@@ -149,10 +145,10 @@ class FunctionUpdater(Updater):
 
 class TranslationUpdater(Updater):
 
-    def __init__(self, transform: Transform, target: Transform, *, max_velocity: float | None = None, acceleration: float | None = None):
+    def __init__(self, transform: Transform, target: Transform, *, max_speed: float | None = None, acceleration: float | None = None):
         self._transform = transform
         self._target = target
-        self._max_velocity = max_velocity
+        self._max_speed = max_speed
         self._acceleration = acceleration
 
         self._locker = PropertyLocker()
@@ -166,7 +162,7 @@ class TranslationUpdater(Updater):
 
     def update(self, t: float, dt: float) -> Self:
 
-        if self._max_velocity is None and self._acceleration is None:
+        if self._max_speed is None and self._acceleration is None:
             self._transform.translation = self._target.translation
             return
 
@@ -176,7 +172,11 @@ class TranslationUpdater(Updater):
         
 
         if self._acceleration is None:
-            max_velocity = self._max_velocity
+            max_speed = self._max_speed
+            if max_speed*dt < dist:
+                self._transform.translation += unit*max_speed*dt
+            else:
+                self._transform.translation = self._target.translation
         else:
             # Determine whether to increase or decrease velocity
             min_time_to_stop = self._last_speed/self._acceleration
@@ -184,13 +184,12 @@ class TranslationUpdater(Updater):
             acceleration = self._acceleration if dist > slowdown_distance else -self._acceleration
 
 
-
-            max_velocity = min(self._last_speed + acceleration * dt, self._max_velocity or np.inf)
-            self._last_speed = max_velocity
+            max_speed = min(self._last_speed + acceleration * dt, self._max_speed or np.inf)
+            self._last_speed = max_speed
 
             desired_speed = dist/dt
-            if desired_speed > max_velocity:
-                self._transform.translation += unit*max_velocity*dt
+            if desired_speed > max_speed:
+                self._transform.translation += unit*max_speed*dt
             else:
                 self._transform.translation = self._target.translation
 
