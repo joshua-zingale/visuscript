@@ -81,16 +81,20 @@ class TestTranslationUpdater(VisuscriptTestCase):
 
 
 class MockUpdater(Updater):
-    def __init__(self):
+    def __init__(self, locked: dict[object, list[str]] = {}):
         self.update_calls = 0
         self.dts = []
         self.ts = []
+        self._locker = PropertyLocker()
+        for obj, properties in locked.items():
+            for property in properties:
+                self._locker.add(obj, property)
     @property
     def locker(self) -> PropertyLocker:
         """
         Returns a PropertyLocker identifying all objects/properties updated by this Updater.
         """
-        return PropertyLocker()
+        return self._locker
     def update(self, t: float, dt: float):
         """Makes this Updater's update."""
         self.update_calls += 1

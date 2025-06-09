@@ -14,9 +14,6 @@ class TestLazyObject(unittest.TestCase):
         a.a = 9
         self.assertEqual(lazy_a.evaluate_lazy_object(), 9)
 
-
-        
-
     def test_attribute_error(self):
         obj = A(B(A(1,2,3), 4), B(A(5)), 6)
         self.assertRaises(AttributeError, lambda: LazyObject(obj).c.a)
@@ -31,7 +28,7 @@ class TestLazyObject(unittest.TestCase):
 
 class TestLazyInitMetaClass(unittest.TestCase):
 
-    def test_delayed_init(self):
+    def test_delayed_init1(self):
         a = A(1,2,3)
         b = B(4,5,6)
         d = B(a, 7, 8)
@@ -40,17 +37,22 @@ class TestLazyInitMetaClass(unittest.TestCase):
         self.assertEqual(lazy_class.d, b)
         self.assertRaises(AttributeError, lambda: lazy_class.a)
         self.assertRaises(AttributeError, lambda: lazy_class.b)
+        self.assertEqual(lazy_class.num_inits, 0)
+
 
         lazy_class.no_activation()
         self.assertRaises(AttributeError, lambda: lazy_class.a)
         self.assertRaises(AttributeError, lambda: lazy_class.b)
+        self.assertEqual(lazy_class.num_inits, 0)
 
-        self.assertEqual(lazy_class.activate_a(1), (1, a))
+        self.assertEqual(lazy_class.activate_b(), b)
+        self.assertEqual(lazy_class.num_inits, 1)
 
         self.assertEqual(lazy_class.a, a)
         self.assertEqual(lazy_class.b, b)
         self.assertEqual(lazy_class.c, a)
         self.assertEqual(lazy_class.d, b)
+        self.assertEqual(lazy_class.num_inits, 1)
 
     def test_delayed_init2(self):
         a = A(1,2,3)
@@ -62,16 +64,26 @@ class TestLazyInitMetaClass(unittest.TestCase):
         self.assertRaises(AttributeError, lambda: lazy_class.a)
         self.assertRaises(AttributeError, lambda: lazy_class.b)
 
+        self.assertEqual(lazy_class.num_inits, 0)
+
         lazy_class.no_activation()
         self.assertRaises(AttributeError, lambda: lazy_class.a)
         self.assertRaises(AttributeError, lambda: lazy_class.b)
+        self.assertEqual(lazy_class.num_inits, 0)
 
-        self.assertEqual(lazy_class.activate_b(), b)
+        self.assertEqual(lazy_class.activate_a(1), (1, a))
+        self.assertEqual(lazy_class.num_inits, 1)
 
         self.assertEqual(lazy_class.a, a)
         self.assertEqual(lazy_class.b, b)
         self.assertEqual(lazy_class.c, a)
         self.assertEqual(lazy_class.d, b)
+
+        self.assertEqual(lazy_class.activate_a(2), (2, a))
+        self.assertEqual(lazy_class.num_inits, 1)
+
+        self.assertEqual(lazy_class.activate_b(), b)
+        self.assertEqual(lazy_class.num_inits, 1)
 
 
 
@@ -88,10 +100,11 @@ class B:
 
 
 class LazyClass(metaclass=LazyInitMetaClass, activators=['activate_a', 'activate_b'], para_inits=['para_init1', 'para_init2']):
-
+    num_inits = 0
     def __init__(self, a: A, b: B):
         self.a = a
         self.b = b
+        self.num_inits += 1
     def para_init1(self, a: A, b : B):
         self.c = a
     def para_init2(self, a: A, b : B):

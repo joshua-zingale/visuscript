@@ -1,4 +1,5 @@
 from typing import cast, Generic, TypeVar, Any
+from types import MethodType
 
 T = TypeVar('T')
 class LazyObject(Generic[T]):
@@ -35,9 +36,9 @@ def evaluate_lazy(args: list[Any], kwargs: list[Any]):
     return new_args, new_kwargs
 
 class LazyInitMetaClass(type):
-    def __new__(cls, name, bases, attrs, activators: list[str] = [], para_inits: list[str] = []):
-
-        original_init = attrs['__init__']
+    def __new__(meta, name, bases, attrs, activators: list[str] = [], para_inits: list[str] = []):
+        cls = super().__new__(meta, name, bases, attrs)
+        original_init = cls.__init__
 
         
         def lazy_init(self, *args, **kwargs):
@@ -49,15 +50,16 @@ class LazyInitMetaClass(type):
             for init in para_inits:
                 getattr(self, init)(*evaluated_args, **evaluated_kwargs)
 
+        cls.__init__ = lazy_init
         
 
         # Set activators to call initializer before they themselves are called
-        attrs['_original_activator_methods'] = {
+        cls._original_activator_methods = {
             activator: attrs[activator] for activator in activators
         }
 
         for activator in activators:
-            activator_method = attrs[activator]
+            activator_method = getattr(cls, activator)
             def init_calling_activator(self, *args, _activator_method=activator_method, **kwargs):
                 init_args, init_kwargs = evaluate_lazy(self._init_args, self._init_kwargs)
                 del self._init_args, self._init_kwargs
@@ -65,13 +67,10 @@ class LazyInitMetaClass(type):
 
                 # After the initialization occurs, return all activators to the methods that they were
                 for activator, original_activator_method in self._original_activator_methods.items():
-                    setattr(self, activator, original_activator_method)
+                    setattr(self, activator, MethodType(original_activator_method, self))
 
                 return _activator_method(self, *args, **kwargs)
-            attrs[activator] = init_calling_activator
-
-        
-        attrs['__init__'] = lazy_init
-        return super().__new__(cls, name, bases, attrs)
+            setattr(cls, activator, init_calling_activator)
+        return cls
 
         
