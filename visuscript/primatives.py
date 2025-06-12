@@ -5,6 +5,7 @@ from array import array
 from copy import deepcopy
 from visuscript._invalidator import Invalidator, Invalidatable, invalidates
 from visuscript._interpolable import Interpolable
+from visuscript.lazy_object import Lazible
 class SizeMismatch(ValueError):
     def __init__(self, size1: int, size2: int, operation: str):
         super().__init__(f"Size mismatch for {operation}: Size {size1} is not compatible with Size {size2}.")
@@ -35,6 +36,16 @@ class Vec(Sequence[float], Interpolable):
             raise SizeMismatch(len(self), len(other), f"__{operation.__name__}__")
         
         return self.__class__(*(operation(s, o) for s,o in zip(self, other)))
+    
+    def add(self, other: "Vec") -> Self:
+        return self + other
+    def sub(self, other: "Vec") -> Self:
+        return self - other
+    def mul(self, other: "Vec") -> Self:
+        return self * other
+    def div(self, other: "Vec") -> Self:
+        return self / other
+
 
     def dot(self, other: "Vec") -> float:
         prods = self._element_wise(mul, other)
@@ -177,7 +188,7 @@ def get_vec3(values: Collection[float], z_fill: float = 0.0) -> Vec3:
         raise ValueError(f"Cannot make Vec3 out of collection of length {len(values)}. Must be of length 2 or 3.")
 
 
-class Transform(Invalidator):
+class Transform(Invalidator, Lazible):
 
     def __init__(self, translation: Vec2 | Vec3 | list | Self = [0,0,0], scale: Vec2 | Vec3 | list | float = [1,1,1], rotation: float = 0.0):
         
@@ -334,7 +345,7 @@ class Transform(Invalidator):
         self._scale = other.scale
         self._rotation = other.rotation
     
-    # Fix to return an actual Transform
+    # TODO fix to return an actual Transform
     @property
     def inv(self):
         def inverse_transform(other: Transform):

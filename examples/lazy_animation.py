@@ -7,6 +7,7 @@ This example shows the difference between sequencing animations with and without
 The goal is to move the circle first down and then to the right.
 """
 from visuscript import *
+from visuscript.animation import LazyAnimation
 
 scene = Scene()
 text = Text("Without LazyAnimation: Incorrect Sequencing").set_anchor(Anchor.TOP_LEFT).translate(*scene.xy(0.02,0.02))

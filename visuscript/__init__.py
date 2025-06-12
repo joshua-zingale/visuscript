@@ -33,19 +33,18 @@ from .constants import (
     )
 from .updater import UpdaterBundle, TranslationUpdater, FunctionUpdater, run_updater
 from .animation import (
-    ScaleAnimation,
-    TranslationAnimation,
-    PathAnimation,
-    RotationAnimation,
-    TransformAnimation,
     AnimationBundle,
     AnimationSequence,
+    TransformAnimation,
+    TranslationAnimation,
+    ScaleAnimation,
+    RotationAnimation,
+    PathAnimation,
     OpacityAnimation,
     NoAnimation,
     RunFunction,
     RgbAnimation,
     UpdaterAnimation,
-    LazyAnimation,
     fade_in,
     fade_out,
     flash

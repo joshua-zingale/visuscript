@@ -142,17 +142,12 @@ class MockAnimation(Animation):
         self.obj = obj
         self.obj_value = obj[0]
         self.adder = adder
-        self._locker = PropertyLocker()
-        for obj, properties in locked.items():
-            for property in properties:
-                self._locker.add(obj, property)
     def advance(self):
         self.actual_advances += 1
         if self.actual_advances > self.total_advances:
             return False
         self.obj[0] = self.obj_value + self.adder
         return True
-    @property
-    def locker(self):
-        return self._locker
+    def init_locker(self, total_advances, obj: list[int] = [0], adder: int = 1, locked: dict[object, list[str]] = dict()):
+        return PropertyLocker(locked)
 
