@@ -6,6 +6,20 @@ from pygments.formatters import SvgFormatter as _SvgFormatter
 from pygments.styles import get_style_by_name as _get_style_by_name
 import re
 
+
+def get_all_code_blocks(filename):
+    with open(filename, 'r') as f:
+        code = f.read()
+    pattern = r"##(\d+)(.*?)##"
+    matches = re.findall(pattern, code, re.DOTALL)
+
+    segments_dict = {}
+    for x_str, segment_content in matches:
+        x = int(x_str)
+        full_segment = f"{segment_content}"
+        segments_dict[x] = full_segment.strip("\n")
+    return segments_dict
+
 class PythonText(Element):
 
     def __init__(self, text: str, *, font_size: float, style="monokai",**kwargs):
