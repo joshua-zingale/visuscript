@@ -388,7 +388,7 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray, edges: Edges):
             tree.quadratic_swap(removal_node, swap_node),
             )
         
-        sequence << RgbAnimation(tree.element_for(swap_node).stroke, 'off_white')
+        sequence << RgbAnimation.lazy(tree.element_for(swap_node).stroke, 'off_white')
 
     elif tree.get_parent(removal_node):
         sequence << AnimationBundle(

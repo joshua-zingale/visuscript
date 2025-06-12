@@ -1,11 +1,16 @@
+from typing import Iterable
 class LockedPropertyError(ValueError):
     def __init__(self, obj: object, property: str):
         message = f"'{property}' on object of type {type(obj).__name__} is already locked."
         super().__init__(message)
 
 class PropertyLocker:
-    def __init__(self):
+    def __init__(self, locks: dict[object, Iterable[str]] | None = None):
         self._map: dict[object, set[str]] = dict()
+        if not locks is None:
+            for obj, properties in locks.items():
+                self._map[obj] = set(properties)
+
 
     def add(self, obj: object, property: str, ignore_conflicts = False):
         """Raises LockedPropertyError if the property is already locked by this PropertyLocker."""

@@ -247,7 +247,7 @@ class QSegment(Segment):
 #     def path_str(self) -> str:
 #         return f"A {self._rx} {self._ry} {self._x_axis_rotation} {self._large_arc_flag} {self._sweep_flag} {self._x2} {self._y2}"
 
-
+# TODO Figure out a way to make Paths lazily constructible for use in PathAnimation.
 class Path(Segment):    
     def __init__(self):
         self._segments: list[Segment] = []

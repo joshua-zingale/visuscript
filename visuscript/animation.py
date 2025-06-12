@@ -1,7 +1,5 @@
 """This module contains the abstract base class of all Animations alongside a bevy of basic animations and easing functions."""
 
-from typing import Callable, Iterable, Generic, TypeVar
-from abc import ABC, abstractmethod
 from visuscript.config import *
 from visuscript.element import Element
 from visuscript.primatives import *
@@ -10,7 +8,12 @@ from visuscript._property_locker import PropertyLocker
 from visuscript.updater import Updater
 from visuscript._interpolable import InterpolableLike, interpolate
 from visuscript._constructors import construct_vec3
+from visuscript.lazy_object import evaluate_lazy, LazyObject
 import numpy as np
+
+from typing import Callable, Iterable, Generic, TypeVar
+from abc import ABC, abstractmethod, ABCMeta
+import inspect
 
 from visuscript.config import config
 def linear_easing(x: float) -> float:
@@ -22,14 +25,67 @@ def sin_easing(a: float) -> float:
 def sin_easing2(a: float) -> float:
     return sin_easing(sin_easing(a))
 
+
+class AnimationMetaClass(ABCMeta):
+    def __new__(meta, name, bases, attrs):
+
+        # Set all parent classes' initializers to their default.
+        for base in bases:
+            if hasattr(base, "_original_init"):
+                base.__init__ = base._original_init
+
+        cls = super().__new__(meta, name, bases, attrs)
+        # TODO see if there is any way to loosen requirement on signature
+        if inspect.signature(cls.__init__) != inspect.signature(cls.init_locker):
+            print(inspect.signature(cls.__init__), inspect.signature(cls.init_locker))
+            raise TypeError(f"The '__init__' method and the 'init_locker' method must have the exact same signature for class '{cls.__name__}', including type hints, parameter names, parameter order, and keyword argument default values. This error could result from overloading one but not the other.")
+
+        # TODO find a way around using "_is_lazy" because this hack is not good style
+        # "_is_lazy" tracks what kind of initializer should be called
+        cls._is_lazy = False
+        # Set initializer to call init_locker unless the animation is lazy
+        cls._original_init = cls.__init__
+        def combined_init(self, *args, **kwargs):
+            if self._is_lazy:
+                self._init_args = args
+                self._init_kwargs = kwargs
+                self._locker = self.init_locker(*args, **kwargs)
+                self._original_advance = self.advance
+                def initializing_advance(*args, **kwargs):
+                    init_args, init_kwargs = evaluate_lazy(self._init_args, self._init_kwargs)
+                    self._original_init(*init_args, **init_kwargs)
+                    self.advance = self._original_advance
+                    return self.advance(*args, **kwargs)
+                self.advance = initializing_advance
+                cls._is_lazy = False
+            else:
+                for arg in [*args] + [*kwargs.values()]:
+                    if isinstance(arg, LazyObject):
+                        raise TypeError("Cannot pass a LazyObject as an argument to an Animation's initializer that is not being lazily constructed. Use Animation.lazy(...) to pass in LazyObject arguments.")
+                self._locker = self.init_locker(*args, **kwargs)
+                cls._original_init(self, *args, **kwargs)
+        cls.__init__ = combined_init
+
+        return cls
+
+
 #TODO Remove FPS as a parameter for all Animations because set_speed on Updater assumes that the FPS will always match the config
 
-class AnimationABC(ABC):
+class AnimationABC(ABC, metaclass=AnimationMetaClass):
+    _num_processed_frames = 0
+    _num_advances = 0
+    _animation_speed = 1
+    _keep_advancing = True
+    _locker: PropertyLocker
+
     def __init__(self):
-        self._num_processed_frames = 0
-        self._num_advances = 0
-        self._animation_speed = 1
-        self._keep_advancing = True
+        ...
+        
+
+    @abstractmethod
+    def init_locker(self):
+        """initializes and returns a property locker for self."""
+        ...
 
     def next_frame(self):
         """Makes the changes for one frame of the animation, accounting for the set animation speed.
@@ -61,12 +117,11 @@ class AnimationABC(ABC):
         ...
 
     @property
-    @abstractmethod
     def locker(self) -> PropertyLocker:
         """
         The :class:`PropertyLocker` identifying all objects/properties updated by this Animation.
         """
-        ...
+        return self._locker
 
     def finish(self) -> None:
         """
@@ -87,37 +142,9 @@ class AnimationABC(ABC):
             raise ValueError("Animation speed must be a positive integer.")
         self._animation_speed = speed
         return self
-
-class CompressedAnimation(AnimationABC):
-    """:class:`CompressedAnimation` wraps around another :class:`Animation`, compressing it into an :class:`Animation` with a single advance that runs all of the advances in the original :class:`Animation`."""
-    def __init__(self, animation: AnimationABC):
-        super().__init__()
-        self._animation = animation
-        self._locker = animation.locker
-
-    @property
-    def locker(self):
-        return self._locker
-    
-    def advance(self):
-        advanced = False
-        while self._animation.next_frame():
-            advanced = True
-        return advanced
-    
-
-
-class Animation(AnimationABC):
-    """An Animation can be used to modify properties of objects in a programmatic manner."""
-    def compress(self) -> CompressedAnimation:
-        """Returns a compressed version of this Animation.
-        
-        The CompressedAnimation will have only a single advance (or frame), during which all of the advances (or frames) for this Animation will complete.
-        """
-        return CompressedAnimation(self)
     
     @classmethod
-    def lazy(cls, *args, **kwargs) -> "LazyAnimation":
+    def lazy(cls, *args, **kwargs) -> Self:
         """A constructor for a lazy version of this :class:`Animation`,
         in which the constructor is not called until the first advance.
         
@@ -130,17 +157,46 @@ class Animation(AnimationABC):
         :return: A lazy version of this :class:`Animation`
         :rtype: LazyAnimation
         """
-        lazy_animation = LazyAnimation(lambda: cls(*args, **kwargs))
-        lazy_animation.__class__.__name__ = f"_Lazy{cls.__name__}"
-        return lazy_animation
+        cls._is_lazy = True
+        return cls(*args, **kwargs)
 
+class CompressedAnimation(AnimationABC):
+    """:class:`CompressedAnimation` wraps around another :class:`Animation`, compressing it into an :class:`Animation` with a single advance that runs all of the advances in the original :class:`Animation`."""
+    def __init__(self, animation: AnimationABC):
+        super().__init__()
+        self._animation = animation
+
+    def init_locker(self, animation: AnimationABC):
+        return animation.locker
+    
+    def advance(self):
+        advanced = False
+        while self._animation.next_frame():
+            advanced = True
+        return advanced
+    
+
+
+
+class Animation(AnimationABC):
+    """An Animation can be used to modify properties of objects in a programmatic manner."""
+    def compress(self) -> CompressedAnimation:
+        """Returns a compressed version of this Animation.
+        
+        The CompressedAnimation will have only a single advance (or frame), during which all of the advances (or frames) for this Animation will complete.
+        """
+        return CompressedAnimation(self)
+    
     def __str__(self) -> str:
         return f"{self.__class__.__name__}"
     def __repr__(self) -> str:
         return str(self)
+    
 
 class LazyAnimation(Animation):
-    """A LazyAnimation allows the initialization of an Animation to be delayed until its first advance.
+    """TO BE REMOVED: Use Animation.lazy instead.
+    
+    A LazyAnimation allows the initialization of an Animation to be delayed until its first advance.
 
     The passed-in callable must have no side effects because it could be called more than once.
     
@@ -150,11 +206,9 @@ class LazyAnimation(Animation):
     def __init__(self, animation_function: Callable[[], Animation]):
         super().__init__()
         self._animation_function = animation_function
-        self._locker = animation_function().locker
 
-    @property
-    def locker(self):
-        return self._locker
+    def init_locker(self, animation_function: Callable[[], Animation]):
+        return deepcopy(animation_function().locker)
     
     def advance(self):
         if not hasattr(self, "_animation"):
@@ -174,12 +228,7 @@ class NoAnimation(Animation):
 
         self._num_frames = round(fps*duration)
 
-    @property
-    def objects(self) -> set[int]:
-        return set()
-    
-    @property
-    def locker(self) -> PropertyLocker:
+    def init_locker(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
         return PropertyLocker()
 
     def advance(self) -> bool:
@@ -199,9 +248,8 @@ class RunFunction(Animation):
         self._locker = PropertyLocker()
         self._consume_frame = consume_frame
 
-    @property
-    def locker(self) -> PropertyLocker:
-        return self._locker
+    def init_locker(self, function: Callable[[], None], consume_frame=False):
+        return PropertyLocker()
 
     def advance(self) -> bool:
         if not self._has_been_run:
@@ -225,9 +273,11 @@ class AnimationSequence(Animation):
         for animation in animations:
             self.push(animation)
 
-    @property
-    def locker(self) -> PropertyLocker:
-        return self._locker
+    def init_locker(self, *animations: Animation):
+        locker = PropertyLocker()
+        for animation in filter(None, animations):
+            locker.update(animation.locker, ignore_conflicts=True)
+        return locker
 
     def advance(self) -> bool:
         while self._animation_index < len(self._animations) and self._animations[self._animation_index].next_frame() == False:
@@ -263,20 +313,21 @@ class AnimationBundle(Animation):
     def __init__(self, *animations: Animation):
         super().__init__()
         self._animations: list[Animation] = []
-        self._locker = PropertyLocker()
 
         for animation in animations:
-            self.push(animation)
+            self.push(animation, _update_locker=False)
                 
-    @property
-    def locker(self) -> PropertyLocker:
-        return self._locker
+    def init_locker(self, *animations: Animation):
+        locker = PropertyLocker()
+        for animation in filter(None, animations):
+            locker.update(animation.locker)
+        return locker
     
     def advance(self) -> bool:
         advance_made = sum(map(lambda x: x.next_frame(), self._animations)) > 0
         return advance_made
     
-    def push(self, animation: AnimationABC | Iterable[AnimationABC], _call_method: str ="push"):
+    def push(self, animation: AnimationABC | Iterable[AnimationABC], _call_method: str ="push", _update_locker: bool = True):
         """Adds an animation to this AnimationBundle.
 
         :param animation: The animation to be added to this AnimationBundle
@@ -286,7 +337,8 @@ class AnimationBundle(Animation):
         if animation is None:
             pass
         elif isinstance(animation, AnimationABC):
-            self._locker.update(animation.locker)
+            if _update_locker:
+                self._locker.update(animation.locker)
             self._animations.append(animation)
         elif isinstance(animation, Iterable):
             for animation_ in animation:
@@ -309,14 +361,12 @@ class UpdaterAnimation(Animation):
         super().__init__()
         self._duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
         self._updater = updater
-        self._locker = deepcopy(updater.locker)
 
         self._t = 0
         self._dt = 1/config.fps
 
-    @property
-    def locker(self):
-        return self._locker
+    def init_locker(self, updater: Updater, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
+        return deepcopy(updater.locker)
 
     def advance(self) -> bool:
         if self._t >= self._duration:
@@ -334,6 +384,10 @@ class AlphaAnimation(Animation):
         self._frame_number: int = 1
         self._num_frames: int = round(fps * duration)
         self._easing_function = easing_function
+
+    @abstractmethod
+    def init_locker(self, *, fps: int | ConfigurationDeference = DEFER_TO_CONFIG, duration: float | ConfigurationDeference = DEFER_TO_CONFIG, easing_function: Callable[[float], float] = sin_easing2):
+        ...
 
     def advance(self) -> bool:
         if self._frame_number > self._num_frames:
@@ -360,12 +414,10 @@ class PathAnimation(AlphaAnimation):
         self._source_translation = self._transform.translation
         self._path = path
 
-        self._locker = PropertyLocker()
-        self._locker.add(self._transform, "translation")
-
-    @property
-    def locker(self) -> PropertyLocker:
-        return self._locker
+    def init_locker(self, transform: Transform, path: Path, **kwargs):
+        return PropertyLocker({
+            transform: ['translation']
+            })
     
     def update(self, alpha: float):
         assert 0 <= alpha <= 1
@@ -387,16 +439,15 @@ class PropertyAnimation(AlphaAnimation, Generic[T]):
         self._destinations = deepcopy(destinations)
         self._attributes = deepcopy(properties)
         self._initials: list[InterpolableLike] = []
-        self._locker = PropertyLocker()
         for attribute, initial in zip(self._attributes, initials):
             if not isinstance(getattr(obj, attribute), InterpolableLike):
                 raise NotInterpolableError(attribute)
-            self._initials.append(getattr(obj, attribute) if initial is None else initial)
-            self._locker.add(obj, attribute)
+            self._initials.append(deepcopy(getattr(obj, attribute)) if initial is None else deepcopy(initial))
 
-    @property
-    def locker(self):
-        return self._locker
+    def init_locker(self, *, obj: T, destinations: list[InterpolableLike], properties: list[str], initials: list[InterpolableLike | None], **kwargs):
+        return PropertyLocker({
+            obj: properties
+        })
 
     def update(self, alpha: float):
         for attribute, initial, destination in zip(self._attributes, self._initials, self._destinations):
@@ -411,6 +462,8 @@ class TranslationAnimation(PropertyAnimation[Transform]):
             destinations=[construct_vec3(target_translation, transform.translation.z)],
             initials=[construct_vec3(initial_translation, transform.translation.z)],
             **kwargs)
+    def init_locker(self, transform: Transform, target_translation: Vec2 | list, initial_translation: Vec2 | Vec3 | None = None,**kwargs):
+        return PropertyLocker({transform: ['translation']})
 
 class ScaleAnimation(PropertyAnimation[Transform]):
     def __init__(self, transform: Transform, target_scale: float | Vec3 | list, initial_scale: int | float | Vec2 | Vec3 | None = None, **kwargs):
@@ -420,6 +473,9 @@ class ScaleAnimation(PropertyAnimation[Transform]):
             destinations=[construct_vec3(target_scale, transform.translation.z)],
             initials=[construct_vec3(initial_scale, transform.translation.z)],
             **kwargs)
+        
+    def init_locker(self, transform: Transform, target_scale: float | Vec3 | list, initial_scale: int | float | Vec2 | Vec3 | None = None, **kwargs):
+        return PropertyLocker({transform: ['scale']})
 
 class RotationAnimation(PropertyAnimation[Transform]):
     def __init__(self, transform: Transform, target_rotation: float, initial_rotation: int | float | None = None, **kwargs):
@@ -429,9 +485,10 @@ class RotationAnimation(PropertyAnimation[Transform]):
             destinations=[target_rotation, transform.translation.z],
             initials=[initial_rotation, transform.translation.z],
             **kwargs)
+    def init_locker(self, transform: Transform, target_rotation: float, initial_rotation: int | float | None = None, **kwargs):
+        return PropertyLocker({transform: ['rotation']})
         
 class TransformAnimation(PropertyAnimation[Transform]):
-    """Animates a Transform linearly toward a target."""
     def __init__(self, transform: Transform, target_transform: Transform, initial_transform: Transform | None = None, **kwargs):
         if initial_transform:
             initials = [
@@ -451,6 +508,8 @@ class TransformAnimation(PropertyAnimation[Transform]):
                 ],
             initials=initials,
             **kwargs)
+    def init_locker(self, transform: Transform, target_transform: Transform, initial_transform: Transform | None = None, **kwargs):
+        return PropertyLocker({transform: ['translation','scale','rotation']})
 
 class OpacityAnimation(PropertyAnimation[Color]):
     def __init__(self, color: Color | Element, target_opacity: float, initial_opacity: float | None = None, **kwargs):
@@ -460,6 +519,8 @@ class OpacityAnimation(PropertyAnimation[Color]):
             destinations=[target_opacity],
             initials=[initial_opacity],
             **kwargs)
+    def init_locker(self, color: Color | Element, target_opacity: float, initial_opacity: float | None = None, **kwargs):
+        return PropertyLocker({color: ['opacity']})
 
 class RgbAnimation(PropertyAnimation[Color]):
     def __init__(self, color: Color, target_rgb: Rgb, initial_rgb: Rgb | str | None = None, **kwargs):
@@ -473,22 +534,23 @@ class RgbAnimation(PropertyAnimation[Color]):
             destinations=[target_rgb],
             initials=[initial_rgb],
             **kwargs)
+    def init_locker(self, color: Color, target_rgb: Rgb, initial_rgb: Rgb | str | None = None, **kwargs):
+        return PropertyLocker({color: ['rgb']})
 
 
 def fade_in(element: Element, **kwargs) -> OpacityAnimation:
     """Returns an Animation to fade an Element in."""
-    return OpacityAnimation(element, 1.0, **kwargs)
+    return OpacityAnimation.lazy(element, 1.0, **kwargs)
 
 def fade_out(element: Element, **kwargs) -> Animation:
     """Returns an Animation to fade an Element out."""
-    return OpacityAnimation(element, 0.0, **kwargs)
+    return OpacityAnimation.lazy(element, 0.0, **kwargs)
 
 def flash(color: Color, rgb: str | Tuple[int, int, int], duration: float | ConfigurationDeference = DEFER_TO_CONFIG, **kwargs):
     """Returns an Animation to flash a Color's rgb to another and then back to its original rgb.."""
     duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
-    original_rgb = color.rgb
     return AnimationSequence(
-        RgbAnimation(color, rgb, duration=duration/2, **kwargs),
-        RgbAnimation(color, original_rgb, duration=duration/2, **kwargs)
+        RgbAnimation.lazy(color, rgb, duration=duration/2, **kwargs),
+        RgbAnimation.lazy(color, color.rgb, duration=duration/2, **kwargs)
     )
 
