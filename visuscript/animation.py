@@ -194,14 +194,16 @@ class Animation(AnimationABC):
     
 
 class LazyAnimation(Animation):
-    """TO BE REMOVED: Use Animation.lazy instead.
-    
-    A LazyAnimation allows the initialization of an Animation to be delayed until its first advance.
+    """A LazyAnimation allows the initialization of an Animation to be delayed until its first advance.
 
-    The passed-in callable must have no side effects because it could be called more than once.
+    The passed-in callable must have no side effects because it is called twice: once to initialize the
+    PropertyLocker and once to initialize the the Animation.
     
     A LazyAnimation can be useful when chaining together multiple animations in an AnimationSequence,
     where the initial state of one object being animated should not be determined until the previous animation completes.
+    Often, Animation.lazy in conjuction with lazy arguments could and propably should be used instead of
+    :class:`LazyAnimation`: it is in cases where the argumets cannot reasonably be made lazy that :class:`LazyAnimation`
+    shines.
     """
     def __init__(self, animation_function: Callable[[], Animation]):
         super().__init__()
