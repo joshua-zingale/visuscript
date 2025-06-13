@@ -1,4 +1,0 @@
-numpy
-Pillow
-svg.py
-pygments

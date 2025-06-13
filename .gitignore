@@ -1,6 +1,7 @@
 __pycache__/
 \.venv
 .vscode/
+dist/*
 *.mp4
 *.svg
 *.png

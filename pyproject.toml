@@ -1,0 +1,38 @@
+[project]
+name = "visuscript"
+version = "0.1.0a1"
+authors = [
+  { name="Joshua Zingale", email="joshua.thomas.zingale@gmail.com" },
+]
+description = "A Vector-Graphics-Based Animation Library"
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+]
+license = "MIT"
+license-files = ["LICENCE"]
+dependencies = [
+    "numpy",
+    "Pillow",
+    "svg.py",
+    "pygments",
+]
+
+[project.urls]
+Homepage = "https://github.com/joshua-zingale/visuscript"
+
+[project.scripts]
+visuscript = "visuscript.cli.visuscript_cli:main"
+
+[tool.setuptools.packages.find]
+exclude = ["tests*", "docs*"]
+
+[tool.setuptools.package-data]
+visuscript = [
+    "fonts/Arimo/*",
+    "fonts/LeagueMono-2.300/*",
+    "cli/scripts/visuscript-animate",
+    "cli/scripts/visuscript-slideshow"
+]
