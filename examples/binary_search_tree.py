@@ -10,8 +10,6 @@ import random
 RADIUS = 8
 NUM_NODES = 31
 
-
-
 def main():
     s = Scene()
 
@@ -20,7 +18,7 @@ def main():
     s.player << fade_in(text)
     s.player << AnimationBundle(
         RunFunction(lambda: text.set_anchor(Anchor.TOP_LEFT, keep_position=True)),
-        TransformAnimation(text.transform, Transform(s.shape.top_left + [10,10], scale=0.5))
+        TransformAnimation.lazy(text.transform, Transform(s.shape.top_left + [10,10], scale=0.5))
         )
 
     tree = AnimatedBinaryTreeArray([Var(None) for _ in range(NUM_NODES)], radius=RADIUS, transform=[0,-75])
