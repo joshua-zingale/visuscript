@@ -472,8 +472,8 @@ class ScaleAnimation(PropertyAnimation[Transform]):
         super().__init__(
             obj=transform,
             properties=['scale'],
-            destinations=[construct_vec3(target_scale, transform.translation.z)],
-            initials=[construct_vec3(initial_scale, transform.translation.z)],
+            destinations=[construct_vec3(target_scale, transform.scale.z)],
+            initials=[construct_vec3(initial_scale, transform.scale.z)],
             **kwargs)
         
     def init_locker(self, transform: Transform, target_scale: float | Vec3 | list, initial_scale: int | float | Vec2 | Vec3 | None = None, **kwargs):
@@ -484,8 +484,8 @@ class RotationAnimation(PropertyAnimation[Transform]):
         super().__init__(
             obj=transform,
             properties=['rotation'],
-            destinations=[target_rotation, transform.translation.z],
-            initials=[initial_rotation, transform.translation.z],
+            destinations=[target_rotation],
+            initials=[initial_rotation],
             **kwargs)
     def init_locker(self, transform: Transform, target_rotation: float, initial_rotation: int | float | None = None, **kwargs):
         return PropertyLocker({transform: ['rotation']})
@@ -551,8 +551,8 @@ def fade_out(element: Element, **kwargs) -> Animation:
 def flash(color: Color, rgb: str | Tuple[int, int, int], duration: float | ConfigurationDeference = DEFER_TO_CONFIG, **kwargs):
     """Returns an Animation to flash a Color's rgb to another and then back to its original rgb.."""
     duration = config.animation_duration if duration is DEFER_TO_CONFIG else duration
-    return AnimationSequence(
-        RgbAnimation.lazy(color, rgb, duration=duration/2, **kwargs),
+    return LazyAnimation(lambda:AnimationSequence(
+        RgbAnimation(color, rgb, duration=duration/2, **kwargs),
         RgbAnimation.lazy(color, color.rgb, duration=duration/2, **kwargs)
-    )
+    ))
 

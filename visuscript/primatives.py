@@ -174,6 +174,16 @@ class Rgb(Interpolable):
         return self * other
     def __truediv__(self, other: float) -> Self:
         return self * (1/other)
+    
+    def __eq__(self, other: Self):
+        return self._rgb[0] == other._rgb[0] and self._rgb[1] == other._rgb[1] and self._rgb[2] == other._rgb[2]
+    
+    def __str__(self):
+        r,g,b = self._rgb
+        return f"RGB({r}, {g}, {b})"
+    
+    def __repr__(self):
+        return str(self)
 
 
 def get_vec3(values: Collection[float], z_fill: float = 0.0) -> Vec3:
@@ -247,7 +257,7 @@ class Transform(Invalidator, Lazible):
 
     @property
     def scale(self) -> Vec3:
-        return deepcopy(self._scale)
+        return self._scale
     
     @scale.setter
     @invalidates
@@ -359,7 +369,7 @@ class Transform(Invalidator, Lazible):
 
 
 
-class Color():
+class Color(Lazible):
 
     PALETTE: dict = {
     "dark_slate": Rgb(*[28, 28, 28]),
@@ -394,6 +404,8 @@ class Color():
 
         if isinstance(color, Color):
             self._rgb = deepcopy(color._rgb)
+        elif isinstance(color, Rgb):
+            self._rgb = deepcopy(color)
         elif isinstance(color, str):
             self._rgb = Color.PALETTE[color]
         elif isinstance(color, Collection):
