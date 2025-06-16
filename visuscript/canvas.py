@@ -11,6 +11,7 @@ import numpy as np
 import svg
 
 from visuscript.animation import AnimationBundle, Animation
+from visuscript.updater import Updater
 
 
 class Canvas(Drawable):
@@ -184,6 +185,7 @@ class _Player:
     def __init__(self, scene: "Scene"):
         self._scene = scene
     def __lshift__(self, animation: Animation):
+        _check_conflicts(animation, self._scene._updater_bundle)
         self._scene._print_frames(animation)
 
 class Scene(Canvas):
@@ -228,12 +230,11 @@ class Scene(Canvas):
         self._player = _Player(self)
 
         self._original_drawables = []
+        self._original_updater_bundles = []  # Track updater bundles for context manager
 
         self._updater_bundle: UpdaterBundle = UpdaterBundle()
         self._number_of_frames_animated: int = 0
-
-        # TODO the PropertLockers for the animation and updater bundles should be linked to ensure no contradictions
-    
+        
     @property
     def _embed_level(self):
         return len(self._original_drawables)
@@ -246,13 +247,18 @@ class Scene(Canvas):
             raise ValueError("Cannot use Scene.animations unless in a context manager. Use Scene.player instead.")
         if self._embed_level > 1:
             raise ValueError("Cannot use Scene.animations in an embedded context manager.")
-        return self._animation_bundle
+        return _AnimationManager(self._animation_bundle, self._updater_bundle)
     
     @property
     def updaters(self):
         """The :class:`~visuscript.updater.Updater` instances stored herein to be run
         before each of this :class:`Scene`'s frames is printed."""
-        return self._updater_bundle
+        if self._embed_level == 0:
+            # Outside context manager - return a wrapper that checks for conflicts
+            return _UpdaterManager(self._updater_bundle, self._animation_bundle)
+        else:
+            # Inside context manager - return a wrapper that checks for conflicts
+            return _UpdaterManager(self._updater_bundle, self._animation_bundle)
     
     @property
     def player(self) -> _Player:
@@ -292,11 +298,85 @@ class Scene(Canvas):
 
     def __enter__(self) -> Self:
         self._original_drawables.append(copy(self._drawables))
+        self._original_updater_bundles.append(copy(self._updater_bundle._updaters))
         return self
+    
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._print_frames()
         self._drawables = self._original_drawables.pop()
+        if self._original_updater_bundles:
+            original_updaters = self._original_updater_bundles.pop()
+            self._updater_bundle.clear()
+            for updater in original_updaters:
+                self._updater_bundle.push(updater)
 
+def _check_conflicts(updater_or_animation1: Updater | Animation, updater_or_animation2: Updater | Animation):
+    """Check if updater conflicts with existing animations."""
+    from visuscript._property_locker import LockedPropertyError
+    
+    # Check if any properties locked by the updater are also locked by animations
+    for obj in updater_or_animation1.locker._map:
+        for prop in updater_or_animation1.locker._map[obj]:
+            if updater_or_animation2.locker.locks(obj, prop):
+                raise LockedPropertyError(obj, prop)
+
+class _AnimationManager:
+    """Wrapper for AnimationBundle that checks for conflicts with updaters."""
+    
+    def __init__(self, animation_bundle: AnimationBundle, updater_bundle: UpdaterBundle):
+        self._animation_bundle = animation_bundle
+        self._updater_bundle = updater_bundle
+    
+    def push(self, animation: Animation | Iterable[Updater], _call_method="push"):
+        """Adds an animation after checking for conflicts with updaters."""
+        if Animation is None:
+            return
+        
+        if isinstance(animation, Animation):
+            _check_conflicts(animation, self._updater_bundle)
+            self._animation_bundle.push(animation, _call_method)
+        elif isinstance(animation, Iterable):
+            for a in animation:
+                self.push(a, _call_method)
+        else:
+            raise TypeError(f"'{_call_method}' is only implemented for types Updater and Iterable[Animation], not for '{type(animation)}'")
+
+    def __lshift__(self, other: Updater | Iterable[Updater]):
+        """See :func:_AnimationManager.push"""
+        self.push(other, _call_method="<<")
+        
+    def __getattr__(self, name):
+        """Delegate other attributes to the underlying AnimationBundle."""
+        return getattr(self._updater_bundle, name)
+
+class _UpdaterManager:
+    """Wrapper for UpdaterBundle that checks for conflicts with animations."""
+    
+    def __init__(self, updater_bundle: UpdaterBundle, animation_bundle: AnimationBundle):
+        self._updater_bundle = updater_bundle
+        self._animation_bundle = animation_bundle
+    
+    def push(self, updater: Updater | Iterable[Updater], _call_method="push"):
+        """Adds an updater after checking for conflicts with animations."""
+        if updater is None:
+            return
+        
+        if isinstance(updater, Updater):
+            _check_conflicts(updater, self._animation_bundle)
+            self._updater_bundle.push(updater, _call_method)
+        elif isinstance(updater, Iterable):
+            for u in updater:
+                self.push(u, _call_method)
+        else:
+            raise TypeError(f"'{_call_method}' is only implemented for types Updater and Iterable[Updater], not for '{type(updater)}'")
+    
+    def __lshift__(self, other: Updater | Iterable[Updater]):
+        """See :func:_UpdaterManager.push"""
+        self.push(other, _call_method="<<")
+        
+    def __getattr__(self, name):
+        """Delegate other attributes to the underlying UpdaterBundle."""
+        return getattr(self._updater_bundle, name)
 
 def _print_svg(canvas: Canvas, file = None) -> None:
     """
