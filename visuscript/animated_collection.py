@@ -4,8 +4,8 @@ from visuscript.animation import NoAnimation, PathAnimation, AnimationBundle, Tr
 from visuscript.segment import Path
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
 from visuscript.text import Text
-from visuscript.organizer import BinaryTreeOrganizer, Organizer
-from visuscript.element import Circle, Pivot, Element
+from visuscript.organizer import BinaryTreeOrganizer, Organizer, GridOrganizer
+from visuscript.element import Circle, Pivot, Element, Rect
 from visuscript.primatives import Transform
 from visuscript.drawable import Drawable
 from visuscript.math_utility import magnitude
@@ -443,3 +443,21 @@ class AnimatedBinaryTreeArray(AnimatedList):
         return int((not self.get_left(var).is_none) + (not self.get_right(var).is_none))
     def get_children(self, var: Var):
         return map(lambda x: not x.is_none, [self.get_left(var), self.get_right(var)])
+    
+
+class AnimatedArray(AnimatedList):
+    def __init__(self, variables: Iterable[Var], font_size: float, *args, **kwargs):
+        variables = list(variables)
+        self._max_length = len(variables)
+        self._font_size = font_size
+        super().__init__(variables, *args, **kwargs)
+        for transform in self.organizer:
+            self.add_auxiliary_element(Rect(font_size, font_size).translate(*self.transform(transform.translation)))
+    def get_organizer(self):
+        return GridOrganizer((1,len(self)), (self._font_size, self._font_size))
+    def new_element_for(self, var):
+        return Text(f"{var.value}", font_size=self._font_size)
+    def insert(self, index, value, *, duration = DEFER_TO_CONFIG):
+        if len(self) == self._max_length:
+            raise ValueError("Cannot insert a Var into an AnimatedArray that is already at its maximal length.")
+        return super().insert(index, value, duration=duration)
