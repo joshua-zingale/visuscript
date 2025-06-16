@@ -7,7 +7,6 @@ from visuscript.primatives import *
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 from typing import Iterable, Iterator
 from copy import copy
-import numpy as np
 import svg
 
 from visuscript.animation import AnimationBundle, Animation
