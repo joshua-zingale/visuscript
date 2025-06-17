@@ -1,6 +1,6 @@
 from .base_class import VisuscriptTestCase
 from visuscript.text import Text
-from visuscript.animated_collection import AnimatedArray, Var
+from visuscript.animated_collection import AnimatedArray, Var, AnimatedBinaryTreeArray
 from visuscript.animation import AnimationSequence
 from visuscript.element import Rect
 
@@ -130,6 +130,38 @@ class TestAnimatedArray(VisuscriptTestCase):
 
         for val, array_val in zip(reversed(data), array):
             self.assertEqual(val, array_val)
+
+
+class TestAnimatedBinaryTreeArray(VisuscriptTestCase):
+
+    def test_initialization(self):
+        data = list(map(Var, [0,1,2,3,4,5]))
+        array = AnimatedBinaryTreeArray(data, radius=10)
+        array.organize().finish()
+
+        for var1, var2 in zip(data, array):
+            self.assertEqual(var1, var2)
+
+        y = lambda i: array.elements[i].global_shape.center.y
+        x = lambda i: array.elements[i].global_shape.center.x
+        
+        self.assertGreater(y(1), y(0))
+
+        self.assertEqual(y(1), y(2))
+        self.assertEqual(y(3), y(4))
+        self.assertEqual(y(3), y(5))
+
+        self.assertGreater(x(0), x(1))
+        self.assertLess(x(0), x(2))
+
+        self.assertGreater(x(1), x(3))
+        self.assertLess(x(1), x(4))
+
+        self.assertLess(x(4), x(5))
+        
+        self.assertGreater(x(2), x(5))
+
+
 
 
 def get_elements_of_type(elements, type_):

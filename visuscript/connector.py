@@ -1,12 +1,14 @@
 from visuscript.drawable import Drawable
 from visuscript.element import Drawing, Path, Element
-from visuscript.primatives import Vec2, Transform
+from visuscript.primatives import Vec2
 from visuscript.constants import LineTarget
 from visuscript.config import *
 from visuscript.math_utility import magnitude
-from visuscript.animation import fade_in, fade_out, AnimationSequence, RunFunction
+from visuscript.animation import fade_in, fade_out, AnimationSequence, RunFunction, Animation, AnimationBundle
+
 from abc import abstractmethod
-from typing import Tuple, Generator
+from typing import Tuple, Callable, Iterable
+import itertools
 
 class Connector(Element):
     """A connector visually connects one Element to another or one location to another."""
@@ -137,6 +139,10 @@ class Arrow(Connector):
             ))
     
 
+class ElementsAlreadyConnectedError(ValueError): pass
+
+class ElementsNotConnectedError(ValueError): pass
+
 class Edges(Drawable):
     def __init__(self):
         super().__init__()
@@ -152,6 +158,19 @@ class Edges(Drawable):
     @property
     def height(self):
         return 0.0
+    
+
+    def connect_by_rule(self, rule: Callable[[Element, Element], bool], elements: Iterable[Element]) -> Animation:
+        bundle = AnimationBundle()
+
+        for e1, e2 in itertools.combinations(elements, 2):
+            should_be_connected = rule(e1, e2)
+            if should_be_connected and not self.connected(e1, e2):
+                bundle << self.connect(e1, e2)
+            elif self.connected(e1, e2) and not should_be_connected:
+                bundle << self.disconnect(e1, e2)
+
+        return bundle
 
     def get_edge(self, element1: Element, element2: Element):
         assert self.connected(element1, element2)
@@ -167,7 +186,7 @@ class Edges(Drawable):
         edge = Line(source=element1, destination=element2).set_opacity(0.0)
         self._edges[(element1, element2)] = edge
 
-        return fade_in(edge, duration=0.5)
+        return fade_in(edge)
 
     def disconnect(self, element1: Element, element2: Element):
         assert self.connected(element1, element2)
@@ -191,5 +210,5 @@ class Edges(Drawable):
             drawing += edge.draw()
         return drawing
     
-    def lines_iter(self) -> Generator[Tuple[Vec2, Vec2]]:
+    def lines_iter(self) -> Iterable[Tuple[Vec2, Vec2]]:
         yield from map(lambda x: (x.source, x.destination),self._edges.values())
