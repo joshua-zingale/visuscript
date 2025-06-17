@@ -43,7 +43,7 @@ class TestAnimatedList(VisuscriptTestCase):
 
         self.assertAlmostEqual(array.elements[0].transform.translation.x, (loc1.x + loc2.x)/2)
         self.assertAlmostEqual(array.elements[-1].transform.translation.x, (loc1.x + loc2.x)/2)
-        self.assertGreaterEqual(array.elements[1].global_shape.bottom.y, array.elements[0].global_shape.top.y)
+        self.assertLessEqual(array.elements[-1].global_shape.bottom.y, array.elements[0].global_shape.top.y)
 
 
         run_for(animation, 1)
@@ -53,6 +53,43 @@ class TestAnimatedList(VisuscriptTestCase):
 
         self.assertVecAlmostEqual(array.elements[0].transform.translation, loc1)
         self.assertVecAlmostEqual(array.elements[-1].transform.translation, loc2)
+
+    def test_quadratic_swap_sequence(self):
+
+
+        data = list(map(Var, [1,2,3,4,5]))
+        array = AnimatedArray(data, 20)
+
+        loc1 = array.elements[0].transform.translation
+        loc2 = array.elements[1].transform.translation
+        loc3 = array.elements[-1].transform.translation
+
+        animation = AnimationSequence(
+            array.quadratic_swap(0,-1, duration=1),
+            array.quadratic_swap(0,1, duration=2)
+            )
+        
+        run_for(animation, 1)
+
+        self.assertVecAlmostEqual(array.elements[1].transform.translation, loc1)
+        self.assertVecAlmostEqual(array.elements[0].transform.translation, loc2)
+        self.assertVecAlmostEqual(array.elements[-1].transform.translation, loc3)
+
+        run_for(animation, 1)
+
+        self.assertAlmostEqual(array.elements[0].transform.translation.x, (loc1.x + loc2.x)/2)
+        self.assertAlmostEqual(array.elements[1].transform.translation.x, (loc1.x + loc2.x)/2)
+        self.assertLessEqual(array.elements[1].global_shape.bottom.y, array.elements[0].global_shape.top.y)
+
+
+        run_for(animation, 1)
+
+        self.assertEqual(array[0], data[1])
+        self.assertEqual(array[1], data[-1])
+        self.assertEqual(array[-1], data[0])
+
+        self.assertVecAlmostEqual(array.elements[0].transform.translation, loc1)
+        self.assertVecAlmostEqual(array.elements[1].transform.translation, loc2)
         
 
 

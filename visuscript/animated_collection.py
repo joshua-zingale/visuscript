@@ -336,18 +336,22 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     
         element_a, element_b = self._swap(a,b)
 
-        diff = element_b.transform.translation.xy - element_a.transform.translation.xy
-        distance = magnitude(diff)
-        direction = diff / distance
-        ortho = Vec2(-direction.y, direction.x)
 
-        mid = element_a.transform.translation.xy + direction * distance/2
-        lift = ortho * element_a.shape.circumscribed_radius*2
+        def get_quadratic_swap():
+            diff = element_b.transform.translation.xy - element_a.transform.translation.xy
+            distance = magnitude(diff)
+            direction = diff / distance
+            ortho = Vec2(-direction.y, direction.x)
+
+            mid = element_a.transform.translation.xy + direction * distance/2
+            lift = ortho * element_a.shape.circumscribed_radius*2
+
+            return AnimationBundle(
+                PathAnimation(element_a.transform, Path().M(*element_a.transform.translation.xy).Q(*(mid - lift), *element_b.transform.translation.xy), duration=duration),
+                PathAnimation(element_b.transform, Path().M(*element_b.transform.translation.xy).Q(*(mid + lift), *element_a.transform.translation.xy), duration=duration)
+            )
         
-        return LazyAnimation(lambda: AnimationBundle(
-            PathAnimation(element_a.transform, Path().M(*element_a.transform.translation.xy).Q(*(mid - lift), *element_b.transform.translation.xy), duration=duration),
-            PathAnimation(element_b.transform, Path().M(*element_b.transform.translation.xy).Q(*(mid + lift), *element_a.transform.translation.xy), duration=duration)
-        ))
+        return LazyAnimation(get_quadratic_swap)
         
     def extend(self, values: Iterable, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
         super().extend(values)
