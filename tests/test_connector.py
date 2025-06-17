@@ -1,7 +1,6 @@
 from .base_class import VisuscriptTestCase
 from visuscript.connector import Edges, ElementsAlreadyConnectedError, ElementsNotConnectedError
 from visuscript.element import Circle
-from .test_animation import run_for
 class TestEdges(VisuscriptTestCase):
 
     def test_connecting(self):
@@ -122,29 +121,34 @@ class TestEdges(VisuscriptTestCase):
         circles[6].previous = circles[2]
 
         edges.connect(circles[0], circles[3]).finish()
-
         line_to_fade_away = edges.get_edge(circles[0], circles[3])
 
         rule = lambda e1, e2: e2.previous is e1
-
         animation = edges.connect_by_rule(rule, circles)
-
-        self.assertEqual(len(list(edges.lines_iter())), 6)
-        for line in edges._edges.values():
-            self.assertEqual(line.opacity, 0)
-
-        self.assertEqual(len(edges._fading_away), 1)
-        self.assertIn(line_to_fade_away, edges._fading_away)
-        self.assertNotIn(line_to_fade_away, edges._edges)
         self.assertEqual(line_to_fade_away.opacity, 1)
 
-        animation.finish()
+        fade_in_lines = [
+            edges.get_edge(circles[0], circles[1]),
+            edges.get_edge(circles[0], circles[2]),
+            edges.get_edge(circles[1], circles[3]),
+            edges.get_edge(circles[1], circles[4]),
+            edges.get_edge(circles[2], circles[5]),
+            edges.get_edge(circles[2], circles[6]),
+        ]
 
         self.assertEqual(len(list(edges.lines_iter())), 6)
-        for line in edges._edges.values():
+        for line in fade_in_lines:
+            self.assertEqual(line.opacity, 0)
+
+    
+        animation.finish()
+        self.assertEqual(line_to_fade_away.opacity, 0)
+
+        self.assertEqual(len(list(edges.lines_iter())), 6)
+        for line in fade_in_lines:
             self.assertEqual(line.opacity, 1)
 
-        self.assertEqual(len(edges._fading_away), 0)
+
 
 
 
