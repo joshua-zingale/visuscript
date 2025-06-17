@@ -104,6 +104,25 @@ class TestEdges(VisuscriptTestCase):
         self.assertFalse(edges.connected(circles[6], circles[1]))
 
 
+    def test_connect_disconnect_animation(self):
+        edges = Edges()
+
+        circ1 = Circle(1)
+        circ2 = Circle(2)
+
+        animation = edges.connect(circ1, circ2)
+        edge = edges.get_edge(circ1, circ2)
+
+        self.assertEqual(edge.opacity, 0)
+        animation.finish()
+        self.assertEqual(edge.opacity, 1)
+
+        animation = edges.disconnect(circ1, circ2)
+        self.assertEqual(edge.opacity, 1)
+        animation.finish()
+        self.assertEqual(edge.opacity, 0)
+
+
     def test_connect_by_rule_animation(self):
 
         edges = Edges()
