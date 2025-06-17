@@ -9,10 +9,11 @@ from visuscript.element import Circle, Pivot, Element, Rect
 from visuscript.primatives import Transform
 from visuscript.drawable import Drawable
 from visuscript.math_utility import magnitude
+from visuscript.config import config
 
 from abc import abstractmethod
 from visuscript.primatives import Vec2
-from typing import Collection, Iterable, MutableSequence, Self, Any
+from typing import Collection, Iterable, MutableSequence, Self, Any, Tuple
 
 
 import numpy as np
@@ -317,7 +318,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
             TransformAnimation.lazy(element_b.transform, element_a.transform)
         )
     
-    def quadratic_swap(self, a: int | Var, b: int | Var) -> LazyAnimation:
+    def quadratic_swap(self, a: int | Var, b: int | Var, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> LazyAnimation:
         """Swaps the :class:`Var` instances stored at the input indices.
 
         If :class:`Var` is used instead of an index, the index herein of :class:`Var` is used for the index.
@@ -329,10 +330,10 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         :return: An Animation along a quadratic curve swapping each :class:`Var`'s :class:`~visuscript.element.Element`'s respective :class:`~visuscript.primatives.Transform`.
         :rtype: Animation
         """
-
         if a == b:
-            return NoAnimation()
-
+            return NoAnimation(duration=duration)
+        
+    
         element_a, element_b = self._swap(a,b)
 
         diff = element_b.transform.translation.xy - element_a.transform.translation.xy
@@ -344,8 +345,8 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         lift = ortho * element_a.shape.circumscribed_radius*2
         
         return LazyAnimation(lambda: AnimationBundle(
-            PathAnimation(element_a.transform, Path().M(*element_a.transform.translation.xy).Q(*(mid - lift), *element_b.transform.translation.xy)),
-            PathAnimation(element_b.transform, Path().M(*element_b.transform.translation.xy).Q(*(mid + lift), *element_a.transform.translation.xy))
+            PathAnimation(element_a.transform, Path().M(*element_a.transform.translation.xy).Q(*(mid - lift), *element_b.transform.translation.xy), duration=duration),
+            PathAnimation(element_b.transform, Path().M(*element_b.transform.translation.xy).Q(*(mid + lift), *element_a.transform.translation.xy), duration=duration)
         ))
         
     def extend(self, values: Iterable, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
@@ -443,7 +444,7 @@ class AnimatedBinaryTreeArray(AnimatedList):
         return int((not self.get_left(var).is_none) + (not self.get_right(var).is_none))
     def get_children(self, var: Var):
         return map(lambda x: not x.is_none, [self.get_left(var), self.get_right(var)])
-    
+
 
 class AnimatedArray(AnimatedList):
     def __init__(self, variables: Iterable[Var], font_size: float, *args, **kwargs):
@@ -452,7 +453,7 @@ class AnimatedArray(AnimatedList):
         self._font_size = font_size
         super().__init__(variables, *args, **kwargs)
         for transform in self.organizer:
-            self.add_auxiliary_element(Rect(font_size, font_size).translate(*self.transform(transform.translation)))
+            self.add_auxiliary_element(Rect(font_size, font_size).set_transform(self.transform @ transform))
     def get_organizer(self):
         return GridOrganizer((1,len(self)), (self._font_size, self._font_size))
     def new_element_for(self, var):
@@ -461,3 +462,28 @@ class AnimatedArray(AnimatedList):
         if len(self) == self._max_length:
             raise ValueError("Cannot insert a Var into an AnimatedArray that is already at its maximal length.")
         return super().insert(index, value, duration=duration)
+    
+class AnimatedArray2D(AnimatedArray):
+    def __init__(self, variables: Iterable[Var], font_size: float, shape: Tuple[int, int], *args, **kwargs):
+        self._shape = shape
+        super().__init__(variables, font_size, *args, **kwargs)
+
+    def _tuple_to_index(self, index: Tuple[int, int]):
+        for axis, (idx, size) in enumerate(zip(index, self._shape)):
+            if idx >= size:
+                raise IndexError(f"Index {idx} is too large for axis {axis} of size {size}.")
+
+        return index[0] * self._shape[1] + index[1]
+
+    
+    def __getitem__(self, index: int | slice | Tuple[int, int]):
+        if isinstance(index, (int, slice)):
+            return super()[index]
+        return super()[self._tuple_to_index[index]]
+        
+    def insert(self, index, value, *, duration=DEFER_TO_CONFIG):
+        if isinstance(index, Tuple):
+            index = self._tuple_to_index(index)
+        return super().insert(index, value, duration=duration)
+    def get_organizer(self):
+        return GridOrganizer(self._shape, (self._font_size, self._font_size))
