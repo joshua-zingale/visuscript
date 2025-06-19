@@ -204,6 +204,15 @@ class TestPath(ABCTestSegment):
                 )
         )
 
+    def test_path_str(self):
+        path = Path().M(0,0).M(2,-1).L(10,12).L(0,0).Q(30,30, 45,-45).Q(40,40,8,8).Z()
+        self.assertEqual(path.path_str.count("L"), 2)
+        self.assertEqual(path.path_str.count("Q"), 2)
+        self.assertEqual(path.path_str.count("Z"), 1)
+
+
+
+
 def floatify_path_str(s: Segment) -> list[str]:
     out = []
     for arg in s.path_str.split():
