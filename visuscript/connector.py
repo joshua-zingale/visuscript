@@ -173,15 +173,18 @@ class Edges(Drawable):
         return bundle
 
     def get_edge(self, element1: Element, element2: Element):
-        assert self.connected(element1, element2)
+        if not self.connected(element1, element2):
+            raise ElementsNotConnectedError(f"Elements {element1} and {element2} are not connected")
         return self._edges.get((element1, element2)) or self._edges[(element2, element1)]
     
     def connected(self, element1: Element, element2: Element):
         return (element1, element2) in self._edges or (element2, element1) in self._edges
     
     def connect(self, element1: Element, element2: Element):
-        assert not self.connected(element1, element2)
-        assert element1 is not element2
+        if self.connected(element1, element2):
+            raise ElementsAlreadyConnectedError(f"Elements {element1} and {element2} are already connected")
+        if element1 is element2:
+            raise ValueError("Cannot connect an element to itself")
 
         edge = Line(source=element1, destination=element2).set_opacity(0.0)
         self._edges[(element1, element2)] = edge
@@ -189,7 +192,8 @@ class Edges(Drawable):
         return fade_in(edge)
 
     def disconnect(self, element1: Element, element2: Element):
-        assert self.connected(element1, element2)
+        if not self.connected(element1, element2):
+            raise ElementsNotConnectedError(f"Elements {element1} and {element2} are not connected")
         if (element1, element2) in self._edges:
             edge = self._edges.pop((element1, element2))
         else:
