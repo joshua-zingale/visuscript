@@ -103,10 +103,10 @@ class TestMSegment(ABCTestSegment):
 
     def test_path_str(self):
         m = MSegment(13,-1)
-        self.assertSequenceEqual(m.path_str.split(), "M 13 -1".split())
+        self.assertSequenceEqual(floatify_path_str(m), "M 13.0 -1.0".split())
 
         m.set_offset(2,-1)
-        self.assertSequenceEqual(m.path_str.split(), "M 15 -2".split())
+        self.assertSequenceEqual(floatify_path_str(m), "M 15.0 -2.0".split())
 
 
 class TestLSegment(ABCTestSegment):
@@ -126,10 +126,10 @@ class TestLSegment(ABCTestSegment):
 
     def test_path_str(self):
         l = LSegment(13,-1, 10, 10)
-        self.assertSequenceEqual(l.path_str.split(), "L 10 10".split())
+        self.assertSequenceEqual(floatify_path_str(l), "L 10.0 10.0".split())
 
         l.set_offset(2,-1)
-        self.assertSequenceEqual(l.path_str.split(), "L 12 9".split())
+        self.assertSequenceEqual(floatify_path_str(l), "L 12.0 9.0".split())
 
 class TestZSegment(ABCTestSegment):
     def init_segment(self):
@@ -178,6 +178,13 @@ class TestQSegment(ABCTestSegment):
         q = QSegment(0,0,0,0,10,0)
         self.assertAlmostEqual(q.arc_length, 10)
 
+    def test_path_str(self):
+        q = QSegment(-1,2,10,12,15,23)
+        self.assertSequenceEqual(floatify_path_str(q), "Q 10.0 12.0 15.0 23.0".split())
+
+        q.set_offset(2,-1)
+        self.assertSequenceEqual(floatify_path_str(q), "Q 12.0 11.0 17.0 22.0".split())
+
 
 
 class TestPath(ABCTestSegment):
@@ -196,3 +203,13 @@ class TestPath(ABCTestSegment):
                 ZSegment(8,8,2,-1).arc_length
                 )
         )
+
+def floatify_path_str(s: Segment) -> list[str]:
+    out = []
+    for arg in s.path_str.split():
+        if arg.isalpha():
+            out.append(arg)
+        else:
+            out.append(str(float(arg)))
+
+    return out
