@@ -9,7 +9,7 @@ from visuscript.element import Circle, Pivot, Element, Rect
 from visuscript.primatives import Transform
 from visuscript.drawable import Drawable
 from visuscript.math_utility import magnitude
-from visuscript.config import config
+from visuscript.connector import Edges
 
 from abc import abstractmethod
 from visuscript.primatives import Vec2
@@ -385,8 +385,15 @@ class AnimatedBinaryTreeArray(AnimatedList):
         self.level_heights = level_heights or 3*radius
         self.node_width = node_width or 3*radius
 
+        self._edges = Edges()
+        self.add_auxiliary_element(self._edges)
+
         super().__init__(variables, **kwargs)
-   
+
+    @property
+    def edges(self):
+        return self._edges
+       
     def get_organizer(self):
         num_levels = int(np.log2(len(self))) + 1
         return BinaryTreeOrganizer(num_levels=num_levels, level_heights=self.level_heights, node_width=self.node_width)
