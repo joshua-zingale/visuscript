@@ -1,10 +1,10 @@
 from visuscript.drawable import Drawable, Shape
 from visuscript.constants import Anchor
-from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
-from .primatives import *
-from .segment import Path, Segment
-from io import StringIO
-from typing import Self, Generator, Iterator
+from visuscript.primatives import *
+from visuscript.segment import Path, Segment
+
+from typing import Self, Iterable, Union
+
 import numpy as np
 import svg
 from abc import abstractmethod
@@ -33,7 +33,12 @@ class Element(Drawable):
         self._svg_pivot = None
         self._deleted = False
 
-    def iter_children(self) -> Iterator["Element"]:
+    @property
+    def parent(self) -> Union["Element", None]:
+        """The parent of this :class:`Element` if it exists, else None."""
+        return self._parent
+
+    def iter_children(self) -> Iterable["Element"]:
         yield from self._children
 
     def _invalidate(self):
@@ -71,8 +76,10 @@ class Element(Drawable):
         
         Also adds this Element as a child of the new parent and removes it as a child of any previous parent.
         """
+        if self.parent:
+            self.parent._children.remove(self)
+
         if parent is None:
-            self._parent._children.remove(self)
             self._parent = None
         else:
 
@@ -93,12 +100,23 @@ class Element(Drawable):
 
         return self
         
-    def add_child(self, child: "Element", preserve_global_transform: bool = False) -> Self:
+    def add_child(self, child: "Element" | Callable[["Element"], "Element" | Iterable["Element"]], preserve_global_transform: bool = False) -> Self:
         """
         Adds `child` as a child to this Element. If `preserve_global_transform` is True, then the
         transform on `child` is set such that its global transform not change.
         """
-        child.set_parent(self, preserve_global_transform=preserve_global_transform)
+
+        if callable(child):
+            child = child(self)
+            if isinstance(child, Element):
+                child.set_parent(self, preserve_global_transform=preserve_global_transform)
+            elif isinstance(child, Iterable):
+                for actual_element in child:
+                    if not isinstance(actual_element, Element):
+                        raise TypeError(f"Cannot add child of type '{actual_element.__class__.__name__}': child must inherit from Element.")
+                    actual_element.set_parent(self, preserve_global_transform=preserve_global_transform)
+        else:
+            child.set_parent(self, preserve_global_transform=preserve_global_transform)
         return self
     
     def remove_child(self, child: "Element", preserve_global_transform: bool = True) -> Self:
@@ -111,7 +129,7 @@ class Element(Drawable):
         child.set_parent(None, preserve_global_transform=preserve_global_transform)
         return self
 
-    def add_children(self, *children: "Element", preserve_global_transform: bool = False) -> Self:
+    def add_children(self, *children: "Element" | Callable[["Element"], Tuple["Element",...] | "Element"], preserve_global_transform: bool = False) -> Self:
         """
         Adds each input child as a child of this Element. If `preserve_global_transform` is True, then the
         transform on each child is set such that its global transform not change.
@@ -168,7 +186,7 @@ class Element(Drawable):
     #         self.transform = self._parent.global_transform.inv(value)
 
 
-    def __iter__(self) -> Iterator["Element"]:
+    def __iter__(self) -> Iterable["Element"]:
         """
         Iterate over this Element and its children in ascending z order, secondarily ordering parents before children.
         """
