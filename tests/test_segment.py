@@ -178,6 +178,23 @@ class TestQSegment(ABCTestSegment):
         q = QSegment(0,0,0,0,10,0)
         self.assertAlmostEqual(q.arc_length, 10)
 
+    def test_arc_length(self):
+        q = QSegment(0,0,0,0,10,0)
+        self.assertAlmostEqual(q.arc_length, 10)
+
+        start = Vec2(-10,20)
+        mid = Vec2(10,12)
+        end = Vec2(15, 23)
+        q = QSegment(*start, *mid, *end)
+
+        n = 1000
+        arc_length = 0
+        for pi,pip1 in zip(map(lambda x: x/n, range(n)), map(lambda x: x/n, range(1,n+1))):
+            arc_length += magnitude(q.point_percentage(pi) - q.point_percentage(pip1))
+
+        self.assertAlmostEqual(q.arc_length, arc_length, 4)
+
+
     def test_path_str(self):
         q = QSegment(-1,2,10,12,15,23)
         self.assertSequenceEqual(floatify_path_str(q), "Q 10.0 12.0 15.0 23.0".split())
