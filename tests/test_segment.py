@@ -210,6 +210,13 @@ class TestPath(ABCTestSegment):
         self.assertEqual(path.path_str.count("Q"), 2)
         self.assertEqual(path.path_str.count("Z"), 1)
 
+        self.assertIn("45.0", floatify_path_str(path))
+        self.assertIn("-45.0", floatify_path_str(path))
+        path.set_offset(2,-1)
+
+        self.assertIn("47.0", floatify_path_str(path))
+        self.assertIn("-46.0", floatify_path_str(path))
+
 
 
 

@@ -282,7 +282,7 @@ class Path(Segment):
             string = ""
 
 
-        return string + " ".join(
+        return string + " " + " ".join(
             map(lambda x: x.path_str, self._segments)
             )
     
