@@ -129,7 +129,7 @@ class Element(Drawable):
         child.set_parent(None, preserve_global_transform=preserve_global_transform)
         return self
 
-    def add_children(self, *children: "Element" | Callable[["Element"], Tuple["Element",...] | "Element"], preserve_global_transform: bool = False) -> Self:
+    def add_children(self, *children: "Element" | Callable[["Element"], "Element" | Iterable["Element"]], preserve_global_transform: bool = False) -> Self:
         """
         Adds each input child as a child of this Element. If `preserve_global_transform` is True, then the
         transform on each child is set such that its global transform not change.
