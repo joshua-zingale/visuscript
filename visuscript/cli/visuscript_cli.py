@@ -60,13 +60,15 @@ def main():
         animate_proc = subprocess.Popen(
             [sys.executable, f"{dir_path}{os.sep}visuscript_animate.py", f"{fps}", f"{output_filename}"],
             stdin=subprocess.PIPE,
-            text=True
+            text=True,
+            encoding='utf-8'
         )
     elif mode == "slideshow":
         animate_proc = subprocess.Popen(
             [sys.executable, f"{dir_path}{os.sep}visuscript_slideshow.py", f"{output_filename}"],
             stdin=subprocess.PIPE,
-            text=True
+            text=True,
+            encoding='utf-8',
         )
 
     if theme == "dark":
