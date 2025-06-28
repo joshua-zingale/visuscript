@@ -7,9 +7,9 @@ from visuscript.math_utility import magnitude
 class Segment(ABC):
 
     @abstractmethod
-    def point_percentage(self, percentage: float) -> Vec2:
+    def point_percentage(self, p: float) -> Vec2:
         """
-        The (x,y) point that is `percentage` along this segment, where `percentage` is between 0 and 1.
+        The (x,y) point that is `p` along this segment, where `p` is between 0 and 1.
         """
         ...
 
@@ -256,7 +256,7 @@ class Path(Segment):
         self.min_y = 0
         self.max_y = 0
 
-        self._cursor = Vec2(0,0)
+        self._cursor: Vec2 = Vec2(0,0)
 
         self._x_offset = 0
         self._y_offset = 0
@@ -286,8 +286,8 @@ class Path(Segment):
             map(lambda x: x.path_str, self._segments)
             )
     
-    def point_percentage(self, percentage):
-        return self.point(percentage * self.arc_length)
+    def point_percentage(self, p: float):
+        return self.point(p * self.arc_length)
     
     def point(self, length: float):
         assert length <= self.arc_length

@@ -1,8 +1,11 @@
 from visuscript.element import Element
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
+
 from xml.sax.saxutils import escape
 from .primatives import *
 from PIL import ImageFont
+
+from typing import Concatenate, ParamSpec, Callable, TypeVar, cast
 import svg
 import os
 
@@ -20,11 +23,14 @@ def xml_escape(data: str) -> str:
         " ": "&#160;",
     })
 
-
+P = ParamSpec("P")
+T = TypeVar("T")
+_Text = TypeVar("_Text", bound="Text")
 class Text(Element):
+     
      @staticmethod
-     def update_size(foo):
-          def size_updating_method(self: "Text", *args, **kwargs):
+     def update_size(foo: Callable[Concatenate[_Text, P], T]) -> Callable[Concatenate[_Text, P], T]:
+          def size_updating_method(self: _Text, *args: P.args, **kwargs: P.kwargs):
                global fonts
                r = foo(self, *args, **kwargs)
 
@@ -36,8 +42,8 @@ class Text(Element):
                # Hack to get bounding box from https://stackoverflow.com/a/46220683
                # TODO Use an appropriate public API from PIL to get these metrics
                font = ImageFont.truetype(font_path, self.font_size)
-               ascent, descent = font.getmetrics()
-               (width, height), (offset_x, offset_y) = font.font.getsize(self.text)
+               ascent, _descent = font.getmetrics()
+               (width, _height), (_offset_x, offset_y) = font.font.getsize(self.text) # type: ignore
                self._width = width
                self._height = ascent - offset_y
 
@@ -47,9 +53,9 @@ class Text(Element):
      @update_size
      def __init__(self, text: str, *, font_size: float | ConfigurationDeference = DEFER_TO_CONFIG, font_family: str | ConfigurationDeference = DEFER_TO_CONFIG, fill: Color | ConfigurationDeference = DEFER_TO_CONFIG, **kwargs):
 
-               font_size = config.text_font_size if font_size is DEFER_TO_CONFIG else font_size
-               font_family = config.text_font_family if font_family is DEFER_TO_CONFIG else font_family
-               fill = config.text_fill if fill is DEFER_TO_CONFIG else fill
+               font_size = cast(float, config.text_font_size if font_size is DEFER_TO_CONFIG else font_size)
+               font_family = cast(str, config.text_font_family if font_family is DEFER_TO_CONFIG else font_family)
+               fill = cast(Color, config.text_fill if fill is DEFER_TO_CONFIG else fill)
 
                self._text: str = text
                self._font_size: float = font_size
@@ -115,7 +121,7 @@ class Text(Element):
                x=x,
                y=y,
                text=xml_escape(self.text),
-               transform=self.global_transform.svg_transform,
+               transform=self.global_transform.svg_transform, # type: ignore
                font_size=self.font_size,
                font_family=self.font_family,
                font_style="normal",
@@ -130,7 +136,7 @@ def get_multiline_texts(text: str, font_size: float, **kwargs) -> Text:
 
      head = None
      for i, line in enumerate(text.split("\n")):
-          text_obj = Text(text=line, font_size=font_size, **kwargs).set_transform([0,i*font_size])
+          text_obj = Text(text=line, font_size=font_size, **kwargs).set_transform(Transform([0,i*font_size]))
           if i == 0:
                head = text_obj
           else:
