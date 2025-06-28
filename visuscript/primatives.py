@@ -1,21 +1,21 @@
-import numpy as np
-from typing import Self, Collection, Tuple, Type, Sequence, Callable, Iterator
-from operator import add, mul, sub, truediv, neg, pow, eq
-from array import array
-from copy import deepcopy
 from visuscript._invalidator import Invalidator, Invalidatable, invalidates
 from visuscript._interpolable import Interpolable
 from visuscript.lazy_object import Lazible
+
+import numpy as np
+
+from typing import Self, Tuple, Sequence, Callable, Iterator, overload, Union, TypeAlias, no_type_check, Iterable
+from operator import add, mul, sub, truediv, neg, pow, eq
+from array import array
+from copy import deepcopy
+
 class SizeMismatch(ValueError):
     def __init__(self, size1: int, size2: int, operation: str):
         super().__init__(f"Size mismatch for {operation}: Size {size1} is not compatible with Size {size2}.")
 
+_VecLike: TypeAlias = Sequence[float]
 #TODO Add support for arbitrary dimensions in a base class, which can be used for matrices etc later
-class Vec(Sequence[float], Interpolable):
-
-    def __init__(self, *args):
-        self._arr = array('d', [*args])
-
+class Vec(Sequence[float], Interpolable[_VecLike]):
     # @staticmethod
     # def size_check(operation):
     #     def size_check_function(self, other):
@@ -24,12 +24,14 @@ class Vec(Sequence[float], Interpolable):
     #         return operation(self, other)
     #     return size_check_function
 
-    def interpolate(self, other: "Vec", alpha: float) -> Self:
-        element_interpolate = lambda a,b: a*(1 - alpha) + b*alpha
-        return self._element_wise(element_interpolate, other)
+    def __init__(self, *args: float):
+        self._arr = array('d', [*args])
+
+    def interpolate(self, other: _VecLike, alpha: float) -> Self:
+        return self._element_wise(lambda a,b: a*(1 - alpha) + b*alpha, other)
     
-    def _element_wise(self, operation: Callable[[float, float], float], other: "Vec"):
-        if not hasattr(other, "__len__"):
+    def _element_wise(self, operation: Callable[[float, float], float], other: _VecLike | float | int):
+        if not isinstance(other, Sequence):
             return self.__class__(*(operation(s, other) for s in self))
         
         if len(self) != len(other):
@@ -37,21 +39,27 @@ class Vec(Sequence[float], Interpolable):
         
         return self.__class__(*(operation(s, o) for s,o in zip(self, other)))
     
-    def add(self, other: "Vec") -> Self:
+    def add(self, other: _VecLike) -> Self:
         return self + other
-    def sub(self, other: "Vec") -> Self:
+    def sub(self, other: _VecLike) -> Self:
         return self - other
-    def mul(self, other: "Vec") -> Self:
+    def mul(self, other: _VecLike) -> Self:
         return self * other
-    def div(self, other: "Vec") -> Self:
+    def div(self, other: _VecLike) -> Self:
         return self / other
 
 
-    def dot(self, other: "Vec") -> float:
+    def dot(self, other: _VecLike) -> float:
         prods = self._element_wise(mul, other)
         return sum(prods)
 
-    def __getitem__(self, index: int | slice) -> float:
+    @overload
+    def __getitem__(self, index: int) -> float:
+        ...
+    @overload
+    def __getitem__(self, index: slice) -> "Vec":
+        ...
+    def __getitem__(self, index: int | slice) -> Union[float, "Vec"]: # type: ignore
         if isinstance(index, slice):
             return Vec(*self._arr[index])
         return self._arr[index]
@@ -59,32 +67,32 @@ class Vec(Sequence[float], Interpolable):
     def __len__(self) -> int:
         return len(self._arr)
 
-    def __eq__(self, other: "Vec") -> bool:
+    def __eq__(self, other: _VecLike) -> bool: # type: ignore
         return sum(self._element_wise(eq, other)) == len(self)
     
-    def __add__(self, other: "Vec") -> Self:
+    def __add__(self, other: _VecLike | int | float) -> Self:
         return self._element_wise(add, other)
-    def __radd__(self, other: "Vec") -> Self:
+    def __radd__(self, other: _VecLike | int | float) -> Self:
         return self._element_wise(add, other)
 
-    def __sub__(self, other: "Vec") -> Self:
+    def __sub__(self, other: _VecLike | int | float) -> Self:
         return self._element_wise(sub, other)
-    def __rsub__(self, other: "Vec") -> Self:
+    def __rsub__(self, other: _VecLike | int | float) -> Self:
         vec = self.__class__(*map(lambda x: -x, self))
         return vec._element_wise(add, other)
 
-    def __mul__(self, other: "Vec") -> Self:
+    def __mul__(self, other: _VecLike | int | float) -> Self:
         return self._element_wise(mul, other)
-    def __rmul__(self, other: "Vec") -> Self:
+    def __rmul__(self, other: _VecLike | int | float) -> Self:
         return self._element_wise(mul, other)
     
-    def __truediv__(self, other: "Vec") -> Self:
+    def __truediv__(self, other: _VecLike | int | float) -> Self:
         return self._element_wise(truediv, other)
-    def __rtruediv__(self, other: "Vec") -> Self:
+    def __rtruediv__(self, other: _VecLike | int | float) -> Self:
         vec = self.__class__(*map(lambda x: 1/x, self))
         return vec._element_wise(mul, other)
     
-    def __pow__(self, other: "Vec") -> Self:
+    def __pow__(self, other: _VecLike | int | float) -> Self:
         return self._element_wise(pow, other)
     # def __rpow__(self, other: "Vec") -> Self:
     #     vec = self.__class__(*map(lambda x: 1/x, self))
@@ -94,8 +102,11 @@ class Vec(Sequence[float], Interpolable):
     def __neg__(self) -> Self:
         return self.__class__(*map(neg, self))
     
+    #TODO fixure out a good type here for the other in matmul
+    @no_type_check
     def __matmul__(self, other) -> Self:
         return self.__class__(*np.matmul(self, other))
+    @no_type_check
     def __rmatmul__(self, other):
         return self.__class__(*np.matmul(other, self))
     
@@ -103,10 +114,6 @@ class Vec(Sequence[float], Interpolable):
         return f"Vec{(*self,)}"
     def __repr__(self):
         return str(self)
-    
-    def astype(self, type: Type):
-        return list(map(type, self))
-
     def max(self):
         return max(self)
 
@@ -117,7 +124,7 @@ class Vec2(Vec):
 
     def extend(self, z: float):
         """Get a Vec3 with the same x,y as this Vec2, where the parameter sets z."""
-        return Vec3(*self, z)
+        return Vec3(*self, z=z)
     
     @property
     def x(self) -> float:
@@ -151,31 +158,29 @@ class Vec3(Vec):
         """
         return Vec2(*self[:2])
 
-class Rgb(Interpolable):
+class Rgb(Interpolable["Rgb"]):
     def __init__(self, r: int, g: int, b: int):
         for v in [r,g,b]:
-            if not isinstance(v, int):
-                raise TypeError("RGB values must be of type int")
             if v < 0 or v > 255:
                 raise ValueError(f"{v} is not a valid RGB value. RGB values must be between 0 and 255, includsive.")
         self._rgb: list[int] = [r,g,b]
-    def interpolate(self, other: "Rgb", alpha: float) -> Self:
+    def interpolate(self, other: "Rgb", alpha: float) -> "Rgb":
         return Rgb(*(min(max(round(s*(1-alpha) + o*alpha),0),255) for s,o in zip(self._rgb, other._rgb) ))
     
     def __iter__(self) -> Iterator[int]:
         yield from self._rgb
 
-    def __add__(self, other: Self) -> Self:
+    def __add__(self, other: "Rgb") -> "Rgb":
         return Rgb(*[min(s+o,255) for s,o in zip(self._rgb, other._rgb)])
     
-    def __mul__(self, other: float) -> Self:
+    def __mul__(self, other: float) -> "Rgb":
         return Rgb(*[min(int(s*other),255) for s in self._rgb])
-    def __rmul__(self, other: float) -> Self:
+    def __rmul__(self, other: float) -> "Rgb":
         return self * other
-    def __truediv__(self, other: float) -> Self:
+    def __truediv__(self, other: float) -> "Rgb":
         return self * (1/other)
     
-    def __eq__(self, other: Self):
+    def __eq__(self, other: "Rgb"): # type: ignore
         return self._rgb[0] == other._rgb[0] and self._rgb[1] == other._rgb[1] and self._rgb[2] == other._rgb[2]
     
     def __str__(self):
@@ -186,21 +191,18 @@ class Rgb(Interpolable):
         return str(self)
 
 
-def get_vec3(values: Collection[float], z_fill: float = 0.0) -> Vec3:
-    if not isinstance(values, Collection):
-        raise TypeError(f"Cannot make Vec3 out of {type(values)}")
-    
+def get_vec3(values: Sequence[float], z_fill: float = 0.0) -> Vec3:    
     if len(values) == 2:
-        return Vec3(*values, z_fill)
+        return Vec3(*values, z=z_fill)
     elif len(values) == 3:
         return Vec3(*values)
     else:
         raise ValueError(f"Cannot make Vec3 out of collection of length {len(values)}. Must be of length 2 or 3.")
 
 
-class Transform(Invalidator, Lazible):
+class Transform(Invalidator, Interpolable["Transform"], Lazible):
 
-    def __init__(self, translation: Vec2 | Vec3 | list | Self = [0,0,0], scale: Vec2 | Vec3 | list | float = [1,1,1], rotation: float = 0.0):
+    def __init__(self, translation: Vec2 | Vec3 | Sequence[float] | Self = [0,0,0], scale: Vec2 | Vec3 | Sequence[float] | float = [1,1,1], rotation: float = 0.0):
         
         if isinstance(translation, Transform):
             self._translation = translation.translation
@@ -220,7 +222,7 @@ class Transform(Invalidator, Lazible):
 
     def _add_invalidatable(self, invalidatable: Invalidatable):
         self._invalidatables.add(invalidatable)
-    def _iter_invalidatables(self):
+    def _iter_invalidatables(self) -> Iterable[Invalidatable]:
         yield from self._invalidatables
 
     @property
@@ -247,7 +249,7 @@ class Transform(Invalidator, Lazible):
     
     @translation.setter
     @invalidates
-    def translation(self, value: Vec2 | Vec3 | Collection[float]):
+    def translation(self, value: Vec2 | Vec3 | Sequence[float]):
         assert 2 <= len(value) and len(value) <= 3
 
         value = get_vec3(value, z_fill=self.translation.z)
@@ -261,17 +263,17 @@ class Transform(Invalidator, Lazible):
     
     @scale.setter
     @invalidates
-    def scale(self, value: int | float | Collection[float]):
-        if not isinstance(value, Collection):
+    def scale(self, value: int | float | Sequence[float]):
+        if not isinstance(value, Sequence):
             self._scale = Vec3(value, value, 1.0)
             return
 
-        assert 2 <= len(value) and len(value) <= 3
-
         if len(value) == 2:
-            self._scale.xy = value
+            self._scale = Vec3(*value, z=self._scale[2])
+        elif len(value) == 3:
+            self._scale = Vec3(*value)
         else:
-            self._scale = value
+            raise ValueError(f"Cannot set scale to a sequence of length {len(value)}: must be length 2 or 3.")
 
 
     def set_translation(self, translation: Vec2 | Vec3) -> Self:
@@ -293,7 +295,7 @@ class Transform(Invalidator, Lazible):
         """
         The SVG representation of this Transform, as can be specified with "transfrom="
         """
-        return f"translate({" ".join(self.translation[:2].astype(str))}) scale({" ".join(self.scale[:2].astype(str))}) rotate({self.rotation})"
+        return f"translate({" ".join(map(str, self.translation[:2]))}) scale({" ".join(map(str, self.scale[:2]))}) rotate({self.rotation})"
     
     def __str__(self):
         return self.svg_transform
@@ -301,10 +303,10 @@ class Transform(Invalidator, Lazible):
     def __repr__(self):
         return str(self)
 
-    def __call__(self, other: Self | Vec2 | Vec3) -> Self | Vec2 | Vec3:
+    def __call__(self, other: Self | Vec2 | Vec3) -> Union["Transform", Vec2, Vec3]:
         return self @ other
     
-    def __matmul__(self, other: Self | Vec2 | Vec3) -> Self | Vec2 | Vec3:
+    def __matmul__(self, other: Union[Self, Vec2, Vec3]) -> Union["Transform", Vec2, Vec3]:
         t = (self.rotation * np.pi/180)
         r_matrix = [
             [np.cos(t), -np.sin(t),0],
@@ -324,7 +326,7 @@ class Transform(Invalidator, Lazible):
             rotation = self.rotation + other.rotation
             )
     
-    def interpolate(self, other: Self, alpha: float) -> Self:
+    def interpolate(self, other: Self, alpha: float) -> "Transform":
         """Initializes and returns a new :class:`Transform` by interpolating between this :class:`Transform` and another.
 
         :param other: The other :class:`Transform` between which this :class:`Transform` is to be interpolated.
@@ -336,6 +338,7 @@ class Transform(Invalidator, Lazible):
         :return: A newly initialized :class:`Transform`
         :rtype: Transform
         """
+
         return Transform(
             translation = self.translation * (1 - alpha) + other.translation * alpha,
             scale = self.scale * (1 - alpha) + other.scale * alpha,
@@ -371,7 +374,7 @@ class Transform(Invalidator, Lazible):
 
 class Color(Lazible):
 
-    PALETTE: dict = {
+    PALETTE: dict[str, Rgb] = {
     "dark_slate": Rgb(*[28, 28, 28]),
     "soft_blue": Rgb(*[173, 216, 230]),
     "vibrant_orange": Rgb(*[255, 165, 0]),
@@ -397,7 +400,7 @@ class Color(Lazible):
     "white": Rgb(*[255,255,255])
 }
 
-    def __init__(self, color: str | Collection[int] | Self = "off_white", opacity: float = 1.0):
+    def __init__(self, color: str | Sequence[int] | Self = "off_white", opacity: float = 1.0):
 
         self.opacity: float = color.opacity if isinstance(color, Color) else opacity
         self._rgb: Rgb
@@ -408,11 +411,8 @@ class Color(Lazible):
             self._rgb = deepcopy(color)
         elif isinstance(color, str):
             self._rgb = Color.PALETTE[color]
-        elif isinstance(color, Collection):
-            assert len(color) == 3, f"length was {len(color)}"
-            self._rgb = Rgb(*color, dtype=int)
-        else:
-            raise TypeError(f"{type(color)} is not accepted.")
+        else: #elif isinstance(color, Sequence):
+            self._rgb = Rgb(*color)
         
 
     def set_opacity(self, opacity: float) -> Self:
@@ -431,8 +431,9 @@ class Color(Lazible):
     @rgb.setter
     def rgb(self, value: str | Tuple[int, int, int]):
         if isinstance(value, str):
-            value = Color.PALETTE[value]
-        self._rgb = value
+            self._rgb = Color.PALETTE[value]
+        else:
+            self._rgb = Rgb(*value)
 
     @property
     def svg_rgb(self):
@@ -442,21 +443,21 @@ class Color(Lazible):
     def __str__(self) -> str:
         return f"Color(color={tuple(self._rgb)}, opacity={self.opacity}"
     
-    def __add__(self, other: Self) -> Self:
-        color = (self._rgb + other._rgb).clip(0,255)
-        return Color(color=color)
+    # def __add__(self, other: Self) -> Self:
+    #     color = (self._rgb + other._rgb)
+    #     return Color(color=color)
     
-    def __sub__(self, other: Self) -> Self:
-        color = (self._rgb - other._rgb).clip(0,255)
-        return Color(color=color)
+    # def __sub__(self, other: Self) -> Self:
+    #     color = (self._rgb - other._rgb)
+    #     return Color(color=color)
     
-    def __mul__(self, other: float) -> Self:
-        color = (self._rgb * other).round().astype(int)
-        return Color(color=color)
+    # def __mul__(self, other: float) -> Self:
+    #     color = self._rgb * other
+    #     return Color(color=color)
     
-    def __rmul__(self, other: float) -> Self:
-        return self * other
+    # def __rmul__(self, other: float) -> Self:
+    #     return self * other
     
-    def __truediv__(self, other: float) -> Self:
-        color = (self._rgb / other).round().astype(int)
-        return Color(color=color)
+    # def __truediv__(self, other: float) -> Self:
+    #     color = map(int, (self._rgb / other).round())
+    #     return Color(color=color)

@@ -227,7 +227,7 @@ class Element(Drawable):
 
 class Image(Element):
 
-    def __init__(self, *, filename: str | Collection[Collection[int]], width: float | None = None, **kwargs):
+    def __init__(self, *, filename: str | Sequence[Sequence[int]], width: float | None = None, **kwargs):
         super().__init__(**kwargs)
 
         if isinstance(filename, str):

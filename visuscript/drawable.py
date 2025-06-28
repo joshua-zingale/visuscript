@@ -115,7 +115,7 @@ class Drawable(ABC, Invalidatable):
         self.transform.translation = Vec3(x,y,z)
         return self
     
-    def scale(self, scale: int | float | Collection[float]) -> Self:
+    def scale(self, scale: int | float | Sequence[float]) -> Self:
         """Sets the scale on this Drawable's Transform."""
         self.transform.scale = scale
         return self
