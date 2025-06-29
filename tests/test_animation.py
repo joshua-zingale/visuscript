@@ -10,7 +10,7 @@ from visuscript.animation import (
     ScaleAnimation,
     RotationAnimation,
     )
-from visuscript._property_locker import PropertyLocker, LockedPropertyError
+from visuscript.property_locker import PropertyLocker, LockedPropertyError
 from visuscript.primatives import Vec, Transform, Vec3, Color, Rgb
 from visuscript.lazy_object import Lazible
 from visuscript.config import config

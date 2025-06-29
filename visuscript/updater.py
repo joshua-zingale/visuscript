@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from visuscript.primatives import Transform
-from visuscript._property_locker import PropertyLocker
+from visuscript.property_locker import PropertyLocker
 from visuscript.math_utility import magnitude
 from visuscript.config import config
 from typing import Iterable, Self, Callable

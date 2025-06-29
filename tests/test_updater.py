@@ -3,7 +3,7 @@ import unittest
 from visuscript.config import config
 from visuscript.updater import TranslationUpdater, Updater
 from visuscript.primatives import Transform
-from visuscript._property_locker import PropertyLocker
+from visuscript.property_locker import PropertyLocker
 from math import sqrt
 
 

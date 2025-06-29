@@ -4,7 +4,7 @@ from visuscript.config import *
 from visuscript.element import Element
 from visuscript.primatives import *
 from visuscript.segment import Path
-from visuscript._property_locker import PropertyLocker
+from visuscript.property_locker import PropertyLocker
 from visuscript.updater import Updater
 from visuscript._interpolable import InterpolableLike, interpolate
 from visuscript._constructors import construct_vec3

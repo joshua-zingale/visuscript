@@ -311,7 +311,7 @@ class Scene(Canvas):
 
 def _check_conflicts(updater_or_animation1: Updater | Animation, updater_or_animation2: Updater | Animation):
     """Check if updater conflicts with existing animations."""
-    from visuscript._property_locker import LockedPropertyError
+    from visuscript.property_locker import LockedPropertyError
     
     # Check if any properties locked by the updater are also locked by animations
     for obj in updater_or_animation1.locker._map:
