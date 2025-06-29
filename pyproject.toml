@@ -20,6 +20,7 @@ dependencies = [
     "svg.py",
     "pygments",
     "coverage>=7.9.1",
+    "pytest>=8.4.1",
 ]
 
 [dependency-groups]
@@ -45,6 +46,8 @@ visuscript = [
     "cli/scripts/visuscript-slideshow"
 ]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true
