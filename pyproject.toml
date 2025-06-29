@@ -19,6 +19,7 @@ dependencies = [
     "Pillow",
     "svg.py",
     "pygments",
+    "coverage>=7.9.1",
 ]
 
 [dependency-groups]
@@ -45,6 +46,9 @@ visuscript = [
 ]
 
 
+[tool.coverage.run]
+branch = true
+source = ["visuscript"]
 
 [tool.pyright]
 strict = [
