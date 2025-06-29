@@ -47,8 +47,7 @@ visuscript = [
 
 
 [tool.pyright]
-
 strict = [
     "visuscript/**.py",
 ]
-reportUnusedExpression = "none"
+reportUnusedExpression = "none" # because visuscript overloads "<<" to be a push opperation, which is often "unused"
