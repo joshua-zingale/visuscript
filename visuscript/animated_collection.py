@@ -13,12 +13,12 @@ from visuscript.connector import Edges
 
 from abc import abstractmethod
 from visuscript.primatives import Vec2
-from typing import Collection, Iterable, MutableSequence, Self, Any, Tuple
+from typing import Collection, Iterable, MutableSequence, Self, Any, Tuple, no_type_check
 
 
 import numpy as np
 
-
+# TODO find a way to do type checking correctly
 class Var:
     """An immutable wrapper around any other type: the foundational bit of data to be stored in an :class:`AnimatedCollection`.
     """
@@ -59,50 +59,61 @@ class Var:
         """
         return self.value is None
     
-    def __add__(self, other: "Var"):
+    @no_type_check
+    def __add__(self, other: "Var") -> "Var":
         value = self.value + other.value
         type_ = type(value)
         return Var(value, type_=type_)
     
-    def __sub__(self, other: "Var"):
+    @no_type_check
+    def __sub__(self, other: "Var") -> "Var":
         value = self.value - other.value
         type_ = type(value)
         return Var(value, type_=type_)
     
-    def __mul__(self, other: "Var"):
+    @no_type_check
+    def __mul__(self, other: "Var") -> "Var":
         value = self.value * other.value
         type_ = type(value)
         return Var(value, type_=type_)
     
-    def __truediv__(self, other: "Var"):
+    @no_type_check
+    def __truediv__(self, other: "Var") -> "Var":
         value = self.value / other.value
         type_ = type(value)
         return Var(value, type_=type_)
     
-    def __mod__(self, other: "Var"):
+    @no_type_check
+    def __mod__(self, other: "Var") -> "Var":
         value = self.value % other.value
         type_ = type(value)
         return Var(value, type_=type_)
     
-    def __floordiv__(self, other: "Var"):
+    @no_type_check
+    def __floordiv__(self, other: "Var") -> "Var":
         value = self.value // other.value
         type_ = type(value)
         return Var(value, type_=type_)
     
-    def __pow__(self, other: "Var"):
+    @no_type_check
+    def __pow__(self, other: "Var") -> "Var":
         value = self.value ** other.value
         type_ = type(value)
         return Var(value, type_=type_)
     
-
+    @no_type_check
     def __gt__(self, other: "Var") -> bool:
         return self.value > other.value
+    @no_type_check
     def __ge__(self, other: "Var") -> bool:
         return self.value >= other.value
+    @no_type_check
     def __eq__(self, other: "Var") -> bool:
         return self.value == other.value
+    @no_type_check
     def __le__(self, other: "Var") -> bool:
         return self.value <= other.value
+    @no_type_check
     def __lt__(self, other: "Var") -> bool:
         return self.value < other.value
     
