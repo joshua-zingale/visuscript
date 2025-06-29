@@ -40,8 +40,8 @@ exclude = ["tests*", "docs*"]
 
 [tool.setuptools.package-data]
 visuscript = [
-    "fonts/Arimo/*",
-    "fonts/LeagueMono-2.300/*",
+    "drawable/fonts/Arimo/*",
+    "drawable/fonts/LeagueMono-2.300/*",
     "cli/scripts/visuscript-animate",
     "cli/scripts/visuscript-slideshow"
 ]
