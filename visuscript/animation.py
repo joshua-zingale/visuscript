@@ -6,8 +6,8 @@ from visuscript.primatives import *
 from visuscript.segment import Path
 from visuscript.property_locker import PropertyLocker
 from visuscript.updater import Updater
-from visuscript._interpolable import InterpolableLike, interpolate
-from visuscript._constructors import construct_vec3
+from visuscript._internal._interpolable import InterpolableLike, interpolate
+from visuscript._internal._constructors import construct_vec3
 from visuscript.lazy_object import evaluate_lazy, LazyObject
 import numpy as np
 

@@ -5,7 +5,7 @@ from ..constants import Anchor
 from ..config import *
 from typing import Self
 from abc import ABC, abstractmethod
-from visuscript._invalidator import Invalidatable
+from visuscript._internal._invalidator import Invalidatable
 from functools import cached_property
 
 

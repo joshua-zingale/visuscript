@@ -1,5 +1,5 @@
-from visuscript._invalidator import Invalidator, Invalidatable, invalidates
-from visuscript._interpolable import Interpolable
+from visuscript._internal._invalidator import Invalidator, Invalidatable, invalidates
+from visuscript._internal._interpolable import Interpolable
 from visuscript.lazy_object import Lazible
 
 import numpy as np
@@ -442,22 +442,3 @@ class Color(Lazible):
 
     def __str__(self) -> str:
         return f"Color(color={tuple(self._rgb)}, opacity={self.opacity}"
-    
-    # def __add__(self, other: Self) -> Self:
-    #     color = (self._rgb + other._rgb)
-    #     return Color(color=color)
-    
-    # def __sub__(self, other: Self) -> Self:
-    #     color = (self._rgb - other._rgb)
-    #     return Color(color=color)
-    
-    # def __mul__(self, other: float) -> Self:
-    #     color = self._rgb * other
-    #     return Color(color=color)
-    
-    # def __rmul__(self, other: float) -> Self:
-    #     return self * other
-    
-    # def __truediv__(self, other: float) -> Self:
-    #     color = map(int, (self._rgb / other).round())
-    #     return Color(color=color)
