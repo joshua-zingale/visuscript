@@ -13,6 +13,7 @@ dist/*
 *.profile
 visuscript.egg-info
 .coverage
+.ruff_cache
 
 old/*
 docs/build
