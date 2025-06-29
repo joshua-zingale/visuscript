@@ -1,8 +1,8 @@
 """This module contains the abstract base class for all Drawable objects."""
 
-from .primatives import *
-from .constants import Anchor
-from .config import *
+from ..primatives import *
+from ..constants import Anchor
+from ..config import *
 from typing import Self
 from abc import ABC, abstractmethod
 from visuscript._invalidator import Invalidatable

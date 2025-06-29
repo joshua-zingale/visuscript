@@ -1,7 +1,7 @@
 """This module contains Canvas and Scene, which allow display of Drawable and animation thereof."""
-from visuscript.drawable import Drawable
+from visuscript.drawable.drawable import Drawable
 from visuscript.constants import Anchor, OutputFormat
-from visuscript.element import Rect
+from visuscript.drawable.element import Rect
 from visuscript.updater import UpdaterBundle
 from visuscript.primatives import *
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG

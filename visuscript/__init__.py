@@ -20,11 +20,11 @@ If the utility is not added to your PATH, the following works as well:
 
 """
 
-from .element import Circle, Rect, Image, Pivot, Drawing
+from .drawable.element import Circle, Rect, Image, Pivot, Drawing
 from .primatives import Transform, Color, Vec2, Vec3, Rgb
-from .canvas import Canvas, Scene
+from .drawable.canvas import Canvas, Scene
 from .organizer import GridOrganizer
-from .text import Text
+from .drawable.text import Text
 from .segment import Path
 from .constants import (
     Anchor,

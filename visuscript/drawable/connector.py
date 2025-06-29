@@ -1,5 +1,5 @@
-from visuscript.drawable import Drawable
-from visuscript.element import Drawing, Path, Element
+from visuscript.drawable.drawable import Drawable
+from visuscript.drawable.element import Drawing, Path, Element
 from visuscript.primatives import Vec2
 from visuscript.constants import LineTarget
 from visuscript.config import *

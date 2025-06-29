@@ -1,4 +1,4 @@
-from visuscript.drawable import Drawable
+from visuscript.drawable.drawable import Drawable
 from visuscript.primatives import Transform, Vec3
 from typing import Collection, Tuple, Self, Iterable, Iterator
 from abc import ABC, abstractmethod

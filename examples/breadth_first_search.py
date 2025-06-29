@@ -9,7 +9,7 @@ ideally would create a graph with neatly spaced nodes.
 """
 
 from visuscript import *
-from visuscript.connector import Edges
+from visuscript.drawable.connector import Edges
 from visuscript.math_utility import unit_diff, magnitude, invert
 from typing import Generator
 import random

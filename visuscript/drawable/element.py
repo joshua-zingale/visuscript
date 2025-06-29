@@ -1,4 +1,4 @@
-from visuscript.drawable import Drawable, Shape
+from visuscript.drawable.drawable import Drawable, Shape
 from visuscript.constants import Anchor
 from visuscript.primatives import *
 from visuscript.segment import Path, Segment

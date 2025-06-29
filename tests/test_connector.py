@@ -1,6 +1,6 @@
 from .base_class import VisuscriptTestCase
-from visuscript.connector import Edges, ElementsAlreadyConnectedError, ElementsNotConnectedError
-from visuscript.element import Circle
+from visuscript.drawable.connector import Edges, ElementsAlreadyConnectedError, ElementsNotConnectedError
+from visuscript.drawable.element import Circle
 class TestEdges(VisuscriptTestCase):
 
     def test_connecting(self):

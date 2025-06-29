@@ -1,8 +1,8 @@
-from visuscript.element import Element
+from visuscript.drawable.element import Element
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 
 from xml.sax.saxutils import escape
-from .primatives import *
+from ..primatives import *
 from PIL import ImageFont
 
 from typing import Concatenate, ParamSpec, Callable, TypeVar, cast

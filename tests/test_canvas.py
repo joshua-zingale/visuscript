@@ -3,7 +3,7 @@ from .test_animation import MockAnimation
 from .test_updater import MockUpdater
 from visuscript.config import config
 from visuscript.property_locker import LockedPropertyError
-from visuscript.canvas import Scene
+from visuscript.drawable.canvas import Scene
 
 class TestScene(VisuscriptTestCase):
     def setUp(self):

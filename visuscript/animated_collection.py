@@ -3,13 +3,13 @@
 from visuscript.animation import NoAnimation, PathAnimation, AnimationBundle, TransformAnimation, LazyAnimation, Animation
 from visuscript.segment import Path
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
-from visuscript.text import Text
+from visuscript.drawable.text import Text
 from visuscript.organizer import BinaryTreeOrganizer, Organizer, GridOrganizer
-from visuscript.element import Circle, Pivot, Element, Rect
+from visuscript.drawable.element import Circle, Pivot, Element, Rect
 from visuscript.primatives import Transform
-from visuscript.drawable import Drawable
+from visuscript.drawable.drawable import Drawable
 from visuscript.math_utility import magnitude
-from visuscript.connector import Edges
+from visuscript.drawable.connector import Edges
 
 from abc import abstractmethod
 from visuscript.primatives import Vec2

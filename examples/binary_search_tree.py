@@ -1,6 +1,6 @@
 from visuscript import *
-from visuscript.connector import *
-from visuscript.element import Element
+from visuscript.drawable.connector import *
+from visuscript.drawable.element import Element
 import numpy as np
 from visuscript.config import *
 from visuscript.animated_collection import AnimatedBinaryTreeArray, Var, NilVar

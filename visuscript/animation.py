@@ -1,7 +1,7 @@
 """This module contains the abstract base class of all Animations alongside a bevy of basic animations and easing functions."""
 
 from visuscript.config import *
-from visuscript.element import Element
+from visuscript.drawable.element import Element
 from visuscript.primatives import *
 from visuscript.segment import Path
 from visuscript.property_locker import PropertyLocker

@@ -1,5 +1,5 @@
 from .base_class import VisuscriptTestCase
-from visuscript.element import Element
+from visuscript.drawable.element import Element
 from visuscript.primatives import Vec2, Vec3
 from visuscript.config import config
 

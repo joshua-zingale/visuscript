@@ -1,5 +1,5 @@
 from visuscript import *
-from visuscript.code import PythonText
+from visuscript.drawable.code import PythonText
 with open(__file__, 'r') as f:
     code = f.read()
 with Scene() as s:

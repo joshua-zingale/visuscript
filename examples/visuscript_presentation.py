@@ -27,8 +27,8 @@ This is all very hacky right now but it works.
 """
 
 from visuscript import *
-from visuscript.code import PythonText
-from visuscript.connector import Arrow
+from visuscript.drawable.code import PythonText
+from visuscript.drawable.connector import Arrow
 with open(__file__, 'r') as f:
         SELF_STRING = f.read()
 

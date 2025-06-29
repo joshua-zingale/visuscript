@@ -8,7 +8,7 @@ The goal is to move the circle first down and then to the right.
 """
 from visuscript import *
 from visuscript.animation import LazyAnimation
-from visuscript.code import get_all_code_blocks, PythonText
+from visuscript.drawable.code import get_all_code_blocks, PythonText
 code_blocks = get_all_code_blocks(__file__)
 scene = Scene()
 text = Text("Without LazyAnimation: Incorrect Sequencing").set_anchor(Anchor.TOP_LEFT).translate(*scene.xy(0.02,0.02))

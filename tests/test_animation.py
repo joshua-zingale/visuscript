@@ -14,7 +14,7 @@ from visuscript.property_locker import PropertyLocker, LockedPropertyError
 from visuscript.primatives import Vec, Transform, Vec3, Color, Rgb
 from visuscript.lazy_object import Lazible
 from visuscript.config import config
-from visuscript.element import Circle
+from visuscript.drawable.element import Circle
 
 class TestAnimation(VisuscriptTestCase):
     def test_set_speed_number_of_advances(self):
