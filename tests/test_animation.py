@@ -477,6 +477,6 @@ class MockAnimation(Animation):
             return False
         self.obj[0] = self.obj_value + self.adder
         return True
-    def init_locker(self, total_advances, obj: list[int] = [0], adder: int = 1, locked: dict[object, list[str]] = dict()):
+    def __init_locker__(self, total_advances, obj: list[int] = [0], adder: int = 1, locked: dict[object, list[str]] = dict()):
         return PropertyLocker(locked)
 

@@ -222,7 +222,7 @@ wheels = [
 [[package]]
 name = "visuscript"
 version = "0.1.0a1"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "coverage" },
     { name = "numpy" },

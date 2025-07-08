@@ -1,6 +1,7 @@
 """Contains things that can be drawn"""
 
 from .element import (
+    Element,
     Circle,
     Rect,
     Image,

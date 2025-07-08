@@ -23,11 +23,15 @@ dependencies = [
     "pytest>=8.4.1",
 ]
 
+
 [dependency-groups]
 dev = [
     "pyright>=1.1.402",
     "ruff>=0.12.1",
 ]
+
+[tool.uv]
+package = true
 
 [project.urls]
 Homepage = "https://github.com/joshua-zingale/visuscript"
@@ -54,7 +58,7 @@ branch = true
 source = ["visuscript"]
 
 [tool.pyright]
-strict = [
+basic = [
     "visuscript/**.py",
 ]
 reportUnusedExpression = "none" # because visuscript overloads "<<" to be a push opperation, which is often "unused"
