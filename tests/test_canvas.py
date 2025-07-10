@@ -3,12 +3,13 @@ from .test_animation import MockAnimation
 from .test_updater import MockUpdater
 from visuscript.config import config
 from visuscript.property_locker import LockedPropertyError
-from visuscript.drawable.canvas import Scene
+from visuscript.drawable.scene import Scene
+
 
 class TestScene(VisuscriptTestCase):
     def setUp(self):
         self.mock_stream = MockStream()
-        config.canvas_output_stream = self.mock_stream
+        config.scene_output_stream = self.mock_stream
 
     def test_animations_play(self):
         scene = Scene(print_initial=False)
@@ -16,7 +17,7 @@ class TestScene(VisuscriptTestCase):
         scene.player << animation
         self.assertGreaterEqual(animation.actual_advances, 11)
         self.assertEqual(self.mock_stream.writes, 11)
-        
+
         animation10 = MockAnimation(10)
         animation9 = MockAnimation(9)
         with scene as s:
@@ -32,7 +33,7 @@ class TestScene(VisuscriptTestCase):
         scene.player << animation
         self.assertGreaterEqual(animation.actual_advances, 12)
         self.assertEqual(self.mock_stream.writes, 12)
-        
+
         animation10 = MockAnimation(10)
         animation9 = MockAnimation(9)
         with scene as s:
@@ -41,7 +42,6 @@ class TestScene(VisuscriptTestCase):
         self.assertEqual(self.mock_stream.writes, 22)
         self.assertGreaterEqual(animation10.actual_advances, 10)
         self.assertGreaterEqual(animation9.actual_advances, 9)
-
 
     def test_updaters_play(self):
         scene = Scene()
@@ -85,7 +85,7 @@ class TestScene(VisuscriptTestCase):
             s.updaters << MockUpdater(locked={obj1: ["strawberry"]})
             s.updaters << MockUpdater(locked={obj1: ["shortcake"]})
             s.updaters << MockUpdater(locked={obj2: ["strawberry"]})
-        
+
         scene.updaters << MockUpdater(locked={obj1: ["strawberry"]})
         scene.updaters << MockUpdater(locked={obj1: ["shortcake"]})
         scene.updaters << MockUpdater(locked={obj2: ["strawberry"]})
@@ -99,9 +99,7 @@ class TestScene(VisuscriptTestCase):
         self.assertRaises(LockedPropertyError, conflict1)
         self.assertRaises(LockedPropertyError, conflict2)
 
-
     def test_animations_and_updaters_locked(self):
-
         scene = Scene()
         obj1 = object()
         obj2 = object()
@@ -110,23 +108,23 @@ class TestScene(VisuscriptTestCase):
             s.animations << MockAnimation(10, locked={obj1: ["strawberry"]})
             s.animations << MockAnimation(10, locked={obj1: ["shortcake"]})
             s.updaters << MockUpdater(locked={obj2: ["strawberry"]})
+
         def conflict1():
             with scene as s:
                 s.animations << MockAnimation(10, locked={obj1: ["strawberry1"]})
                 s.updaters << MockUpdater(locked={obj1: ["strawberry1"]})
+
         def conflict2():
             with scene as s:
                 s.updaters << MockUpdater(locked={obj1: ["strawberry1"]})
                 s.animations << MockAnimation(10, locked={obj1: ["strawberry1"]})
 
-
         self.assertRaises(LockedPropertyError, conflict1)
         self.assertRaises(LockedPropertyError, conflict2)
 
 
-
-
 class MockStream:
     writes = 0
+
     def write(self, data: str):
-        self.writes += data.count("<svg xmlns=\"http://www.w3.org/2000/svg\"")
+        self.writes += data.count('<svg xmlns="http://www.w3.org/2000/svg"')

@@ -28,10 +28,10 @@ visuscript.animation module
    :show-inheritance:
    :undoc-members:
 
-visuscript.canvas module
+visuscript.scene module
 ------------------------
 
-.. automodule:: visuscript.canvas
+.. automodule:: visuscript.scene
    :members:
    :show-inheritance:
    :undoc-members:

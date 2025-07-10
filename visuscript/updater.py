@@ -8,12 +8,18 @@ from visuscript.config import config
 from typing import Iterable, Self, Callable
 import numpy as np
 
+
 class UpdaterActivityError(ValueError):
     pass
+
+
 class UpdaterAlreadyActiveError(UpdaterActivityError):
     pass
+
+
 class UpdaterAlreadyDeactiveError(UpdaterActivityError):
     pass
+
 
 class Updater(ABC):
     _num_frames = 0
@@ -26,7 +32,7 @@ class Updater(ABC):
     def active(self) -> bool:
         """Whether this Updater is active or not."""
         return self._active
-    
+
     def activate(self):
         """Activate this Updater."""
         if self._active:
@@ -41,10 +47,12 @@ class Updater(ABC):
 
     def update_for_frame(self) -> Self:
         self._num_frames += 1
-        num_updates_to_make = int(self._num_frames * self._updates_per_frame - self._num_updates_processed)
+        num_updates_to_make = int(
+            self._num_frames * self._updates_per_frame - self._num_updates_processed
+        )
         sub_dt = 1 / self._updates_per_second
         for i in range(num_updates_to_make):
-            self.update(self._num_updates_processed/self._updates_per_second, sub_dt)
+            self.update(self._num_updates_processed / self._updates_per_second, sub_dt)
 
         self._num_updates_processed += num_updates_to_make
 
@@ -57,7 +65,7 @@ class Updater(ABC):
         Returns a PropertyLocker identifying all objects/properties updated by this Updater.
         """
         ...
-    
+
     @abstractmethod
     def update(self, t: float, dt: float) -> Self:
         """Makes this Updater's update."""
@@ -65,7 +73,7 @@ class Updater(ABC):
 
     def set_update_rate(self, updates_per_second: float) -> Self:
         """Sets the rate that updates occur for this Updater.
-        
+
         By default, an Updater will execute once for each frame inside of a Scene.
         If this is set, then the updater can run more
         or less often than once per frame.
@@ -73,7 +81,7 @@ class Updater(ABC):
         if not isinstance(updates_per_second, (int, float)) or updates_per_second <= 0:
             raise ValueError("Update rate must be a positive number.")
         self._updates_per_second = updates_per_second
-        self._updates_per_frame = updates_per_second/config.fps
+        self._updates_per_frame = updates_per_second / config.fps
         return self
 
 
@@ -102,12 +110,12 @@ class UpdaterBundle(Updater):
             for updater_ in updater:
                 self.push(updater_)
         else:
-            raise TypeError(f"Cannot push type '{updater.__class__.__name__}' to '{self.__class__.__name__}': must push types 'Updater' or 'Iterable[Updater]' ")
-
+            raise TypeError(
+                f"Cannot push type '{updater.__class__.__name__}' to '{self.__class__.__name__}': must push types 'Updater' or 'Iterable[Updater]' "
+            )
 
     def __lshift__(self, other: Updater | Iterable[Updater]):
         self.push(other, _call_method="<<")
-
 
     def clear(self):
         self._updaters = []
@@ -118,20 +126,25 @@ class FunctionUpdater(Updater):
     def __init__(self, function: Callable[[float, float], None]):
         self._function = function
         self._locker = PropertyLocker()
-    
+
     @property
     def locker(self):
         return self._locker
-    
+
     def update(self, t, dt) -> Self:
         self._function(t, dt)
         return self
 
 
-
 class TranslationUpdater(Updater):
-
-    def __init__(self, transform: Transform, target: Transform, *, max_speed: float | None = None, acceleration: float | None = None):
+    def __init__(
+        self,
+        transform: Transform,
+        target: Transform,
+        *,
+        max_speed: float | None = None,
+        acceleration: float | None = None,
+    ):
         self._transform = transform
         self._target = target
         self._max_speed = max_speed
@@ -147,51 +160,49 @@ class TranslationUpdater(Updater):
         return self._locker
 
     def update(self, t: float, dt: float) -> Self:
-
         if self._max_speed is None and self._acceleration is None:
             self._transform.translation = self._target.translation
             return
 
         diff = self._target.translation - self._transform.translation
         dist = magnitude(diff)
-        unit = diff/max(dist, 1e-16)
-        
+        unit = diff / max(dist, 1e-16)
 
         if self._acceleration is None:
             max_speed = self._max_speed
-            if max_speed*dt < dist:
-                self._transform.translation += unit*max_speed*dt
+            if max_speed * dt < dist:
+                self._transform.translation += unit * max_speed * dt
             else:
                 self._transform.translation = self._target.translation
         else:
             # Determine whether to increase or decrease velocity
-            min_time_to_stop = self._last_speed/self._acceleration
-            slowdown_distance = self._last_speed * min_time_to_stop - self._acceleration * min_time_to_stop**2 / 2
-            acceleration = self._acceleration if dist > slowdown_distance else -self._acceleration
+            min_time_to_stop = self._last_speed / self._acceleration
+            slowdown_distance = (
+                self._last_speed * min_time_to_stop
+                - self._acceleration * min_time_to_stop**2 / 2
+            )
+            acceleration = (
+                self._acceleration if dist > slowdown_distance else -self._acceleration
+            )
 
-
-            max_speed = min(self._last_speed + acceleration * dt, self._max_speed or np.inf)
+            max_speed = min(
+                self._last_speed + acceleration * dt, self._max_speed or np.inf
+            )
             self._last_speed = max_speed
 
-            desired_speed = dist/dt
+            desired_speed = dist / dt
             if desired_speed > max_speed:
-                self._transform.translation += unit*max_speed*dt
+                self._transform.translation += unit * max_speed * dt
             else:
                 self._transform.translation = self._target.translation
 
         return self
 
 
-
 def run_updater(updater: Updater, duration: float):
     t = 0
-    dt = 1/config.fps
+    dt = 1 / config.fps
 
-    for _ in range(duration*config.fps):
+    for _ in range(duration * config.fps):
         updater.update(t, dt)
         t += dt
-
-
-
-
-

@@ -10,6 +10,7 @@ import random
 RADIUS = 8
 NUM_NODES = 31
 
+
 def main():
     s = Scene()
 
@@ -18,50 +19,62 @@ def main():
     s.player << fade_in(text)
     s.player << AnimationBundle(
         RunFunction(lambda: text.set_anchor(Anchor.TOP_LEFT, keep_position=True)),
-        TransformAnimation.lazy(text.transform, Transform(s.shape.top_left + [10,10], scale=0.5))
-        )
+        TransformAnimation.lazy(
+            text.transform, Transform(s.shape.top_left + [10, 10], scale=0.5)
+        ),
+    )
 
-    tree = AnimatedBinaryTreeArray([Var(None) for _ in range(NUM_NODES)], radius=RADIUS, transform=[0,-75])
+    tree = AnimatedBinaryTreeArray(
+        [Var(None) for _ in range(NUM_NODES)], radius=RADIUS, transform=[0, -75]
+    )
 
     s << tree.collection_element
 
-    operation_text = Text("").set_anchor(Anchor.TOP_RIGHT).translate(*s.shape.top_right + [-10, 10])
+    operation_text = (
+        Text("").set_anchor(Anchor.TOP_RIGHT).translate(*s.shape.top_right + [-10, 10])
+    )
     s << operation_text
 
     flash_text = lambda text, other_animation: AnimationSequence(
         RunFunction(lambda: operation_text.set_text(text)),
-        fade_in(operation_text, duration = 0.5),
+        fade_in(operation_text, duration=0.5),
         other_animation,
-        fade_out(operation_text, duration = 0.5)
+        fade_out(operation_text, duration=0.5),
     )
 
-
     random.seed(316)
-    vars = list(map(Var, range(1,65)))
+    vars = list(map(Var, range(1, 65)))
     random.shuffle(vars)
     vars = vars[:31]
     vars = insertion_order(vars)
-    
-    for speed, var in zip([1,1,1,1,2,3,6] + [20]*len(vars), vars):
-        s.player << flash_text(f"insert({var.value})", animate_insert(var, tree)).set_speed(speed)
-    
-    find_vars = map(Var, [23,41])
+
+    for speed, var in zip([1, 1, 1, 1, 2, 3, 6] + [20] * len(vars), vars):
+        s.player << flash_text(
+            f"insert({var.value})", animate_insert(var, tree)
+        ).set_speed(speed)
+
+    find_vars = map(Var, [23, 41])
     for var in find_vars:
         s.player << flash_text(f"find({var.value})", animate_find(var, tree))
 
-    remove_vars = list(map(Var, [12,11,43,46,40]))
+    remove_vars = list(map(Var, [12, 11, 43, 46, 40]))
     FIND = False
     NO_FIND = True
-    for find, var in zip([FIND,FIND,FIND,FIND,FIND] + [NO_FIND]*len(remove_vars), remove_vars):
-        s.player << flash_text(f"remove({var.value})", AnimationSequence(
-            animate_find(var, tree) if find == FIND else None,
-            animate_remove(var, tree)
-            )
-            )
+    for find, var in zip(
+        [FIND, FIND, FIND, FIND, FIND] + [NO_FIND] * len(remove_vars), remove_vars
+    ):
+        s.player << flash_text(
+            f"remove({var.value})",
+            AnimationSequence(
+                animate_find(var, tree) if find == FIND else None,
+                animate_remove(var, tree),
+            ),
+        )
+
 
 def to_balanced_tree(sequence: Sequence):
     sequence = sorted(sequence)
-    new_sequence = [None]*len(sequence)
+    new_sequence = [None] * len(sequence)
 
     worklist = [(0, len(sequence), 0)]
     while worklist:
@@ -69,14 +82,11 @@ def to_balanced_tree(sequence: Sequence):
         if low >= high:
             continue
 
-        mid = (low + high)//2
+        mid = (low + high) // 2
 
         new_sequence[idx] = sequence[mid]
 
-        worklist.extend([
-            (low, mid, (idx+1)*2-1),
-            (mid+1, high,(idx+1)*2)
-        ])
+        worklist.extend([(low, mid, (idx + 1) * 2 - 1), (mid + 1, high, (idx + 1) * 2)])
 
     return new_sequence
 
@@ -86,7 +96,7 @@ def insertion_order(sequence: Sequence):
     new_sequence = []
 
     worklist = [0]
-        
+
     pop_random = lambda: worklist.pop(random.randrange(len(worklist)))
 
     while worklist:
@@ -95,10 +105,7 @@ def insertion_order(sequence: Sequence):
             continue
         new_sequence.append(sequence[index])
 
-        worklist.extend([
-            (index+1)*2 -1,
-            (index+1)*2
-        ])
+        worklist.extend([(index + 1) * 2 - 1, (index + 1) * 2])
 
     return new_sequence
 
@@ -118,25 +125,36 @@ def insert(var: Var, tree: AnimatedBinaryTreeArray) -> Var:
 
     return var
 
-def compare(operator: str, element1: Element, element2: Element, is_true: bool):
 
+def compare(operator: str, element1: Element, element2: Element, is_true: bool):
     if is_true:
-        color = 'green'
+        color = "green"
         text = "✓"
     else:
-        color = 'red'
+        color = "red"
         text = "X"
 
-    less_than = (Text(f"{operator}", font_size=element2.height, anchor=Anchor.RIGHT, fill=color).translate(*(element2.shape.left*1.5))
-                    .add_child(question_mark := Text(text, font_size=element2.height/2, fill=color).set_anchor(Anchor.BOTTOM))).set_opacity(0.0)
-    question_mark.translate(*(less_than.shape.top*1.25))
+    less_than = (
+        Text(f"{operator}", font_size=element2.height, anchor=Anchor.RIGHT, fill=color)
+        .translate(*(element2.shape.left * 1.5))
+        .add_child(
+            question_mark := Text(
+                text, font_size=element2.height / 2, fill=color
+            ).set_anchor(Anchor.BOTTOM)
+        )
+    ).set_opacity(0.0)
+    question_mark.translate(*(less_than.shape.top * 1.25))
 
     element2.add_child(less_than)
 
     sequence = AnimationSequence()
 
     sequence << AnimationBundle(
-        TranslationAnimation.lazy(element2.transform, element1.transformed_shape.right + (element2.shape.right - element2.shape.left)/1.25),
+        TranslationAnimation.lazy(
+            element2.transform,
+            element1.transformed_shape.right
+            + (element2.shape.right - element2.shape.left) / 1.25,
+        ),
         ScaleAnimation.lazy(element2.transform, 0.5),
     )
 
@@ -146,7 +164,7 @@ def compare(operator: str, element1: Element, element2: Element, is_true: bool):
 
     sequence << NoAnimation()
 
-    sequence << RunFunction(lambda : element2.remove_child(less_than))
+    sequence << RunFunction(lambda: element2.remove_child(less_than))
 
     return sequence
 
@@ -157,8 +175,8 @@ def animate_insert(var: Var, tree: AnimatedBinaryTreeArray):
     sequence = AnimationSequence()
 
     element = tree.element_for(var)
-    
-    element.set_transform(Transform([0,-150], scale=0))
+
+    element.set_transform(Transform([0, -150], scale=0))
 
     parent = NilVar
     node = tree.root
@@ -178,17 +196,20 @@ def animate_insert(var: Var, tree: AnimatedBinaryTreeArray):
     return sequence
 
 
-def magnifying_glass(radius = 2*RADIUS, length = 2*RADIUS):
-
-    unit = Vec2(np.cos(np.pi*3/8), np.sin(np.pi*3/8))
+def magnifying_glass(radius=2 * RADIUS, length=2 * RADIUS):
+    unit = Vec2(np.cos(np.pi * 3 / 8), np.sin(np.pi * 3 / 8))
 
     start = radius * unit
     end = (radius + length) * unit
 
-    return Circle(radius=radius).add_child(Drawing(path=Path().M(*start).L(*end))).set_fill(Color('white', opacity=0.0125))
+    return (
+        Circle(radius=radius)
+        .add_child(Drawing(path=Path().M(*start).L(*end)))
+        .set_fill(Color("white", opacity=0.0125))
+    )
 
 
-def find(var: Var, tree:AnimatedBinaryTreeArray):
+def find(var: Var, tree: AnimatedBinaryTreeArray):
     node = tree.root
     while node != var and not node.is_none:
         if var <= node:
@@ -198,37 +219,48 @@ def find(var: Var, tree:AnimatedBinaryTreeArray):
     return node
 
 
-def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
-
+def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size=16):
     sequence = AnimationSequence()
 
     parent = NilVar
     node = tree.root
 
-    glass = magnifying_glass().set_transform(tree.element_for(node).transform).set_opacity(0.0)
+    glass = (
+        magnifying_glass()
+        .set_transform(tree.element_for(node).transform)
+        .set_opacity(0.0)
+    )
 
     found_text = f"{var.value} ="
     not_found_text = f"{var.value} ≠"
     go_right_text = f"< {var.value} →"
     go_left_text = f"< {var.value} ←"
     glass.add_children(
-        check := Text(not_found_text, fill=Color('red', 0.0)).set_anchor(Anchor.RIGHT).translate(*glass.shape.left + font_size*LEFT/2),
-        comparison := Pivot().set_opacity(0.0).add_children(
-            less_than := Text("", font_size=font_size).set_anchor(Anchor.LEFT).translate(*glass.shape.right + font_size*RIGHT/2),
-            less_than_check := Text("", font_size=font_size/2).set_anchor(Anchor.LEFT).translate(*glass.shape.right + UP*font_size/2 + font_size*RIGHT/2),
+        check := Text(not_found_text, fill=Color("red", 0.0))
+        .set_anchor(Anchor.RIGHT)
+        .translate(*glass.shape.left + font_size * LEFT / 2),
+        comparison := Pivot()
+        .set_opacity(0.0)
+        .add_children(
+            less_than := Text("", font_size=font_size)
+            .set_anchor(Anchor.LEFT)
+            .translate(*glass.shape.right + font_size * RIGHT / 2),
+            less_than_check := Text("", font_size=font_size / 2)
+            .set_anchor(Anchor.LEFT)
+            .translate(*glass.shape.right + UP * font_size / 2 + font_size * RIGHT / 2),
         ),
-        center_cross := Text("X", fill='red', font_size=glass.shape.height).set_opacity(0.0)
-        )
+        center_cross := Text("X", fill="red", font_size=glass.shape.height).set_opacity(
+            0.0
+        ),
+    )
 
     tree.add_auxiliary_element(glass)
     sequence << fade_in(glass)
 
     while True:
-
-
         if node == var:
             sequence << RunFunction(lambda: check.set_text(found_text))
-            sequence << RunFunction(lambda: check.set_fill(Color('green', 0.0)))
+            sequence << RunFunction(lambda: check.set_fill(Color("green", 0.0)))
             sequence << OpacityAnimation(check.fill, 1.0)
             break
         else:
@@ -238,7 +270,7 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
         if node < var:
             node = tree.get_right(node)
             sequence << AnimationBundle(
-                RunFunction(lambda: less_than_check.set_fill('green')),
+                RunFunction(lambda: less_than_check.set_fill("green")),
                 RunFunction(lambda: less_than_check.set_text("✓")),
                 RunFunction(lambda: less_than.set_fill("green")),
                 RunFunction(lambda: less_than.set_text(go_right_text)),
@@ -247,7 +279,7 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
         else:
             node = tree.get_left(node)
             sequence << AnimationBundle(
-                RunFunction(lambda: less_than_check.set_fill('red')),
+                RunFunction(lambda: less_than_check.set_fill("red")),
                 RunFunction(lambda: less_than_check.set_text("X")),
                 RunFunction(lambda: less_than.set_fill("red")),
                 RunFunction(lambda: less_than.set_text(go_left_text)),
@@ -255,18 +287,22 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size = 16):
             )
 
         if node is NilVar and parent:
-
             sequence << AnimationBundle(
-                TranslationAnimation.lazy(glass.transform, tree.target_for(parent).translation + [0, 3*RADIUS,0]),
+                TranslationAnimation.lazy(
+                    glass.transform,
+                    tree.target_for(parent).translation + [0, 3 * RADIUS, 0],
+                ),
                 OpacityAnimation(check.fill, 0.0),
                 OpacityAnimation(comparison, 0.0),
-                )
+            )
         elif not node is NilVar:
             sequence << AnimationBundle(
-                TransformAnimation.lazy(glass.transform, tree.element_for(node).transform),
+                TransformAnimation.lazy(
+                    glass.transform, tree.element_for(node).transform
+                ),
                 OpacityAnimation(check.fill, 0.0),
-                OpacityAnimation(comparison, 0.0)
-                )
+                OpacityAnimation(comparison, 0.0),
+            )
 
         if node.is_none:
             break
@@ -299,57 +335,103 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray):
     # )
 
     sequence << AnimationBundle(
-        RgbAnimation(removal_element.stroke, 'red'),
+        RgbAnimation(removal_element.stroke, "red"),
         # fade_in(removal_text)
-        )
-    
+    )
+
     if tree.number_of_children(removal_node) == 2:
         swap_node = tree.get_left(removal_node)
-        sequence << RgbAnimation(tree.element_for(swap_node).stroke, 'blue')
+        sequence << RgbAnimation(tree.element_for(swap_node).stroke, "blue")
         parent = swap_node
         while not tree.get_right(swap_node).is_none:
             parent = swap_node
             swap_node = tree.get_right(swap_node)
             sequence << AnimationBundle(
-                RgbAnimation.lazy(tree.element_for(parent).stroke, 'off_white'),
-                RgbAnimation(tree.element_for(swap_node).stroke, 'blue')
-                )
-            
+                RgbAnimation.lazy(tree.element_for(parent).stroke, "off_white"),
+                RgbAnimation(tree.element_for(swap_node).stroke, "blue"),
+            )
+
         removal_parent = tree.get_parent(removal_node)
         sequence << AnimationBundle(
-            tree.edges.disconnect(tree.element_for(removal_node),tree.element_for(tree.get_left(removal_node))),
-            tree.edges.disconnect(tree.element_for(removal_node),tree.element_for(tree.get_right(removal_node))),
-            tree.edges.disconnect(tree.element_for(removal_parent),tree.element_for(removal_node)) if removal_parent else None,
-            tree.edges.disconnect(tree.element_for(swap_node), tree.element_for(tree.get_parent(swap_node)))
+            tree.edges.disconnect(
+                tree.element_for(removal_node),
+                tree.element_for(tree.get_left(removal_node)),
+            ),
+            tree.edges.disconnect(
+                tree.element_for(removal_node),
+                tree.element_for(tree.get_right(removal_node)),
+            ),
+            tree.edges.disconnect(
+                tree.element_for(removal_parent), tree.element_for(removal_node)
+            )
+            if removal_parent
+            else None,
+            tree.edges.disconnect(
+                tree.element_for(swap_node),
+                tree.element_for(tree.get_parent(swap_node)),
+            ),
         )
         sequence << AnimationBundle(
-            RgbAnimation(tree.element_for(parent).stroke, 'off_white'),
-            tree.edges.connect(tree.element_for(swap_node), tree.element_for(tree.get_left(removal_node))),
-            tree.edges.connect(tree.element_for(swap_node), tree.element_for(tree.get_right(removal_node))),
-            tree.edges.connect(tree.element_for(removal_parent), tree.element_for(swap_node)) if removal_parent else None,
-            tree.quadratic_swap(removal_node, swap_node),
+            RgbAnimation(tree.element_for(parent).stroke, "off_white"),
+            tree.edges.connect(
+                tree.element_for(swap_node),
+                tree.element_for(tree.get_left(removal_node)),
+            ),
+            tree.edges.connect(
+                tree.element_for(swap_node),
+                tree.element_for(tree.get_right(removal_node)),
+            ),
+            tree.edges.connect(
+                tree.element_for(removal_parent), tree.element_for(swap_node)
             )
-        
-        sequence << RgbAnimation.lazy(tree.element_for(swap_node).stroke, 'off_white')
+            if removal_parent
+            else None,
+            tree.quadratic_swap(removal_node, swap_node),
+        )
+
+        sequence << RgbAnimation.lazy(tree.element_for(swap_node).stroke, "off_white")
 
     elif tree.get_parent(removal_node):
         sequence << AnimationBundle(
-            tree.edges.disconnect(tree.element_for(tree.get_parent(removal_node)), tree.element_for(removal_node)),
-            tree.edges.connect(tree.element_for(tree.get_parent(removal_node)), tree.element_for(tree.get_left(removal_node))) if tree.get_left(removal_node) else None,
-            tree.edges.connect(tree.element_for(tree.get_parent(removal_node)), tree.element_for(tree.get_right(removal_node))) if tree.get_right(removal_node) else None,
+            tree.edges.disconnect(
+                tree.element_for(tree.get_parent(removal_node)),
+                tree.element_for(removal_node),
+            ),
+            tree.edges.connect(
+                tree.element_for(tree.get_parent(removal_node)),
+                tree.element_for(tree.get_left(removal_node)),
             )
-    
+            if tree.get_left(removal_node)
+            else None,
+            tree.edges.connect(
+                tree.element_for(tree.get_parent(removal_node)),
+                tree.element_for(tree.get_right(removal_node)),
+            )
+            if tree.get_right(removal_node)
+            else None,
+        )
+
     ## Reorganize tree if needed
 
-    if tree.is_root(removal_node) or tree.get_left(tree.get_parent(removal_node)) is removal_node:
+    if (
+        tree.is_root(removal_node)
+        or tree.get_left(tree.get_parent(removal_node)) is removal_node
+    ):
         removal_node_is_right_child = False
     else:
         removal_node_is_right_child = True
-    
+
     removal_node_parent = tree.get_parent(removal_node)
 
     # Unprocessed node, new index
-    move_queue = [(tree.get_left(removal_node), removal_node_parent, removal_node_is_right_child), (tree.get_right(removal_node), removal_node_parent, removal_node_is_right_child)]
+    move_queue = [
+        (tree.get_left(removal_node), removal_node_parent, removal_node_is_right_child),
+        (
+            tree.get_right(removal_node),
+            removal_node_parent,
+            removal_node_is_right_child,
+        ),
+    ]
 
     tree[tree.is_index(removal_node)] = Var(None)
 
@@ -357,10 +439,9 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray):
         node, parent, is_right_child = move_queue.pop(0)
 
         if not node.is_none:
-            move_queue.extend([
-            (tree.get_left(node), node, False),
-            (tree.get_right(node), node, True)
-            ])
+            move_queue.extend(
+                [(tree.get_left(node), node, False), (tree.get_right(node), node, True)]
+            )
 
         if parent.is_none:
             old_index = tree.is_index(node)
@@ -370,7 +451,7 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray):
 
         if node.is_none:
             continue
-        
+
         old_index = tree.is_index(node)
         if is_right_child:
             tree.quadratic_swap(tree.get_right(parent), node)
@@ -378,17 +459,11 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray):
             tree.quadratic_swap(tree.get_left(parent), node)
 
         tree[old_index] = Var(None)
-    
 
-    sequence << AnimationBundle(
-        tree.organize(),
-        fade_out(removal_element)
-        )
+    sequence << AnimationBundle(tree.organize(), fade_out(removal_element))
     sequence << RunFunction(lambda: tree.remove_auxiliary_element(removal_element))
     return sequence
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

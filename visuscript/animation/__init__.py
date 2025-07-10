@@ -24,11 +24,7 @@ from .animation_store import (
     AnimationBundle,
 )
 
-from .utility_animations import (
-    fade_in,
-    fade_out,
-    flash
-)
+from .utility_animations import fade_in, fade_out, flash
 
 from .easing import (
     linear_easing,

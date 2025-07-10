@@ -9,7 +9,7 @@ from .element import (
 from .text import Text
 from .code import PythonText
 
-from .canvas import Scene
+from .scene import Scene
 
 from .connector import (
     Anchor,

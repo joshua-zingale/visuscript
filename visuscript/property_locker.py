@@ -1,8 +1,13 @@
 from typing import Iterable
+
+
 class LockedPropertyError(ValueError):
     def __init__(self, obj: object, property: str):
-        message = f"'{property}' on object of type {type(obj).__name__} is already locked."
+        message = (
+            f"'{property}' on object of type {type(obj).__name__} is already locked."
+        )
         super().__init__(message)
+
 
 class PropertyLocker:
     def __init__(self, locks: dict[object, Iterable[str]] | None = None):
@@ -11,11 +16,10 @@ class PropertyLocker:
             for obj, properties in locks.items():
                 self._map[obj] = set(properties)
 
-
     def add(self, obj: object, property: str, ignore_conflicts: bool = False):
         """Raises LockedPropertyError if the property is already locked by this PropertyLocker."""
         if not ignore_conflicts and self.locks(obj, property):
-            raise LockedPropertyError(obj, property)        
+            raise LockedPropertyError(obj, property)
         self._map[obj] = self._map.get(obj, set()).union(set([property]))
 
     def update(self, other: "PropertyLocker", ignore_conflicts: bool = False):
@@ -34,5 +38,5 @@ class PropertyLocker:
         :return: True if this :class:`PropertyLocker` locks the specified property; else False
         :rtype: bool
         """
-        lock_set = self._map.get(obj, set())        
+        lock_set = self._map.get(obj, set())
         return property in lock_set

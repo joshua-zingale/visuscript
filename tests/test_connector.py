@@ -1,14 +1,17 @@
 from .base_class import VisuscriptTestCase
-from visuscript.drawable.connector import Edges, ElementsAlreadyConnectedError, ElementsNotConnectedError
+from visuscript.drawable.connector import (
+    Edges,
+    ElementsAlreadyConnectedError,
+    ElementsNotConnectedError,
+)
 from visuscript.drawable.element import Circle
+
+
 class TestEdges(VisuscriptTestCase):
-
     def test_connecting(self):
-
         edges = Edges()
 
         circles = [Circle(5) for _ in range(4)]
-
 
         edges.connect(circles[0], circles[1])
         edges.connect(circles[1], circles[2])
@@ -18,7 +21,6 @@ class TestEdges(VisuscriptTestCase):
         self.assertFalse(edges.connected(circles[1], circles[1]))
         self.assertFalse(edges.connected(circles[2], circles[2]))
         self.assertFalse(edges.connected(circles[3], circles[3]))
-
 
         self.assertTrue(edges.connected(circles[0], circles[1]))
         self.assertTrue(edges.connected(circles[1], circles[0]))
@@ -38,38 +40,33 @@ class TestEdges(VisuscriptTestCase):
         self.assertFalse(edges.connected(circles[1], circles[3]))
         self.assertFalse(edges.connected(circles[3], circles[1]))
 
-        
-
-
     def test_connecting_errors(self):
-
         edges = Edges()
 
         circles = [Circle(5) for _ in range(4)]
-
 
         edges.connect(circles[0], circles[1])
         edges.connect(circles[1], circles[2])
         edges.connect(circles[3], circles[2])
 
-        self.assertRaises(ElementsAlreadyConnectedError,
-                          lambda: edges.connect(circles[0], circles[1]))
-        self.assertRaises(ElementsAlreadyConnectedError,
-                          lambda: edges.connect(circles[1], circles[0]))
-        
+        self.assertRaises(
+            ElementsAlreadyConnectedError, lambda: edges.connect(circles[0], circles[1])
+        )
+        self.assertRaises(
+            ElementsAlreadyConnectedError, lambda: edges.connect(circles[1], circles[0])
+        )
+
         edges.get_edge(circles[0], circles[1])
         edges.get_edge(circles[1], circles[0])
 
-        self.assertRaises(ElementsNotConnectedError,
-                          lambda: edges.get_edge(circles[0], circles[3])
-                          )
-        self.assertRaises(ElementsNotConnectedError,
-                          lambda: edges.get_edge(circles[3], circles[0])
-                          )
-        
-    
-    def test_connect_by_rule(self):
+        self.assertRaises(
+            ElementsNotConnectedError, lambda: edges.get_edge(circles[0], circles[3])
+        )
+        self.assertRaises(
+            ElementsNotConnectedError, lambda: edges.get_edge(circles[3], circles[0])
+        )
 
+    def test_connect_by_rule(self):
         edges = Edges()
 
         circles = [Circle(5) for _ in range(7)]
@@ -103,7 +100,6 @@ class TestEdges(VisuscriptTestCase):
         self.assertFalse(edges.connected(circles[1], circles[6]))
         self.assertFalse(edges.connected(circles[6], circles[1]))
 
-
     def test_connect_disconnect_animation(self):
         edges = Edges()
 
@@ -122,9 +118,7 @@ class TestEdges(VisuscriptTestCase):
         animation.finish()
         self.assertEqual(edge.opacity, 0)
 
-
     def test_connect_by_rule_animation(self):
-
         edges = Edges()
 
         circles = [Circle(5) for _ in range(7)]
@@ -159,16 +153,9 @@ class TestEdges(VisuscriptTestCase):
         for line in fade_in_lines:
             self.assertEqual(line.opacity, 0)
 
-    
         animation.finish()
         self.assertEqual(line_to_fade_away.opacity, 0)
 
         self.assertEqual(len(list(edges.lines_iter())), 6)
         for line in fade_in_lines:
             self.assertEqual(line.opacity, 1)
-
-
-
-
-
-        

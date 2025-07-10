@@ -1,6 +1,13 @@
-"""This module contains functionality for :class:`~AnimatedCollection`.
-"""
-from visuscript.animation import NoAnimation, PathAnimation, AnimationBundle, TransformAnimation, LazyAnimation, Animation
+"""This module contains functionality for :class:`~AnimatedCollection`."""
+
+from visuscript.animation import (
+    NoAnimation,
+    PathAnimation,
+    AnimationBundle,
+    TransformAnimation,
+    LazyAnimation,
+    Animation,
+)
 from visuscript.segment import Path
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
 from visuscript.drawable.text import Text
@@ -13,15 +20,23 @@ from visuscript.drawable.connector import Edges
 
 from abc import abstractmethod
 from visuscript.primatives import Vec2
-from typing import Collection, Iterable, MutableSequence, Self, Any, Tuple, no_type_check
+from typing import (
+    Collection,
+    Iterable,
+    MutableSequence,
+    Self,
+    Any,
+    Tuple,
+    no_type_check,
+)
 
 
 import numpy as np
 
+
 # TODO find a way to do type checking correctly
 class Var:
-    """An immutable wrapper around any other type: the foundational bit of data to be stored in an :class:`AnimatedCollection`.
-    """
+    """An immutable wrapper around any other type: the foundational bit of data to be stored in an :class:`AnimatedCollection`."""
 
     def __init__(self, value: Any, *, type_: type | None = None):
         """
@@ -45,89 +60,94 @@ class Var:
             self._value = None
         else:
             self._value = type_(value)
-    
+
         self._type = type_
-    
+
     @property
     def value(self):
         """The value stored in this :class:`Var`."""
         return self._value
-    
+
     @property
     def is_none(self) -> bool:
-        """True if and only if None is the value stored herein.
-        """
+        """True if and only if None is the value stored herein."""
         return self.value is None
-    
+
     @no_type_check
     def __add__(self, other: "Var") -> "Var":
         value = self.value + other.value
         type_ = type(value)
         return Var(value, type_=type_)
-    
+
     @no_type_check
     def __sub__(self, other: "Var") -> "Var":
         value = self.value - other.value
         type_ = type(value)
         return Var(value, type_=type_)
-    
+
     @no_type_check
     def __mul__(self, other: "Var") -> "Var":
         value = self.value * other.value
         type_ = type(value)
         return Var(value, type_=type_)
-    
+
     @no_type_check
     def __truediv__(self, other: "Var") -> "Var":
         value = self.value / other.value
         type_ = type(value)
         return Var(value, type_=type_)
-    
+
     @no_type_check
     def __mod__(self, other: "Var") -> "Var":
         value = self.value % other.value
         type_ = type(value)
         return Var(value, type_=type_)
-    
+
     @no_type_check
     def __floordiv__(self, other: "Var") -> "Var":
         value = self.value // other.value
         type_ = type(value)
         return Var(value, type_=type_)
-    
+
     @no_type_check
     def __pow__(self, other: "Var") -> "Var":
-        value = self.value ** other.value
+        value = self.value**other.value
         type_ = type(value)
         return Var(value, type_=type_)
-    
+
     @no_type_check
     def __gt__(self, other: "Var") -> bool:
         return self.value > other.value
+
     @no_type_check
     def __ge__(self, other: "Var") -> bool:
         return self.value >= other.value
+
     @no_type_check
     def __eq__(self, other: "Var") -> bool:
         return self.value == other.value
+
     @no_type_check
     def __le__(self, other: "Var") -> bool:
         return self.value <= other.value
+
     @no_type_check
     def __lt__(self, other: "Var") -> bool:
         return self.value < other.value
-    
+
     def __str__(self):
         return f"Var({self.value}, type={self._type.__name__})"
-    
+
     def __repr__(self):
         return str(self)
-    
+
     def __bool__(self):
         return self.value is not None and self.value is not False
 
+
 NilVar = Var(None)
 """A :class:`Var` representing no value."""
+
 
 class _AnimatedCollectionDrawable(Drawable):
     def __init__(self, animated_collection: "AnimatedCollection", **kwargs):
@@ -136,19 +156,23 @@ class _AnimatedCollectionDrawable(Drawable):
 
     @property
     def top_left(self):
-        return Vec2(0,0)
+        return Vec2(0, 0)
+
     @property
     def width(self):
         return 0.0
+
     @property
     def height(self):
         return 0.0
-    
+
     def draw(self):
-        return "".join(element.draw() for element in self._animated_collection.all_elements)
-    
-   
-#TODO Consider changing Element in all the below to Drawable.
+        return "".join(
+            element.draw() for element in self._animated_collection.all_elements
+        )
+
+
+# TODO Consider changing Element in all the below to Drawable.
 # Drawable would be sufficient for the ABC
 class AnimatedCollection(Collection[Var]):
     """Stores data in form of :class:`Var` instances alongside corresponding :class:`~visuscript.element.Element` instances
@@ -166,15 +190,19 @@ class AnimatedCollection(Collection[Var]):
         should have to be positioned according to this :class:`AnimatedCollection`'s rules.
         """
         ...
-    
-    def organize(self, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
+
+    def organize(
+        self, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG
+    ) -> AnimationBundle:
         """Returns an :class:`~visuscript.animation.Animation` that positions all of the :class:`~visuscript.element.Element` instances
         corresponding to :class:`Var` instances in this :class:`AnimatedCollection` according to its rules."""
         animation_bundle = AnimationBundle(NoAnimation(duration=duration))
         for var in self:
-            animation_bundle << TransformAnimation.lazy(self.element_for(var).transform, self.target_for(var), duration=duration)
-        return animation_bundle  
-    
+            animation_bundle << TransformAnimation.lazy(
+                self.element_for(var).transform, self.target_for(var), duration=duration
+            )
+        return animation_bundle
+
     @property
     def elements(self) -> Iterable[Element]:
         """An iterable over the :class:`~visuscript.element.Element` instances managed by this collection
@@ -195,7 +223,7 @@ class AnimatedCollection(Collection[Var]):
         draws all :class:`~visuscript.element.Element` instances that comprise this
         :class:`AnimatedCollection`'s visual component."""
         return _AnimatedCollectionDrawable(self)
-    
+
     @property
     def auxiliary_elements(self) -> list[Element]:
         """A list of all auxiliary :class:`~visuscript.element.Element` instances that comprise this
@@ -204,19 +232,17 @@ class AnimatedCollection(Collection[Var]):
         if not hasattr(self, "_auxiliary_elements"):
             self._auxiliary_elements: list[Element] = []
         return self._auxiliary_elements
-    
 
     def add_auxiliary_element(self, element: Element) -> Self:
         """Adds an :class:`~visuscript.element.Element` to de displayed along with the :class:`~visuscript.element.Element`
         instances that correspond to the :class:`Var` instances stored herein."""
         self.auxiliary_elements.append(element)
         return self
-    
+
     def remove_auxiliary_element(self, element: Element) -> Self:
         """Removes an auxiliar element form this :class:`AnimatedCollection`."""
         self.auxiliary_elements.remove(element)
         return self
-
 
 
 class AnimatedList(AnimatedCollection, MutableSequence[Var]):
@@ -238,14 +264,13 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
 
     @abstractmethod
     def new_element_for(self, var: Var) -> Element:
-        """Initializes and returns an :class:`~visuscript.element.Element` for a :class:`Var` newly inserted into this :class:`AnimatedList`.
-        """
+        """Initializes and returns an :class:`~visuscript.element.Element` for a :class:`Var` newly inserted into this :class:`AnimatedList`."""
         ...
 
     @property
     def organizer(self) -> Organizer:
         return self.get_organizer()
-    
+
     @abstractmethod
     def get_organizer() -> Organizer:
         """Initializes and returns an :class:`~visuscript.organizer.Organizer` for this :class:`AnimatedList`.
@@ -259,18 +284,22 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
 
     def element_for(self, var: Var) -> Element:
         if var not in self._vars:
-            raise ValueError(f"Var {var} is not present in this {self.__class__.__name__}")
+            raise ValueError(
+                f"Var {var} is not present in this {self.__class__.__name__}"
+            )
         return self._elements[self.is_index(var)]
-                
+
     def __len__(self):
         return len(self._vars)
 
     def __getitem__(self, index: int | slice):
         return self._vars[index]
-        
+
     def __setitem__(self, index: int | slice, value: Var):
         if not isinstance(value, Var):
-            raise TypeError(f"Cannot set value of type {type(value).__name__}: must be of type Var")
+            raise TypeError(
+                f"Cannot set value of type {type(value).__name__}: must be of type Var"
+            )
         if self.is_contains(value):
             raise ValueError(f"Cannot have the same Var in this AnimatedList twice.")
         self._vars[index] = value
@@ -280,9 +309,17 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         del self._vars[index]
         del self._elements[index]
 
-    def insert(self, index: int, value: Var, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
+    def insert(
+        self,
+        index: int,
+        value: Var,
+        *,
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
+    ):
         if not isinstance(value, Var):
-            raise TypeError(f"Cannot insert value of type {type(value).__name__}: must be of type Var")
+            raise TypeError(
+                f"Cannot insert value of type {type(value).__name__}: must be of type Var"
+            )
         if self.is_contains(value):
             raise ValueError(f"Cannot have the same Var in this AnimatedList twice.")
         self._vars.insert(index, value)
@@ -322,14 +359,20 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         if a == b:
             return NoAnimation()
 
-        element_a, element_b = self._swap(a,b)
-        
+        element_a, element_b = self._swap(a, b)
+
         return AnimationBundle(
             TransformAnimation.lazy(element_a.transform, element_b.transform),
-            TransformAnimation.lazy(element_b.transform, element_a.transform)
+            TransformAnimation.lazy(element_b.transform, element_a.transform),
         )
-    
-    def quadratic_swap(self, a: int | Var, b: int | Var, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> LazyAnimation:
+
+    def quadratic_swap(
+        self,
+        a: int | Var,
+        b: int | Var,
+        *,
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
+    ) -> LazyAnimation:
         """Swaps the :class:`Var` instances stored at the input indices.
 
         If :class:`Var` is used instead of an index, the index herein of :class:`Var` is used for the index.
@@ -343,31 +386,47 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         """
         if a == b:
             return NoAnimation(duration=duration)
-        
-    
-        element_a, element_b = self._swap(a,b)
 
+        element_a, element_b = self._swap(a, b)
 
         def get_quadratic_swap():
-            diff = element_b.transform.translation.xy - element_a.transform.translation.xy
+            diff = (
+                element_b.transform.translation.xy - element_a.transform.translation.xy
+            )
             distance = magnitude(diff)
             direction = diff / distance
             ortho = Vec2(-direction.y, direction.x)
 
-            mid = element_a.transform.translation.xy + direction * distance/2
-            lift = ortho * element_a.shape.circumscribed_radius*2
+            mid = element_a.transform.translation.xy + direction * distance / 2
+            lift = ortho * element_a.shape.circumscribed_radius * 2
 
             return AnimationBundle(
-                PathAnimation(element_a.transform, Path().M(*element_a.transform.translation.xy).Q(*(mid - lift), *element_b.transform.translation.xy), duration=duration),
-                PathAnimation(element_b.transform, Path().M(*element_b.transform.translation.xy).Q(*(mid + lift), *element_a.transform.translation.xy), duration=duration)
+                PathAnimation(
+                    element_a.transform,
+                    Path()
+                    .M(*element_a.transform.translation.xy)
+                    .Q(*(mid - lift), *element_b.transform.translation.xy),
+                    duration=duration,
+                ),
+                PathAnimation(
+                    element_b.transform,
+                    Path()
+                    .M(*element_b.transform.translation.xy)
+                    .Q(*(mid + lift), *element_a.transform.translation.xy),
+                    duration=duration,
+                ),
             )
-        
+
         return LazyAnimation(get_quadratic_swap)
-        
-    def extend(self, values: Iterable, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> AnimationBundle:
+
+    def extend(
+        self,
+        values: Iterable,
+        *,
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
+    ) -> AnimationBundle:
         super().extend(values)
         return self.organize(duration=duration)
-    
 
     def is_index(self, var: Var) -> int:
         """Returns the index herein for a specific :class:`Var`, not just a :class:`Var` with an equivalent value.
@@ -382,19 +441,25 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
             return list(map(lambda x: x is var, self)).index(True)
         except ValueError:
             raise ValueError(f"Var is not present in this {self.__class__.__name__}.")
-        
+
     def is_contains(self, var: Var) -> bool:
-        """Returns True if a specific :class:`Var`, not just a :class:`Var` with an equivalent value, is herein contained.
-        """
+        """Returns True if a specific :class:`Var`, not just a :class:`Var` with an equivalent value, is herein contained."""
         return sum(map(lambda x: x is var, self)) > 0
-    
+
+
 class AnimatedBinaryTreeArray(AnimatedList):
-
-    def __init__(self, variables: Iterable[Var], *, radius: float, level_heights: float | None = None, node_width: float | None = None, **kwargs):
-
+    def __init__(
+        self,
+        variables: Iterable[Var],
+        *,
+        radius: float,
+        level_heights: float | None = None,
+        node_width: float | None = None,
+        **kwargs,
+    ):
         self._radius = radius
-        self.level_heights = level_heights or 3*radius
-        self.node_width = node_width or 3*radius
+        self.level_heights = level_heights or 3 * radius
+        self.node_width = node_width or 3 * radius
 
         self._edges = Edges()
         self.add_auxiliary_element(self._edges)
@@ -404,66 +469,76 @@ class AnimatedBinaryTreeArray(AnimatedList):
     @property
     def edges(self):
         return self._edges
-       
+
     def get_organizer(self):
         num_levels = int(np.log2(len(self))) + 1
-        return BinaryTreeOrganizer(num_levels=num_levels, level_heights=self.level_heights, node_width=self.node_width)
-    
+        return BinaryTreeOrganizer(
+            num_levels=num_levels,
+            level_heights=self.level_heights,
+            node_width=self.node_width,
+        )
+
     def new_element_for(self, var):
         if var.is_none:
             return Pivot()
-        n = Circle(radius=self._radius).add_child(Text(str(var.value), font_size=self._radius))
+        n = Circle(radius=self._radius).add_child(
+            Text(str(var.value), font_size=self._radius)
+        )
         return n
 
     def get_parent_index(self, var: int | Var):
         if isinstance(var, int):
             var = self[var]
-        return int((self.is_index(var) + 1)//2) - 1
-    
+        return int((self.is_index(var) + 1) // 2) - 1
+
     def get_left_index(self, var: int | Var):
         if isinstance(var, int):
             var = self[var]
-        return int((self.is_index(var) + 1) * 2) - 1 
-    
+        return int((self.is_index(var) + 1) * 2) - 1
+
     def get_right_index(self, var: int | Var):
         return self.get_left_index(var) + 1
 
     @property
     def root(self) -> Var:
         return self[0]
-    
-    def get_parent(self, var: Var) -> Var:        
+
+    def get_parent(self, var: Var) -> Var:
         idx = self.get_parent_index(var)
 
         if idx < 0:
             return NilVar
-        
+
         return self[idx]
 
-    def get_left(self, var: Var) -> Var:        
+    def get_left(self, var: Var) -> Var:
         idx = self.get_left_index(var)
 
         if idx >= len(self):
             return NilVar
-        
+
         return self[idx]
-    
+
     def get_right(self, var: Var) -> Var:
         idx = self.get_right_index(var)
 
         if idx >= len(self):
             return NilVar
-        
+
         return self[idx]
 
     def is_root(self, var: Var) -> bool:
         return self.root is var
+
     def is_child(self, var: Var) -> bool:
         return not self.get_parent(var).is_none
+
     def is_leaf(self, var: Var) -> bool:
         return self.get_left(var).is_none and self.get_right(var).is_none
+
     def number_of_children(self, var: Var) -> int:
         return int((not self.get_left(var).is_none) + (not self.get_right(var).is_none))
+
     def get_children(self, var: Var):
         return map(lambda x: not x.is_none, [self.get_left(var), self.get_right(var)])
 
@@ -475,37 +550,54 @@ class AnimatedArray(AnimatedList):
         self._font_size = font_size
         super().__init__(variables, *args, **kwargs)
         for transform in self.organizer:
-            self.add_auxiliary_element(Rect(font_size, font_size).set_transform(self.transform @ transform))
+            self.add_auxiliary_element(
+                Rect(font_size, font_size).set_transform(self.transform @ transform)
+            )
+
     def get_organizer(self):
-        return GridOrganizer((1,len(self)), (self._font_size, self._font_size))
+        return GridOrganizer((1, len(self)), (self._font_size, self._font_size))
+
     def new_element_for(self, var):
         return Text(f"{var.value}", font_size=self._font_size)
-    def insert(self, index, value, *, duration = DEFER_TO_CONFIG):
+
+    def insert(self, index, value, *, duration=DEFER_TO_CONFIG):
         if len(self) == self._max_length:
-            raise ValueError("Cannot insert a Var into an AnimatedArray that is already at its maximal length.")
+            raise ValueError(
+                "Cannot insert a Var into an AnimatedArray that is already at its maximal length."
+            )
         return super().insert(index, value, duration=duration)
-    
+
+
 class AnimatedArray2D(AnimatedArray):
-    def __init__(self, variables: Iterable[Var], font_size: float, shape: Tuple[int, int], *args, **kwargs):
+    def __init__(
+        self,
+        variables: Iterable[Var],
+        font_size: float,
+        shape: Tuple[int, int],
+        *args,
+        **kwargs,
+    ):
         self._shape = shape
         super().__init__(variables, font_size, *args, **kwargs)
 
     def _tuple_to_index(self, index: Tuple[int, int]):
         for axis, (idx, size) in enumerate(zip(index, self._shape)):
             if idx >= size:
-                raise IndexError(f"Index {idx} is too large for axis {axis} of size {size}.")
+                raise IndexError(
+                    f"Index {idx} is too large for axis {axis} of size {size}."
+                )
 
         return index[0] * self._shape[1] + index[1]
 
-    
     def __getitem__(self, index: int | slice | Tuple[int, int]):
         if isinstance(index, (int, slice)):
             return super()[index]
         return super()[self._tuple_to_index[index]]
-        
+
     def insert(self, index, value, *, duration=DEFER_TO_CONFIG):
         if isinstance(index, Tuple):
             index = self._tuple_to_index(index)
         return super().insert(index, value, duration=duration)
+
     def get_organizer(self):
         return GridOrganizer(self._shape, (self._font_size, self._font_size))
