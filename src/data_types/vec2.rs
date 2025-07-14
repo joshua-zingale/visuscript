@@ -4,32 +4,18 @@ use pyo3::exceptions::{PyTypeError, PyZeroDivisionError};
 use pyo3::ffi::c_str;
 
 #[pyclass]
-pub struct Vec2([f64; 2]);
+pub struct Vec2(pub [f64; 2]);
 
 impl<'a> FromPyObject<'a> for Vec2 {
     fn extract_bound(obj: &Bound<'a, PyAny>) -> PyResult<Self> {
         // We first try to treat the object as an iterator
-        let iter = PyIterator::from_object(obj)
-            .map_err(|e| {
-                // If it's not an iterator, provide a better error message.
-                // We're expecting a sequence/iterable, not the given type.
-                PyTypeError::new_err(format!(
-                    "Expected a sequence or iterable with two floats, got {}",
-                    obj.get_type().name().unwrap()
-                ))
-            })?;
+        let iter = PyIterator::from_object(obj)?;
 
         let mut values = Vec::with_capacity(2);
         
         for item in iter {
             let item = item?;
-            let value = item.extract::<f64>()
-                .map_err(|e| {
-                    PyTypeError::new_err(format!(
-                        "Invalid value in sequence. Expected float, got {}", 
-                        item.get_type().name().unwrap()
-                    ))
-                })?;
+            let value = item.extract::<f64>()?;
             values.push(value);
         }
 
@@ -108,5 +94,9 @@ impl Vec2 {
 
     fn __str__(&self) -> String {
         format!("[ {}, {} ]", self.0[0], self.0[1])
+    }
+
+    fn magnitude(&self) -> f64{
+        f64::sqrt(self.0[0] * self.0[0] + self.0[1] *self.0[1])
     }
 }

@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use data_types::{Vec2, Rgb};
+use data_types::{Vec2, Rgb, Transform};
 
 pub mod data_types;
 
@@ -8,5 +8,6 @@ pub mod data_types;
 fn visuscript_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Vec2>()?;
     m.add_class::<Rgb>()?;
+    m.add_class::<Transform>()?;
     Ok(())
 }
