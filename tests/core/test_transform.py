@@ -23,3 +23,17 @@ def test_vec2_transformation():
     transformed_vec = transform @ vec
 
     assert (transformed_vec - Vec2(13, 22)).magnitude() < 1e-6
+
+def test_inverse():
+    transform = Transform(Vec2(1,2), Vec2(2,2), 90)
+    t = transform.inverse() @ transform
+    assert t.translation.magnitude() == pytest.approx(0)
+    assert t.scale.x, t.scale.y == pytest.approx((1,1))
+    assert t.rotation == pytest.approx(0)
+
+    base = Transform(Vec2(13,31), Vec2(13,131), -312)
+    transform = Transform(Vec2(-381,134), Vec2(2841, 482), 846.5)
+    t = transform.inverse() @ (transform @ base)
+    assert (t.translation - base.translation).magnitude() == pytest.approx(0)
+    assert t.scale.x, t.scale.y == pytest.approx((base.scale.x,base.scale.y))
+    assert t.rotation == pytest.approx(base.rotation)

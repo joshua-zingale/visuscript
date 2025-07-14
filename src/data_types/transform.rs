@@ -1,6 +1,6 @@
 
 use pyo3::{prelude::*, IntoPyObjectExt};
-use pyo3::exceptions::PyTypeError;
+use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::types::PyString;
 use super::vec2::Vec2;
 use std::f64::consts::PI;
@@ -58,7 +58,7 @@ impl Transform {
         // https://en.wikipedia.org/wiki/Transformation_matrix#Affine_transformations
         let (tx, ty) = (translation.0[0], translation.0[1]);
         let (sx, sy) = (scale.0[0], scale.0[1]);
-        let rot_rad = rotation * PI / 180.0; // Convert degrees to radians
+        let rot_rad = rotation * PI / 180.0;
         let (cos_rot, sin_rot) = (rot_rad.cos(), rot_rad.sin());
 
         Transform([
@@ -83,6 +83,37 @@ impl Transform {
     #[getter]
     fn rotation(&self) -> f64 {
         self.rotation_radians() * 180.0/PI
+    }
+
+    pub fn inverse(&self) -> PyResult<Self> {
+        let a = self.0[0];
+        let b = self.0[1];
+        let tx = self.0[2];
+        let c = self.0[3];
+        let d = self.0[4];
+        let ty = self.0[5];
+
+        let det = a * d - b * c;
+
+        if det.abs() < f64::EPSILON { 
+            return Err(PyValueError::new_err("Transform is non-invertible."));
+        }
+
+        let inv_det = 1.0 / det;
+
+        let m00 = d * inv_det;
+        let m01 = -b * inv_det;
+        let m02 = (b * ty - d * tx) * inv_det;
+
+        let m10 = -c * inv_det;
+        let m11 = a * inv_det;
+        let m12 = (c * tx - a * ty) * inv_det;
+
+        Ok(Transform([
+            m00, m01, m02,
+            m10, m11, m12,
+            0.0, 0.0, 1.0,
+        ]))
     }
 
     fn __matmul__<'py>(&self, py: Python<'py>, other: PyObject) -> PyResult<PyObject> {

@@ -46,6 +46,8 @@ class Transform:
     @property
     def rotation(self) -> float: ...
 
+    def inverse(self) -> "Transform": ...
+
     @overload
     def __matmul__(self, other: "Transform") -> "Transform": ...
     @overload
@@ -53,3 +55,4 @@ class Transform:
     def __matmul__(
         self, other: Union["Transform", Vec2Like]
     ) -> Union["Transform", Vec2]: ...
+    
