@@ -1,3 +1,7 @@
+[build-system]
+requires = ["maturin>=1.9,<2.0"]
+build-backend = "maturin"
+
 [project]
 name = "visuscript"
 version = "0.1.0a1"
@@ -24,6 +28,13 @@ dependencies = [
     "maturin>=1.9.1",
 ]
 
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "visuscript.visuscript_core"
+
+[tool.uv]
+package = true
+cache-keys = [{file = "pyproject.toml"}, {file = "Cargo.toml"}, {file = "**/*.rs"}]
 
 [dependency-groups]
 dev = [
@@ -31,8 +42,6 @@ dev = [
     "ruff>=0.12.1",
 ]
 
-[tool.uv]
-package = true
 
 [project.urls]
 Homepage = "https://github.com/joshua-zingale/visuscript"

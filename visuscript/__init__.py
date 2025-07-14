@@ -54,3 +54,5 @@ from .animation import (
     fade_out,
     flash,
 )
+
+from visuscript import visuscript_core as core
