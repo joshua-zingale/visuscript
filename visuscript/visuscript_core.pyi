@@ -55,4 +55,58 @@ class Transform:
     def __matmul__(
         self, other: Union["Transform", Vec2Like]
     ) -> Union["Transform", Vec2]: ...
+
+class Drawable:
+    def __init__(
+            self,
+            element_text: str = ...,
+            transform: Transform = ...,
+            stroke: Rgb = ...,
+            stroke_opacity: float = ...,
+            fill: Rgb = ...,
+            fill_opacity: float = ...,
+            opacity: float = ...): ...
+    
+
+    @property
+    def _transform(self) -> Transform: ...
+
+    @_transform.setter
+    def _transform(self, value: "Transform") -> None: ...
+
+    @property
+    def _element_text(self) -> str: ...
+
+    @_element_text.setter
+    def _element_text(self, value: str) -> None: ...
+
+    @property
+    def _stroke(self) -> Rgb: ...
+
+    @_stroke.setter
+    def _stroke(self, value: Rgb) -> None: ...
+
+    @property
+    def _stroke_opacity(self) -> float: ...
+
+    @_stroke_opacity.setter
+    def _stroke_opacity(self, value: float) -> None: ...
+
+    @property
+    def _fill(self) -> Rgb: ...
+
+    @_fill.setter
+    def _fill(self, value: Rgb) -> None: ...
+
+    @property
+    def _fill_opacity(self) -> float: ...
+
+    @_fill_opacity.setter
+    def _fill_opacity(self, value: float) -> None: ...
+
+    @property
+    def _opacity(self) -> float: ...
+
+    @_opacity.setter
+    def _opacity(self, value: float) -> None: ...
     

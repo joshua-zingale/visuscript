@@ -4,8 +4,8 @@ use pyo3::exceptions::PyZeroDivisionError;
 use pyo3::ffi::c_str;
 
 #[pyclass]
-#[derive(Clone)]
-pub struct Rgb([u8; 3]);
+#[derive(Clone, Debug)]
+pub struct Rgb(pub [u8; 3]);
 
 #[pymethods]
 impl Rgb {

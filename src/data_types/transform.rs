@@ -7,11 +7,20 @@ use std::f64::consts::PI;
 
 
 #[pyclass]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Transform([f64; 9]);
 
 
 impl Transform {
+
+    pub fn identity() -> Transform {
+        Transform([
+            1.0,0.0,0.0,
+            0.0,1.0,0.0,
+            0.0,0.0,1.0
+            ])
+    }
+
     fn rotation_radians(&self) -> f64 {
         self.0[3].atan2(self.0[0])
     }
