@@ -1,7 +1,7 @@
 from visuscript import *
 
 s = Scene()
-rect = Rect(20, 20)
+rect = Rect(20, 20).translate(100)
 s << rect
 s.print()
 s.player << AnimationBundle(

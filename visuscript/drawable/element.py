@@ -146,7 +146,7 @@ stroke-opacity="{self.stroke.opacity}" \
 stroke-width="{self.stroke_width}" \
 fill="{self.fill.rgb}" \
 fill-opacity="{self.fill.opacity}" \
-opacity="{self.opacity}" \
+opacity="{self.global_opacity}"\
 />"""
 
 
@@ -183,7 +183,7 @@ class Circle(HasGlobalShape, HierarchicalDrawable, HasFill, HasStroke, HasAnchor
         stroke-width="{self.stroke_width}"
         fill="{self.fill.rgb}"
         fill-opacity="{self.fill.opacity}"
-        opacity="{self.opacity}"
+        opacity="{self.global_opacity}"
         >
         """
 
