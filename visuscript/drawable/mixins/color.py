@@ -8,12 +8,11 @@ from visuscript.lazy_object import Lazible
 
     
 class HasRgb:
-    _RgbLike: TypeAlias = Union[Rgb, str, tuple[int,int,int]]
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._rgb: Rgb = PALETTE['off_white']
 
-    def set_rgb(self, rgb: _RgbLike) -> Self:
+    def set_rgb(self, rgb: Rgb._RgbLike) -> Self:
         self.rgb = rgb
         return self
 
@@ -22,7 +21,7 @@ class HasRgb:
         return self._rgb
 
     @rgb.setter
-    def rgb(self, value: _RgbLike):
+    def rgb(self, value: Rgb._RgbLike):
         if isinstance(value, str):
             self._rgb = PALETTE[value]
         else:
@@ -47,12 +46,15 @@ class HasOpacity:
     
 
 class Color(HasRgb, HasOpacity, Lazible):
-    def __init__(self, rgb: HasRgb._RgbLike | "Color", opacity: float | None = None, **kwargs):
+    _ColorLike: TypeAlias = Union[Rgb._RgbLike, "Color"]
+    def __init__(self, rgb: _ColorLike, opacity: float | None = None, **kwargs):
         super().__init__(**kwargs)
 
         if isinstance(rgb, Color):
             self.rgb = rgb.rgb
             self.opacity = rgb.opacity
+        else:
+            self.rgb = rgb
 
         if opacity is not None:
             self.opacity = opacity

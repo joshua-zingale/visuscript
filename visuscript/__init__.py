@@ -21,22 +21,23 @@ If the utility is not added to your PATH, the following works as well:
 """
 
 from .drawable.element import Circle, Rect, Image, Pivot, Drawing
-from .primatives import Transform, Color, Vec2, Vec3, Rgb
+from .drawable import Color
+from .primatives import Transform, Vec2, Vec3, Rgb
 from .drawable.scene import Scene
-from .organizer import GridOrganizer
-from .drawable.text import Text
-from .segment import Path
-from .constants import (
-    Anchor,
-    OutputFormat,
-    UP,
-    RIGHT,
-    DOWN,
-    LEFT,
-    FORWARD,
-    BACKWARD,
-)
-from .updater import UpdaterBundle, TranslationUpdater, FunctionUpdater, run_updater
+# from .organizer import GridOrganizer
+# from .drawable.text import Text
+# from .segment import Path
+# from .constants import (
+#     Anchor,
+#     OutputFormat,
+#     UP,
+#     RIGHT,
+#     DOWN,
+#     LEFT,
+#     FORWARD,
+#     BACKWARD,
+# )
+# from .updater import UpdaterBundle, TranslationUpdater, FunctionUpdater, run_updater
 from .animation import (
     AnimationBundle,
     AnimationSequence,
@@ -54,3 +55,35 @@ from .animation import (
     fade_out,
     flash,
 )
+
+__all__ = [
+    "Scene",
+
+    "Color",
+    "Circle",
+    "Rect",
+    "Image",
+    "Pivot",
+    "Drawing",
+
+    "Transform",
+    "Vec2",
+    "Vec3",
+    "Rgb",
+
+    "AnimationBundle",
+    "AnimationSequence",
+    "TransformAnimation",
+    "TranslationAnimation",
+    "ScaleAnimation",
+    "RotationAnimation",
+    "PathAnimation",
+    "OpacityAnimation",
+    "NoAnimation",
+    "RunFunction",
+    "RgbAnimation",
+    "UpdaterAnimation",
+    "fade_in",
+    "fade_out",
+    "flash",
+]

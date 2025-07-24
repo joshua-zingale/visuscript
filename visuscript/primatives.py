@@ -186,6 +186,7 @@ class Vec3(Vec):
 
 
 class Rgb(Interpolable["Rgb"]):
+    _RgbLike: TypeAlias = Union["Rgb", str, tuple[int,int,int]]
     def __init__(self, r: int, g: int, b: int):
         for v in [r, g, b]:
             if v < 0 or v > 255:
@@ -230,6 +231,11 @@ class Rgb(Interpolable["Rgb"]):
 
     def __repr__(self):
         return str(self)
+    
+    @property
+    def svg(self):
+        r, g, b = self._rgb
+        return f"rgb({r},{g},{b})"
 
 
 def get_vec3(values: Sequence[float], z_fill: float = 0.0) -> Vec3:
@@ -355,11 +361,24 @@ class Transform(Invalidator, Interpolable["Transform"], Lazible):
     def __repr__(self):
         return str(self)
 
-    def __call__(self, other: Self | Vec2 | Vec3) -> Union["Transform", Vec2, Vec3]:
+    @overload
+    def __call__(self, other: "Transform") -> "Transform": ...
+    @overload
+    def __call__(self, other: Vec2) -> Vec2: ...
+    @overload
+    def __call__(self, other: Vec3) -> Vec3: ...
+    def __call__(self, other: Union["Transform", Vec2, Vec3]) -> Union["Transform", Vec2, Vec3]:
         return self @ other
 
+
+    @overload
+    def __matmul__(self, other: "Transform") -> "Transform": ...
+    @overload
+    def __matmul__(self, other: Vec2) -> Vec2: ...
+    @overload
+    def __matmul__(self, other: Vec3) -> Vec3: ...
     def __matmul__(
-        self, other: Union[Self, Vec2, Vec3]
+        self, other: Union["Transform", Vec2, Vec3]
     ) -> Union["Transform", Vec2, Vec3]:
         t = self.rotation * np.pi / 180
         r_matrix = [[np.cos(t), -np.sin(t), 0], [np.sin(t), np.cos(t), 0], [0, 0, 1]]
@@ -422,73 +441,3 @@ class Transform(Invalidator, Interpolable["Transform"], Lazible):
             )
 
         return inverse_transform
-
-
-class Color(Lazible):
-    PALETTE: dict[str, Rgb] = {
-        "dark_slate": Rgb(*[28, 28, 28]),
-        "soft_blue": Rgb(*[173, 216, 230]),
-        "vibrant_orange": Rgb(*[255, 165, 0]),
-        "pale_green": Rgb(*[144, 238, 144]),
-        "bright_yellow": Rgb(*[255, 255, 0]),
-        "steel_blue": Rgb(*[70, 130, 180]),
-        "forest_green": Rgb(*[34, 139, 34]),
-        "burnt_orange": Rgb(*[205, 127, 50]),
-        "light_gray": Rgb(*[220, 220, 220]),
-        "off_white": Rgb(*[245, 245, 220]),
-        "medium_gray": Rgb(*[150, 150, 150]),
-        "slate_gray": Rgb(*[112, 128, 144]),
-        "crimson": Rgb(*[220, 20, 60]),
-        "gold": Rgb(*[255, 215, 0]),
-        "sky_blue": Rgb(*[135, 206, 235]),
-        "light_coral": Rgb(*[240, 128, 128]),
-        "red": Rgb(*[255, 99, 71]),
-        "orange": Rgb(*[255, 165, 0]),
-        "yellow": Rgb(*[255, 215, 0]),
-        "green": Rgb(*[124, 252, 0]),
-        "blue": Rgb(*[65, 105, 225]),
-        "purple": Rgb(*[138, 43, 226]),
-        "white": Rgb(*[255, 255, 255]),
-    }
-
-    def __init__(
-        self, color: str | Sequence[int] | Self = "off_white", opacity: float = 1.0
-    ):
-        self.opacity: float = color.opacity if isinstance(color, Color) else opacity
-        self._rgb: Rgb
-
-        if isinstance(color, Color):
-            self._rgb = deepcopy(color._rgb)
-        elif isinstance(color, Rgb):
-            self._rgb = deepcopy(color)
-        elif isinstance(color, str):
-            self._rgb = Color.PALETTE[color]
-        else:  # elif isinstance(color, Sequence):
-            self._rgb = Rgb(*color)
-
-    def set_opacity(self, opacity: float) -> Self:
-        self.opacity = opacity
-        return self
-
-    def set_rgb(self, rgb: str | Tuple[int, int, int]) -> Self:
-        self.rgb = rgb
-        return self
-
-    @property
-    def rgb(self) -> Rgb:
-        return self._rgb
-
-    @rgb.setter
-    def rgb(self, value: str | Tuple[int, int, int]):
-        if isinstance(value, str):
-            self._rgb = Color.PALETTE[value]
-        else:
-            self._rgb = Rgb(*value)
-
-    @property
-    def svg_rgb(self):
-        r, g, b = self._rgb
-        return f"rgb({r},{g},{b})"
-
-    def __str__(self) -> str:
-        return f"Color(color={tuple(self._rgb)}, opacity={self.opacity}"

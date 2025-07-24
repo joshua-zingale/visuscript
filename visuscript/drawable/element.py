@@ -1,20 +1,18 @@
-from visuscript.drawable.drawable import Drawable, Shape
-from visuscript.constants import Anchor
-from visuscript.primatives import *
-from visuscript.segment import Path, Segment
-
-from typing import Self, Iterable, Union
-
-import numpy as np
-import svg
-from abc import abstractmethod
-from PIL import Image as PILImage
+from typing import no_type_check
 from io import BytesIO
+
+
+from PIL import Image as PILImage
 import base64
-from functools import cached_property
+import svg
+
+from visuscript.primatives import *
+from visuscript.segment import Path
+from visuscript.drawable.mixins import HierarchicalDrawable, HasGlobalShape, HasAnchor, HasFill, HasStroke, HasOpacity
 
 
-def get_base64_from_pil_image(pil_image: PILImage) -> str:
+
+def get_base64_from_pil_image(pil_image: PILImage.Image) -> str:
     """
     Converts a PIL Image object to a base64 encoded string.
     """
@@ -28,224 +26,8 @@ def get_base64_from_pil_image(pil_image: PILImage) -> str:
     return img_str
 
 
-class Element(Drawable):
-    """An Element is a Drawable that can be placed in a hierarcy, where ancestor's transforms are applied to an Element for the Element to be drawn."""
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._children: list["Element"] = []
-        self._parent: "Element" | None = None
-        self._svg_pivot = None
-        self._deleted = False
-
-    @property
-    def parent(self) -> Union["Element", None]:
-        """The parent of this :class:`Element` if it exists, else None."""
-        return self._parent
-
-    def iter_children(self) -> Iterable["Element"]:
-        yield from self._children
-
-    def _invalidate(self):
-        super()._invalidate()
-        if hasattr(self, "global_shape"):
-            del self.global_shape
-        if hasattr(self, "global_transform"):
-            del self.global_transform
-
-        for child in self.iter_children():
-            child._invalidate()
-
-    def set_global_transform(self, transform: Transform) -> Self:
-        """
-        The global transform on this Element.
-
-        Returns the composition of all transforms, including that on this Element, up this Element's hierarchy.
-        """
-        self.global_transform = transform
-        return self
-
-    def has_ancestor(self, element: "Element") -> bool:
-        """
-        Returns True if `element` is an ancestor of this Element.
-        """
-        ancestor = self
-        while (ancestor := ancestor._parent) is not None:
-            if ancestor == element:
-                return True
-        return False
-
-    def set_parent(
-        self, parent: "Element", preserve_global_transform: bool = False
-    ) -> Self:
-        """
-        Sets this Element's parent, replacing any that may have already existed.
-
-        Also adds this Element as a child of the new parent and removes it as a child of any previous parent.
-        """
-        if self.parent:
-            self.parent._children.remove(self)
-
-        if parent is None:
-            self._parent = None
-        else:
-            if parent.has_ancestor(self):
-                raise ValueError("Cannot set an Element's descendant as its parent")
-
-            if parent is self:
-                raise ValueError("Cannot set an Element to be its own parent.")
-
-            if preserve_global_transform:
-                global_transform = self.global_transform
-
-            parent._children.append(self)
-            self._parent = parent
-
-            if preserve_global_transform:
-                self.global_transform = global_transform
-
-        return self
-
-    def add_child(
-        self,
-        child: "Element" | Callable[["Element"], "Element" | Iterable["Element"]],
-        preserve_global_transform: bool = False,
-    ) -> Self:
-        """
-        Adds `child` as a child to this Element. If `preserve_global_transform` is True, then the
-        transform on `child` is set such that its global transform not change.
-        """
-
-        if callable(child):
-            child = child(self)
-            if isinstance(child, Element):
-                child.set_parent(
-                    self, preserve_global_transform=preserve_global_transform
-                )
-            elif isinstance(child, Iterable):
-                for actual_element in child:
-                    if not isinstance(actual_element, Element):
-                        raise TypeError(
-                            f"Cannot add child of type '{actual_element.__class__.__name__}': child must inherit from Element."
-                        )
-                    actual_element.set_parent(
-                        self, preserve_global_transform=preserve_global_transform
-                    )
-        else:
-            child.set_parent(self, preserve_global_transform=preserve_global_transform)
-        return self
-
-    def remove_child(
-        self, child: "Element", preserve_global_transform: bool = True
-    ) -> Self:
-        """
-        Removes `child` as a child to this Element. If `preserve_global_transform` is True, then the
-        transform on `child` is set such that its global transform not change.
-        """
-        if child not in self._children:
-            raise ValueError(
-                "Attempted to remove a child from an Element that is not a child of the Element."
-            )
-        child.set_parent(None, preserve_global_transform=preserve_global_transform)
-        return self
-
-    def add_children(
-        self,
-        *children: "Element" | Callable[["Element"], "Element" | Iterable["Element"]],
-        preserve_global_transform: bool = False,
-    ) -> Self:
-        """
-        Adds each input child as a child of this Element. If `preserve_global_transform` is True, then the
-        transform on each child is set such that its global transform not change.
-        """
-        for child in children:
-            self.add_child(child, preserve_global_transform=preserve_global_transform)
-        return self
-
-    @property
-    def global_opacity(self) -> float:
-        """
-        The global opacity of this Element.
-
-        Returns the product of all ancestor opacities and that of this Element.
-        """
-        curr = self
-
-        opacity = self.opacity
-
-        while curr._parent is not None:
-            opacity *= curr._parent.opacity
-            curr = curr._parent
-
-        return opacity
-
-    @cached_property
-    def global_transform(self) -> Transform:
-        """
-        The global transform of this Element. Do NOT update this value manually.
-
-        Returns the composition of all ancestor transforms and this Element's transform.
-
-        """
-        curr = self
-
-        transform = self.transform
-
-        if self._parent:
-            transform = self._parent.global_transform(transform)
-            curr = curr._parent
-
-        return transform
-
-    # @global_transform.setter
-    # def global_transform(self, value: Transform):
-    #     """
-    #     Sets the global transform of this Element.
-    #     """
-    #     if self._parent is None:
-    #         self.transform = value
-    #     else:
-    #         self.transform = self._parent.global_transform.inv(value)
-
-    def __iter__(self) -> Iterable["Element"]:
-        """
-        Iterate over this Element and its children in ascending z order, secondarily ordering parents before children.
-        """
-        elements = [self]
-        for child in self._children:
-            elements.extend(child.__iter__())
-
-        yield from sorted(elements, key=lambda d: d.global_transform.translation.z)
-
-    def draw(self) -> str:
-        return "".join(map(lambda element: element.draw_self(), self))
-
-    @property
-    def deleted(self) -> bool:
-        return self._deleted
-
-    def delete(self):
-        for element in self:
-            element._deleted = True
-            element.set_parent(None)
-
-    @cached_property
-    def global_shape(self):
-        return Shape(self, self.global_transform)
-
-    # TODO make children not move with respect to parnet when parent's anchor is updated with keep_position=True
-    def set_anchor(self, anchor, keep_position=False) -> Self:
-        return super().set_anchor(anchor, keep_position=keep_position)
-
-    @abstractmethod
-    def draw_self(self) -> str:
-        """
-        Returns the SVG representation for this Element but not for its children.
-        """
-        ...
-
-
-class Image(Element):
+class Image(HasGlobalShape, HierarchicalDrawable, HasAnchor):
+    @no_type_check
     def __init__(
         self,
         *,
@@ -290,11 +72,10 @@ class Image(Element):
     def height(self) -> float:
         return self._height * self._resize_scale
 
+    @no_type_check
     def draw_self(self):
         x, y = self.anchor_offset
 
-        transform = deepcopy(transform)
-        transform.scale = transform.scale * self._resize_scale
         return svg.Image(
             x=x,
             y=y,
@@ -304,7 +85,7 @@ class Image(Element):
         ).as_str()
 
 
-class Pivot(Element):
+class Pivot(HierarchicalDrawable):
     """A Pivot is an Element with no display for itself.
 
     A Pivot can be used to construct more complex object by adding children."""
@@ -325,11 +106,11 @@ class Pivot(Element):
         return ""
 
 
-class Drawing(Element, Segment):
+class Drawing(HasGlobalShape, HierarchicalDrawable, HasFill, HasStroke, HasAnchor, HasOpacity):
     """A Drawing is an Element for which the self-display is defined by a Path."""
 
-    def __init__(self, path: Path, *, anchor=Anchor.DEFAULT, **kwargs):
-        super().__init__(anchor=anchor, **kwargs)
+    def __init__(self, path: Path):
+        super().__init__()
 
         self._path: Path = path
 
@@ -347,97 +128,69 @@ class Drawing(Element, Segment):
         return self.global_transform(
             Transform(self._path.set_offset(*self.anchor_offset).point(length))
         ).translation.xy
+    
 
-    @property
-    def top_left(self) -> Vec2:
+    def calculate_top_left(self):
         return self._path.top_left
-
-    @property
-    def start(self):
-        return self._path.start
-
-    @property
-    def end(self):
-        return self._path.end
-
-    @property
-    def arc_length(self):
-        return self._path.arc_length
-
-    @property
-    def path_str(self):
-        return self._path.path_str
-
-    @property
-    def set_offset(self, x_offset, y_offset):
-        return self._path.set_offset(x_offset, y_offset)
-
-    @property
-    def width(self):
+    def calculate_width(self):
         return self._path.width
-
-    @property
-    def height(self):
+    def calculate_height(self):
         return self._path.height
-
     def draw_self(self):
         self._path.set_offset(*self.anchor_offset)
-        return svg.Path(
-            d=self._path.path_str,
-            transform=self.global_transform.svg_transform,
-            stroke=self.stroke.svg_rgb,
-            stroke_opacity=self.stroke.opacity,
-            fill=self.fill.svg_rgb,
-            fill_opacity=self.fill.opacity,
-            opacity=self.global_opacity,
-            stroke_width=self.stroke_width,
-        ).as_str()
+        return f"""<path \
+d="{self._path.path_str}" \
+transform="{self.global_transform.svg_transform}" \
+stroke="{self.stroke.rgb}" \
+stroke-opacity="{self.stroke.opacity}" \
+stroke-width="{self.stroke_width}" \
+fill="{self.fill.rgb}" \
+fill-opacity="{self.fill.opacity}" \
+opacity="{self.opacity}" \
+/>"""
 
 
 # TODO Make Circle a Drawing by adding a Path that approximates the circle
-class Circle(Element):
+class Circle(HasGlobalShape, HierarchicalDrawable, HasFill, HasStroke, HasAnchor, HasOpacity):
     """A Circle"""
 
-    def __init__(self, radius: float, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, radius: float):
+        super().__init__()
         self.radius = radius
 
-    @property
-    def top_left(self):
+
+    def calculate_top_left(self):
         return Vec2(-self.radius, -self.radius)
 
-    @property
-    def width(self):
+    def calculate_width(self):
         return self.radius * 2
 
-    @property
-    def height(self):
+    def calculate_height(self):
         return self.radius * 2
 
-    @property
-    def circumscribed_radius(self):
+    def calculate_circumscribed_radius(self):
         return self.radius
 
     def draw_self(self):
-        x, y = self.anchor_offset
-        return svg.Circle(
-            cx=x,
-            cy=y,
-            r=self.radius,
-            transform=self.global_transform.svg_transform,
-            stroke=self.stroke.svg_rgb,
-            stroke_opacity=self.stroke.opacity,
-            stroke_width=self.stroke_width,
-            fill=self.fill.svg_rgb,
-            fill_opacity=self.fill.opacity,
-            opacity=self.global_opacity,
-        ).as_str()
-
+        x, y = self.global_shape.center
+        return f"""<path
+        cx="{x}"
+        cy="{y}"
+        r="{self.radius}"
+        transform="{self.global_transform.svg_transform}"
+        stroke="{self.stroke.rgb}"
+        stroke-opacity="{self.stroke.opacity}"
+        stroke-width="{self.stroke_width}"
+        fill="{self.fill.rgb}"
+        fill-opacity="{self.fill.opacity}"
+        opacity="{self.opacity}"
+        >
+        """
 
 class Rect(Drawing):
     """A Rectangle"""
 
-    def __init__(self, width, height, anchor: Anchor = Anchor.CENTER, **kwargs):
+    def __init__(self, width, height):
         super().__init__(
-            Path().l(width, 0).l(0, height).l(-width, 0).Z(), anchor=anchor, **kwargs
-        )
+            Path().l(width, 0).l(0, height).l(-width, 0).Z()
+            )

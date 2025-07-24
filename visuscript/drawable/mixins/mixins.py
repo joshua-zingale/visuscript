@@ -7,7 +7,7 @@ from visuscript.constants import Anchor
 from visuscript.primatives import Transform, Vec3, Vec2, Rgb
 from visuscript._internal._invalidator import Invalidatable
 from visuscript.config import config
-from .color import Color, HasOpacity
+from .color import Color, HasOpacity, HasRgb
 
 class HasTransform:
     def __init__(self, **kwargs):
@@ -57,17 +57,17 @@ class HasTransform:
 class HasFill:
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._fill = Color(config.element_fill.rgb)
+        self._fill = Color(config.element_fill)
 
     @property
     def fill(self) -> Color:
         return Color(self._fill)
     
     @fill.setter
-    def fill(self, other: Color):
+    def fill(self, other: Color._ColorLike):
         self.set_fill(other)
 
-    def set_fill(self, color: Color) -> Self:
+    def set_fill(self, color: Color._ColorLike) -> Self:
         """Sets the fill for this object."""
         color = Color(color)
         self._fill.rgb = color.rgb
@@ -77,7 +77,7 @@ class HasFill:
 class HasStroke:
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._stroke = Color(config.element_fill.rgb)
+        self._stroke = Color(config.element_stroke)
         self._stroke_width = config.element_stroke_width
 
     @property
@@ -85,10 +85,10 @@ class HasStroke:
         return Color(self._stroke)
     
     @stroke.setter
-    def stroke(self, other: Color):
+    def stroke(self, other: Color._ColorLike):
         self.set_stroke(other)
 
-    def set_stroke(self, color: Color) -> Self:
+    def set_stroke(self, color: Color._ColorLike) -> Self:
         """Sets the stroke for this object."""
         color = Color(color)
         self._stroke.rgb = color.rgb
@@ -139,7 +139,8 @@ class HasTransformableShape(HasShape, HasTransform):
         return Shape(self, self.transform)
     
     def _invalidate(self):
-        del self.transformed_shape
+        if hasattr(self, "transformed_shape"):
+            del self.transformed_shape
 
 class HasAnchor(HasShape):
     def __init__(self, **kwargs):
@@ -156,39 +157,43 @@ class HasAnchor(HasShape):
         """
         old_anchor_offset = self.anchor_offset
 
-        self.anchor = anchor
+        self._anchor = anchor
 
         if isinstance(self, HasTransform) and keep_position:
             self.translate(*old_anchor_offset - self.anchor_offset)
             # Invalidate shapes
-            del self.shape
-            if isinstance(self, HasTransformableShape):
+            if hasattr(self, "shape"):
+                del self.shape
+            if isinstance(self, HasTransformableShape) and hasattr(self, "transformed_shape"):
                 del self.transformed_shape
         return self
 
     @property
     def anchor_offset(self) -> Vec2:
         """The (x,y) offset of this object for it to be anchored properly."""
+        top_left = self.calculate_top_left()
+        width = self.calculate_width()
+        height = self.calculate_height()
         if self._anchor == Anchor.DEFAULT:
             return Vec2(0, 0)
         if self._anchor == Anchor.TOP_LEFT:
-            return -self.shape.top_left
+            return -top_left
         if self._anchor == Anchor.TOP:
-            return -(self.shape.top_left + [self.shape.width / 2, 0])
+            return -(top_left + [width / 2, 0])
         if self._anchor == Anchor.TOP_RIGHT:
-            return -(self.shape.top_left + [self.shape.width, 0])
+            return -(top_left + [width, 0])
         if self._anchor == Anchor.RIGHT:
-            return -(self.shape.top_left + [self.shape.width, self.shape.height / 2])
+            return -(top_left + [width, height / 2])
         if self._anchor == Anchor.BOTTOM_RIGHT:
-            return -(self.shape.top_left + [self.shape.width / 2, self.shape.height])
+            return -(top_left + [width / 2, height])
         if self._anchor == Anchor.BOTTOM:
-            return -(self.shape.top_left + [self.shape.width / 2, self.shape.height])
+            return -(top_left + [width / 2, height])
         if self._anchor == Anchor.BOTTOM_LEFT:
-            return -(self.shape.top_left + [0, self.shape.height])
+            return -(top_left + [0, height])
         if self._anchor == Anchor.LEFT:
-            return -(self.shape.top_left + [0, self.shape.height / 2])
+            return -(top_left + [0, height / 2])
         if self._anchor == Anchor.CENTER:
-            return -(self.shape.top_left + [self.shape.width / 2, self.shape.height / 2])
+            return -(top_left + [width / 2, height / 2])
         else:
             raise NotImplementedError()
 
@@ -213,7 +218,8 @@ class HierarchicalDrawable(Drawable, HasTransform, HasOpacity, Iterable["Hierarc
         ...
 
     def _invalidate(self):
-        del self.global_transform
+        if hasattr(self, "global_transform"):
+            del self.global_transform
         for child in self.iter_children():
             child._invalidate()
 
@@ -383,7 +389,8 @@ class HierarchicalDrawable(Drawable, HasTransform, HasOpacity, Iterable["Hierarc
 class HasGlobalShape(HierarchicalDrawable, HasShape):
     def _invalidate(self):
         super()._invalidate()
-        del self.global_shape
+        if hasattr(self, "global_shape"):
+            del self.global_shape
     @cached_property
     def global_shape(self):
         return Shape(self, self.global_transform)

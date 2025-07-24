@@ -58,7 +58,7 @@ branch = true
 source = ["visuscript"]
 
 [tool.pyright]
-basic = [
+strict = [
     "visuscript/**.py",
 ]
 reportUnusedExpression = "none" # because visuscript overloads "<<" to be a push opperation, which is often "unused"

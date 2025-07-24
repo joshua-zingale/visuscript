@@ -14,7 +14,7 @@ import sys
 import os
 
 from visuscript.config import config
-from visuscript.primatives import Color
+from visuscript import Color
 
 MODES = ["video", "slideshow"]
 THEME = ["dark", "light"]

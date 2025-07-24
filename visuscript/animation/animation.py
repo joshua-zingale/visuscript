@@ -1,5 +1,13 @@
 """This module contains the abstract base class of all Animations alongside a bevy of basic animations and easing functions."""
 
+
+
+
+from typing import Callable, no_type_check
+from abc import ABC, abstractmethod, ABCMeta
+import inspect
+
+from visuscript.config import config
 from visuscript.config import *
 from visuscript.primatives import *
 from visuscript.segment import Path
@@ -7,15 +15,7 @@ from visuscript.property_locker import PropertyLocker
 from visuscript.updater import Updater
 from visuscript.lazy_object import evaluate_lazy, LazyObject
 
-
-from typing import Callable, no_type_check
-from abc import ABC, abstractmethod, ABCMeta
-import inspect
-
 from .easing import sin_easing2
-
-from visuscript.config import config
-
 
 class AnimationMetaClass(ABCMeta):
     @no_type_check
@@ -238,21 +238,18 @@ class NoAnimation(Animation):
     def __init__(
         self,
         *,
-        fps: int | ConfigurationDeference = DEFER_TO_CONFIG,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ):
         super().__init__()
-        fps = config.fps if fps is DEFER_TO_CONFIG else fps
-        duration = (
-            config.animation_duration if duration is DEFER_TO_CONFIG else duration
-        )
 
-        self._num_frames = round(fps * duration)
+        if isinstance(duration, ConfigurationDeference):
+            duration = config.animation_duration
+
+        self._num_frames = round(config.fps * duration)
 
     def __init_locker__(
         self,
         *,
-        fps: int | ConfigurationDeference = DEFER_TO_CONFIG,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ):
         return PropertyLocker()
@@ -300,20 +297,20 @@ class UpdaterAnimation(Animation):
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ):
         super().__init__()
-        self._duration = (
-            config.animation_duration if duration is DEFER_TO_CONFIG else duration
-        )
+        if isinstance(duration, ConfigurationDeference):
+            duration = config.animation_duration
+        self._duration = duration
         self._updater = updater
 
         self._t = 0
         self._dt = 1 / config.fps
 
-    def __init_locker__(
+    def __init_locker__(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         updater: Updater,
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
-    ):  # type: ignore[reportIncompatibleMethodOverride]
+    ): 
         return deepcopy(updater.locker)
 
     def advance(self) -> bool:
@@ -328,28 +325,26 @@ class AlphaAnimation(Animation):
     def __init__(
         self,
         *,
-        fps: int | ConfigurationDeference = DEFER_TO_CONFIG,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
         easing_function: Callable[[float], float] = sin_easing2,
     ):
         super().__init__()
-        fps = config.fps if fps is DEFER_TO_CONFIG else fps
-        duration = (
-            config.animation_duration if duration is DEFER_TO_CONFIG else duration
-        )
+        if isinstance(duration, ConfigurationDeference):
+            duration = config.animation_duration
+        
+        self._duration = duration
 
         self._frame_number: int = 1
-        self._num_frames: int = round(fps * duration)
+        self._num_frames: int = round(config.fps * duration)
         self._easing_function = easing_function
 
     @abstractmethod
-    def __init_locker__(
+    def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
         self,
         *,
-        fps: int | ConfigurationDeference = DEFER_TO_CONFIG,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
         easing_function: Callable[[float], float] = sin_easing2,
-    ):  # type: ignore[reportIncompatibleMethodOverride]
+    ):  
         ...
 
     def advance(self) -> bool:
