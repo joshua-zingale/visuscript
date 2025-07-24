@@ -16,6 +16,7 @@ from visuscript.updater import Updater
 from visuscript.lazy_object import evaluate_lazy, LazyObject
 
 from .easing import sin_easing2
+from copy import deepcopy
 
 class AnimationMetaClass(ABCMeta):
     @no_type_check
@@ -86,7 +87,9 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
     _keep_advancing = True
     _locker: PropertyLocker
 
-    def __init__(self): ...
+    # This needs to be here because of the metaclass:
+    # __init_locker__ and __init__ must share the same signatures.
+    def __init__(self): ... 
 
     @abstractmethod
     def __init_locker__(self) -> PropertyLocker:

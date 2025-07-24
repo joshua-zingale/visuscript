@@ -172,20 +172,18 @@ class Circle(HasGlobalShape, HierarchicalDrawable, HasFill, HasStroke, HasAnchor
         return self.radius
 
     def draw_self(self):
-        x, y = self.global_shape.center
-        return f"""<path
-        cx="{x}"
-        cy="{y}"
-        r="{self.radius}"
-        transform="{self.global_transform.svg_transform}"
-        stroke="{self.stroke.rgb}"
-        stroke-opacity="{self.stroke.opacity}"
-        stroke-width="{self.stroke_width}"
-        fill="{self.fill.rgb}"
-        fill-opacity="{self.fill.opacity}"
-        opacity="{self.global_opacity}"
-        >
-        """
+        return f"""<circle \
+cx="0" \
+cy="0" \
+r="{self.radius}" \
+transform="{self.global_transform.svg_transform}" \
+stroke="{self.stroke.rgb}" \
+stroke-opacity="{self.stroke.opacity}" \
+stroke-width="{self.stroke_width}" \
+fill="{self.fill.rgb}" \
+fill-opacity="{self.fill.opacity}" \
+opacity="{self.global_opacity}"\
+/>"""
 
 class Rect(Drawing):
     """A Rectangle"""

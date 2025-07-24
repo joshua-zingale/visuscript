@@ -26,18 +26,23 @@ from .primatives import Transform, Vec2, Vec3, Rgb
 from .drawable.scene import Scene
 # from .organizer import GridOrganizer
 from .drawable.text import Text
-# from .segment import Path
-# from .constants import (
-#     Anchor,
-#     OutputFormat,
-#     UP,
-#     RIGHT,
-#     DOWN,
-#     LEFT,
-#     FORWARD,
-#     BACKWARD,
-# )
-# from .updater import UpdaterBundle, TranslationUpdater, FunctionUpdater, run_updater
+from .segment import Path
+from .constants import (
+    Anchor,
+    OutputFormat,
+    UP,
+    RIGHT,
+    DOWN,
+    LEFT,
+    FORWARD,
+    BACKWARD,
+)
+from .updater import (
+    UpdaterBundle,
+    TranslationUpdater,
+    FunctionUpdater,
+    run_updater
+    )
 from .animation import (
     AnimationBundle,
     AnimationSequence,
@@ -88,4 +93,21 @@ __all__ = [
     "fade_in",
     "fade_out",
     "flash",
+
+    "UpdaterBundle",
+    "TranslationUpdater",
+    "FunctionUpdater",
+    "run_updater",
+
+    "Anchor",
+    "OutputFormat",
+    "UP",
+    "RIGHT",
+    "DOWN",
+    "LEFT",
+    "FORWARD",
+    "BACKWARD",
+
+    "Path",
+    # "GridOrganizer",
 ]

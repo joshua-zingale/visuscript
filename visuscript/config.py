@@ -1,4 +1,3 @@
-from typing import TypeAlias
 import sys
 
 from visuscript.constants import OutputFormat
@@ -68,10 +67,10 @@ config: _AnimationConfig = _AnimationConfig()
 The global singleton configuration object for Visuscript, which sets defaults for various Visuscript features.
 """
 
-ConfigurationDeference: TypeAlias = object
-"""
-As an parameter type hint, specifies that passing in `DEFER_TO_CONFIG` as the argument will lead to the global configuration setting the value.
-"""
+class ConfigurationDeference:
+    """As an parameter type hint, specifies that passing in `DEFER_TO_CONFIG` as the argument will lead to the global configuration setting the value.
+    """
 
-DEFER_TO_CONFIG: ConfigurationDeference = object()
+
+DEFER_TO_CONFIG: ConfigurationDeference = ConfigurationDeference()
 """Indicates that this parameter should be set by the global configuration."""
