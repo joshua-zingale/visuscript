@@ -30,9 +30,10 @@ def invalidates(
 ) -> Callable[Concatenate[_Invalidator, P], T]:
     @functools.wraps(method)
     def invalidating_foo(self: _Invalidator, *args: P.args, **kwargs: P.kwargs) -> T:
-        for invalidatable in self._iter_invalidatables():  # type: ignore
-            invalidatable._invalidate()  # type: ignore
-        return method(self, *args, **kwargs)
+        output = method(self, *args, **kwargs)
+        for invalidatable in self._iter_invalidatables():
+            invalidatable._invalidate()
+        return output
 
     return invalidating_foo
 

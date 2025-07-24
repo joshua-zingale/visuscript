@@ -6,7 +6,6 @@ import numpy as np
 
 from typing import (
     Self,
-    Tuple,
     Sequence,
     Callable,
     Iterator,
@@ -18,7 +17,6 @@ from typing import (
 )
 from operator import add, mul, sub, truediv, neg, pow, eq
 from array import array
-from copy import deepcopy
 
 
 class SizeMismatch(ValueError):

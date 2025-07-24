@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Sequence, Self, Union, Iterable, Callable, Iterator, TypeAlias
-
+from copy import deepcopy
 
 from visuscript.constants import Anchor
 from visuscript.primatives import Transform, Vec3, Vec2, Rgb
@@ -61,7 +61,7 @@ class HasFill:
 
     @property
     def fill(self) -> Color:
-        return Color(self._fill)
+        return self._fill
     
     @fill.setter
     def fill(self, other: Color._ColorLike):
@@ -82,7 +82,7 @@ class HasStroke:
 
     @property
     def stroke(self) -> Color:
-        return Color(self._stroke)
+        return self._stroke
     
     @stroke.setter
     def stroke(self, other: Color._ColorLike):
@@ -204,7 +204,7 @@ class Drawable(ABC):
         ...
 
 
-class HierarchicalDrawable(Drawable, HasTransform, HasOpacity, Iterable["HierarchicalDrawable"]):
+class HierarchicalDrawable(Drawable, HasTransform, HasOpacity, Iterable["HierarchicalDrawable"], Invalidatable):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._children: list[HierarchicalDrawable] = []
@@ -357,7 +357,7 @@ class HierarchicalDrawable(Drawable, HasTransform, HasOpacity, Iterable["Hierarc
     @cached_property
     def global_transform(self) -> Transform:
         """
-        The global transform of this Element. Do NOT update this value manually.
+        A copy of the global transform of this Element.
 
         Returns the composition of all ancestor transforms and this Element's transform.
 
@@ -370,7 +370,7 @@ class HierarchicalDrawable(Drawable, HasTransform, HasOpacity, Iterable["Hierarc
             transform = self._parent.global_transform @ transform
             curr = curr._parent
 
-        return transform
+        return deepcopy(transform)
 
     def __iter__(self) -> Iterator["HierarchicalDrawable"]:
         """
