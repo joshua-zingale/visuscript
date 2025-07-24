@@ -12,9 +12,9 @@ from visuscript.segment import Path
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
 from visuscript.drawable.text import Text
 from visuscript.organizer import BinaryTreeOrganizer, Organizer, GridOrganizer
-from visuscript.drawable.element import Circle, Pivot, Element, Rect
+from visuscript.drawable.element import Circle, Pivot, Rect
 from visuscript.primatives import Transform
-from visuscript.drawable.drawable import Drawable
+from visuscript.drawable.mixins import Drawable, DrawableWithTransform
 from visuscript.math_utility import magnitude
 from visuscript.drawable.connector import Edges
 
@@ -150,21 +150,9 @@ NilVar = Var(None)
 
 
 class _AnimatedCollectionDrawable(Drawable):
-    def __init__(self, animated_collection: "AnimatedCollection", **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, animated_collection: "AnimatedCollection"):
+        super().__init__()
         self._animated_collection = animated_collection
-
-    @property
-    def top_left(self):
-        return Vec2(0, 0)
-
-    @property
-    def width(self):
-        return 0.0
-
-    @property
-    def height(self):
-        return 0.0
 
     def draw(self):
         return "".join(
@@ -180,8 +168,8 @@ class AnimatedCollection(Collection[Var]):
     """
 
     @abstractmethod
-    def element_for(self, var: Var) -> Element:
-        """Returns the :class:`~visuscript.element.Element` for a :class:`Var` stored in this collection."""
+    def element_for(self, var: Var) -> DrawableWithTransform:
+        """Returns the :class:`~visuscript.drawable.mixins.DrawableWithTransform` for a :class:`Var` stored in this collection."""
         ...
 
     @abstractmethod
@@ -204,14 +192,14 @@ class AnimatedCollection(Collection[Var]):
         return animation_bundle
 
     @property
-    def elements(self) -> Iterable[Element]:
+    def elements(self) -> Iterable[DrawableWithTransform]:
         """An iterable over the :class:`~visuscript.element.Element` instances managed by this collection
         that correspond to the :class:`Var` instances stored herein."""
         for var in self:
             yield self.element_for(var)
 
     @property
-    def all_elements(self) -> Iterable[Element]:
+    def all_elements(self) -> Iterable[Drawable]:
         """An iterable over all :class:`~visuscript.element.Element` instances that comprise
         this :class:`AnimatedCollection`'s visual component."""
         yield from self.auxiliary_elements
@@ -225,21 +213,21 @@ class AnimatedCollection(Collection[Var]):
         return _AnimatedCollectionDrawable(self)
 
     @property
-    def auxiliary_elements(self) -> list[Element]:
+    def auxiliary_elements(self) -> list[Drawable]:
         """A list of all auxiliary :class:`~visuscript.element.Element` instances that comprise this
         :class:`AnimatedCollection`'s visual component.
         """
         if not hasattr(self, "_auxiliary_elements"):
-            self._auxiliary_elements: list[Element] = []
+            self._auxiliary_elements: list[Drawable] = []
         return self._auxiliary_elements
 
-    def add_auxiliary_element(self, element: Element) -> Self:
+    def add_auxiliary_element(self, element: Drawable) -> Self:
         """Adds an :class:`~visuscript.element.Element` to de displayed along with the :class:`~visuscript.element.Element`
         instances that correspond to the :class:`Var` instances stored herein."""
         self.auxiliary_elements.append(element)
         return self
 
-    def remove_auxiliary_element(self, element: Element) -> Self:
+    def remove_auxiliary_element(self, element: Drawable) -> Self:
         """Removes an auxiliar element form this :class:`AnimatedCollection`."""
         self.auxiliary_elements.remove(element)
         return self
@@ -272,7 +260,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         return self.get_organizer()
 
     @abstractmethod
-    def get_organizer() -> Organizer:
+    def get_organizer(self) -> Organizer:
         """Initializes and returns an :class:`~visuscript.organizer.Organizer` for this :class:`AnimatedList`.
         The returned :class:`~visuscript.organizer.Organizer` sets the rule for how `animated_list[i]` should
         be transformed with `organizer[i]`.

@@ -386,7 +386,7 @@ class HierarchicalDrawable(Drawable, HasTransform, HasOpacity, Iterable["Hierarc
         return "".join(map(lambda element: element.draw_self(), self))
 
 
-class HasGlobalShape(HierarchicalDrawable, HasShape):
+class HasGlobalShape(HierarchicalDrawable, HasTransformableShape):
     def _invalidate(self):
         super()._invalidate()
         if hasattr(self, "global_shape"):
@@ -454,3 +454,6 @@ class Shape:
             top_left + [width / 2, height / 2]
         )
         """The center coordinate of the object's rectangular circumscription."""
+
+
+class DrawableWithTransform(Drawable, HasTransform): pass
