@@ -10,8 +10,8 @@ from visuscript.config import config
 from .color import Color, HasOpacity, HasRgb
 
 class HasTransform:
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self._transform = Transform()
 
         if isinstance(self, Invalidatable):
@@ -55,8 +55,8 @@ class HasTransform:
     
 
 class HasFill:
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self._fill = Color(config.element_fill)
 
     @property
@@ -75,8 +75,8 @@ class HasFill:
         return self
     
 class HasStroke:
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self._stroke = Color(config.element_stroke)
         self._stroke_width = config.element_stroke_width
 
@@ -143,8 +143,8 @@ class HasTransformableShape(HasShape, HasTransform):
             del self.transformed_shape
 
 class HasAnchor(HasShape):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self._anchor: Anchor = Anchor.CENTER
 
     def set_anchor(self, anchor: Anchor, keep_position=False) -> Self:
@@ -205,8 +205,8 @@ class Drawable(ABC):
 
 
 class HierarchicalDrawable(Drawable, HasTransform, HasOpacity, Iterable["HierarchicalDrawable"], Invalidatable):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self._children: list[HierarchicalDrawable] = []
         self._parent: HierarchicalDrawable | None = None
 
