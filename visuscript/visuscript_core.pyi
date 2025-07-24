@@ -1,5 +1,4 @@
-from typing import Iterable, Union, overload, TypeAlias, Sequence
-
+from typing import Iterable, Union, overload, TypeAlias, Sequence, Mapping
 
 Vec2Like: TypeAlias = Union[Sequence[float], Vec2]
 
@@ -55,6 +54,10 @@ class Transform:
     def __matmul__(
         self, other: Union["Transform", Vec2Like]
     ) -> Union["Transform", Vec2]: ...
+
+class SvgString:
+    def __init__(self, string: str): ...
+    def set_parameters(self, svg_arguments: Mapping[str, str]): ...
 
 class Drawable:
     def __init__(
