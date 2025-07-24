@@ -25,7 +25,7 @@ from .drawable import Color
 from .primatives import Transform, Vec2, Vec3, Rgb
 from .drawable.scene import Scene
 # from .organizer import GridOrganizer
-# from .drawable.text import Text
+from .drawable.text import Text
 # from .segment import Path
 # from .constants import (
 #     Anchor,
@@ -65,6 +65,8 @@ __all__ = [
     "Image",
     "Pivot",
     "Drawing",
+
+    "Text",
 
     "Transform",
     "Vec2",

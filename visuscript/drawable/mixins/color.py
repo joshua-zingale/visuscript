@@ -8,8 +8,8 @@ from visuscript.lazy_object import Lazible
 
     
 class HasRgb:
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self._rgb: Rgb = PALETTE['off_white']
 
     def set_rgb(self, rgb: Rgb._RgbLike) -> Self:
@@ -28,8 +28,8 @@ class HasRgb:
             self._rgb = Rgb(*value)
 
 class HasOpacity:
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self._opacity: float = 1
 
     @property
@@ -47,8 +47,8 @@ class HasOpacity:
 
 class Color(HasRgb, HasOpacity, Lazible):
     _ColorLike: TypeAlias = Union[Rgb._RgbLike, "Color"]
-    def __init__(self, rgb: _ColorLike, opacity: float | None = None, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, rgb: _ColorLike, opacity: float | None = None):
+        super().__init__()
 
         if isinstance(rgb, Color):
             self.rgb = rgb.rgb

@@ -1,13 +1,16 @@
-from visuscript.drawable.element import Element
-from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
+
+
+from typing import Concatenate, ParamSpec, Callable, TypeVar
+import os
+
 
 from xml.sax.saxutils import escape
 from ..primatives import *
 from PIL import ImageFont
 
-from typing import Concatenate, ParamSpec, Callable, TypeVar, cast
-import svg
-import os
+
+from visuscript.drawable.mixins import HierarchicalDrawable, HasAnchor, HasFill, HasGlobalShape
+from visuscript.config import config
 
 # TODO Figure out why league mono is not centered properly
 fonts: dict[str, str] = {
@@ -28,17 +31,19 @@ def xml_escape(data: str) -> str:
     )
 
 
-P = ParamSpec("P")
-T = TypeVar("T")
+
+
+_P = ParamSpec("_P")
+_T = TypeVar("_T")
 _Text = TypeVar("_Text", bound="Text")
 
-
-class Text(Element):
+class Text(HasGlobalShape, HierarchicalDrawable, HasAnchor, HasFill):
+    
     @staticmethod
     def update_size(
-        foo: Callable[Concatenate[_Text, P], T],
-    ) -> Callable[Concatenate[_Text, P], T]:
-        def size_updating_method(self: _Text, *args: P.args, **kwargs: P.kwargs):
+        foo: Callable[Concatenate[_Text, _P], _T],
+    ) -> Callable[Concatenate[_Text, _P], _T]:
+        def size_updating_method(self: _Text, *args: _P.args, **kwargs: _P.kwargs):
             global fonts
             r = foo(self, *args, **kwargs)
 
@@ -55,6 +60,11 @@ class Text(Element):
             self._width = width
             self._height = ascent - offset_y
 
+            if hasattr(self, "shape"):
+                del self.shape
+            if hasattr(self, "global_shape"):
+                del self.global_shape
+
             return r
 
         return size_updating_method
@@ -63,28 +73,19 @@ class Text(Element):
     def __init__(
         self,
         text: str,
-        *,
-        font_size: float | ConfigurationDeference = DEFER_TO_CONFIG,
-        font_family: str | ConfigurationDeference = DEFER_TO_CONFIG,
-        fill: Color | ConfigurationDeference = DEFER_TO_CONFIG,
-        **kwargs,
     ):
-        font_size = cast(
-            float, config.text_font_size if font_size is DEFER_TO_CONFIG else font_size
-        )
-        font_family = cast(
-            str,
-            config.text_font_family if font_family is DEFER_TO_CONFIG else font_family,
-        )
-        fill = cast(Color, config.text_fill if fill is DEFER_TO_CONFIG else fill)
 
         self._text: str = text
-        self._font_size: float = font_size
-        self._font_family: str = font_family
+        self._font_size: float = config.text_font_size
+        self._font_family: str = config.text_font_family
+
+        # Initialized by the wrapper returned by "update_size"
         self._width: float
         self._height: float
 
-        super().__init__(fill=fill, **kwargs)
+        super().__init__()
+
+        self.set_fill(config.text_fill)
 
     @property
     def font_family(self) -> str:
@@ -118,46 +119,25 @@ class Text(Element):
     def font_size(self, value: float):
         self._font_size = value
 
-    @property
-    def top_left(self) -> Vec2:
-        return Vec2(0, -self.height)
 
-    @property
-    def width(self) -> float:
+    def calculate_top_left(self) -> Vec2:
+        return Vec2(0, -self._height)
+    def calculate_width(self) -> float:
         return self._width
-
-    @property
-    def height(self) -> float:
+    def calculate_height(self) -> float:
         return self._height
 
     def draw_self(self):
         x, y = self.anchor_offset
-        return (
-            svg.Text(
-                x=x,
-                y=y,
-                text=xml_escape(self.text),
-                transform=self.global_transform.svg_transform,  # type: ignore
-                font_size=self.font_size,
-                font_family=self.font_family,
-                font_style="normal",
-                fill=self.fill.svg_rgb,
-                fill_opacity=self.fill.opacity,
-                opacity=self.global_opacity,
-            ).as_str()
-            + "<text/>"
-        )  # The extra tag is to skirt a bug in the rendering of the SVG
-
-
-def get_multiline_texts(text: str, font_size: float, **kwargs) -> Text:
-    head = None
-    for i, line in enumerate(text.split("\n")):
-        text_obj = Text(text=line, font_size=font_size, **kwargs).set_transform(
-            Transform([0, i * font_size])
-        )
-        if i == 0:
-            head = text_obj
-        else:
-            text_obj.set_parent(head)
-
-    return head
+        return f"""\
+<text \
+x="{x}" \
+y="{y}" \
+transform="{self.global_transform.svg_transform}" \
+font-size="{self.font_size}" \
+font-family="{self.font_family}" \
+font-style="normal" \
+fill="{self.fill.rgb}" \
+fill-opacity="{self.fill.opacity}" \
+opacity="{self.global_opacity}"\
+>{self.text}</text><text/>""" # The extra tag is to skirt a bug in the rendering of the SVG

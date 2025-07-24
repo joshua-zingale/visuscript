@@ -6,10 +6,10 @@ from .element import (
     Image,
 )
 from .mixins.color import Color
-# from .text import Text
+from .text import Text
 # from .code import PythonText
 
-# from .scene import Scene
+from .scene import Scene
 
 # from .connector import (
 #     Line,
