@@ -52,7 +52,7 @@ class Organizer(ABC):
 class GridOrganizer(Organizer):
     """GridOrganizer arranges its output Transform objects into a three dimensional grid."""
 
-    def __init__(self, shape: Collection[int], sizes: Collection[int]):
+    def __init__(self, shape: Collection[int], sizes: Collection[float]):
         if len(shape) == 2:
             shape = tuple(shape) + (1,)
         elif len(shape) == 3:
