@@ -1,7 +1,8 @@
-from visuscript.constants import Anchor, OutputFormat
-from visuscript.primatives import Color
 from typing import TypeAlias
 import sys
+
+from visuscript.constants import OutputFormat
+from visuscript.drawable.mixins.color import Color
 
 
 class _AnimationConfig:

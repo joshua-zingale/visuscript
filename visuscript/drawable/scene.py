@@ -1,20 +1,23 @@
 """This module contains Scene, which allows display of Drawable and animation thereof."""
-
-from visuscript.drawable.drawable import Drawable
+from visuscript.drawable.mixins import (
+    Color,
+    Drawable,
+    HasAnchor,
+    HasTransform,
+    )
 from visuscript.constants import Anchor, OutputFormat
 from visuscript.drawable.element import Rect
 from visuscript.updater import UpdaterBundle
 from visuscript.primatives import *
-from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
+from visuscript.config import config
 from typing import Iterable, Iterator
 from copy import copy
-import svg
 
 from visuscript.animation import AnimationBundle, Animation
 from visuscript.updater import Updater
 
 
-class Scene(Drawable):
+class Scene(Drawable, HasAnchor, HasTransform):
     """A Scene can display Drawable objects under various Animations and Updaters and provides functionality to output the composite image(s).
 
     A Scene can receive:
@@ -53,63 +56,32 @@ class Scene(Drawable):
     def __init__(
         self,
         print_initial=True,
-        drawables: list[Drawable] | None = None,
-        width: int | ConfigurationDeference = DEFER_TO_CONFIG,
-        height: int | ConfigurationDeference = DEFER_TO_CONFIG,
-        logical_width: int | ConfigurationDeference = DEFER_TO_CONFIG,
-        logical_height: int | ConfigurationDeference = DEFER_TO_CONFIG,
-        color: str | Color | ConfigurationDeference = DEFER_TO_CONFIG,
-        output_format: OutputFormat | ConfigurationDeference = DEFER_TO_CONFIG,
-        output_stream: ConfigurationDeference = DEFER_TO_CONFIG,
         **kwargs,
     ):
-        width = config.scene_width if width is DEFER_TO_CONFIG else width
-        height = config.scene_height if height is DEFER_TO_CONFIG else height
-        logical_width = (
-            config.scene_logical_width
-            if logical_width is DEFER_TO_CONFIG
-            else logical_width
-        )
-        logical_height = (
-            config.scene_logical_height
-            if logical_height is DEFER_TO_CONFIG
-            else logical_height
-        )
-        color = config.scene_color if color is DEFER_TO_CONFIG else color
-        output_format = (
-            config.scene_output_format
-            if output_format is DEFER_TO_CONFIG
-            else output_format
-        )
-        output_stream = (
-            config.scene_output_stream
-            if output_stream is DEFER_TO_CONFIG
-            else output_stream
-        )
+        super().__init__(**kwargs)
+
+        self._width = config.scene_width
+        self._height = config.scene_height
+        self._logical_width = config.scene_logical_width
+        self._logical_height = config.scene_logical_height
+        self._logical_scaling = self._width / self._logical_width
 
         assert (
-            width / height == logical_width / logical_height
-            and width / logical_width == height / logical_height
+            self._width / self._height == self._logical_width / self._logical_height
+            and self._width / self._logical_width == self._height / self._logical_height
         )
 
-        super().__init__(**kwargs)
-        self._width = width
-        self._height = height
-        self._logical_width = logical_width
-        self._logical_height = logical_height
-        self._logical_scaling = width / logical_width
+        self._drawables: list[Drawable] = []
+        self.color: Color = config.scene_color
 
-        self._drawables: list[Drawable] = [] if drawables is None else list(drawables)
-        self.color: Color = Color(color)
-
-        self._output_format = output_format
-        self._output_stream = output_stream
+        self._output_format = config.scene_output_format
+        self._output_stream = config.scene_output_stream
         self._print_initial = print_initial
         self._animation_bundle: AnimationBundle = AnimationBundle()
         self._player = _Player(self)
 
         self._original_drawables = []
-        self._original_updater_bundles = []  # Track updater bundles for context manager
+        self._original_updater_bundles = []
 
         self._updater_bundle: UpdaterBundle = UpdaterBundle()
         self._number_of_frames_animated: int = 0
@@ -172,16 +144,16 @@ class Scene(Drawable):
         horizontal/vertical dimension from left to right/top to bottom."""
         return Vec2(self.x(x_percentage), self.y(y_percentage))
 
-    @property
-    def top_left(self) -> Vec2:
+
+    def calculate_top_left(self) -> Vec2:
         return Vec2(0, 0)
 
-    @property
-    def width(self) -> float:
+
+    def calculate_width(self) -> float:
         return self._logical_width
 
-    @property
-    def height(self) -> float:
+
+    def calculate_height(self) -> float:
         return self._logical_height
 
     @property
@@ -201,31 +173,16 @@ class Scene(Drawable):
         )
 
         background = Rect(
-            width=self.width * self.logical_scaling,
-            height=self.height * self.logical_scaling,
-            fill=self.color,
-            stroke=self.color,
-            anchor=Anchor.TOP_LEFT,
-        )
-
-        # # removed deleted drawables
-        # self._drawables = list(filter(lambda x: not x.deleted, self._drawables))
-
-        return svg.SVG(
-            viewBox=svg.ViewBoxSpec(
-                0,
-                0,
-                self.width * self.logical_scaling,
-                self.height * self.logical_scaling,
-            ),
-            elements=[
-                background.draw(),
-                svg.G(
-                    elements=[drawable.draw() for drawable in self._drawables],
-                    transform=transform.svg_transform,
-                ),
-            ],
-        ).as_str()
+            width=self.shape.width * self.logical_scaling,
+            height=self.shape.height * self.logical_scaling,
+        ).set_fill(self.color).set_stroke(self.color).set_anchor(Anchor.TOP_LEFT)
+        view_width = self.shape.width * self.logical_scaling
+        view_height = self.shape.height * self.logical_scaling
+        return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {view_width} {view_height}">\
+{background.draw()}\
+<g transform="{transform.svg_transform}">\
+{" ".join([drawable.draw() for drawable in self._drawables])}\
+</g></svg>"""
 
     def print(self):
         """Prints one frame with the current state hereof."""
@@ -239,7 +196,7 @@ class Scene(Drawable):
         return len(self._original_drawables)
 
     @property
-    def animations(self) -> AnimationBundle:
+    def animations(self) -> "_AnimationManager":
         """The :class:`~visuscript.animation.Animation` instances stored herein to be run
         the next time this :class:`Scene`'s frames are printed."""
         if self._embed_level == 0:
@@ -346,7 +303,7 @@ class _AnimationManager:
         self._animation_bundle = animation_bundle
         self._updater_bundle = updater_bundle
 
-    def push(self, animation: Animation | Iterable[Updater], _call_method="push"):
+    def push(self, animation: Animation | Iterable[Animation], _call_method="push"):
         """Adds an animation after checking for conflicts with updaters."""
         if Animation is None:
             return
@@ -362,7 +319,7 @@ class _AnimationManager:
                 f"'{_call_method}' is only implemented for types Updater and Iterable[Animation], not for '{type(animation)}'"
             )
 
-    def __lshift__(self, other: Updater | Iterable[Updater]):
+    def __lshift__(self, other: Animation | Iterable[Animation]):
         """See :func:_AnimationManager.push"""
         self.push(other, _call_method="<<")
 

@@ -7,10 +7,9 @@ from visuscript._internal._constructors import construct_vec3
 from .animation import AlphaAnimation
 from visuscript.property_locker import PropertyLocker
 
-from visuscript.primatives import Transform, Color, Rgb, Vec2, Vec3
-
-
-from visuscript.drawable import Element
+from visuscript.primatives import Transform, Rgb, Vec2, Vec3
+from visuscript.drawable import Color
+from visuscript.drawable.mixins import HasOpacity, HasTransform, HasRgb
 
 
 class NotInterpolableError(ValueError):
@@ -45,7 +44,7 @@ class PropertyAnimation(AlphaAnimation, Generic[T]):
                 else deepcopy(initial)
             )
 
-    def __init_locker__(
+    def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
         self,
         *,
         obj: T,
@@ -53,7 +52,7 @@ class PropertyAnimation(AlphaAnimation, Generic[T]):
         properties: list[str],
         initials: list[InterpolableLike | None],
         **kwargs,
-    ):  # type: ignore[reportIncompatibleMethodOverride]
+    ):  
         return PropertyLocker({obj: properties})
 
     def update(self, alpha: float):
@@ -79,13 +78,13 @@ class TranslationAnimation(PropertyAnimation[Transform]):
             **kwargs,
         )
 
-    def __init_locker__(
+    def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
         self,
         transform: Transform,
         target_translation: Vec2 | list,
         initial_translation: Vec2 | Vec3 | None = None,
         **kwargs,
-    ):  # type: ignore[reportIncompatibleMethodOverride]
+    ):  
         return PropertyLocker({transform: ["translation"]})
 
 
@@ -105,13 +104,13 @@ class ScaleAnimation(PropertyAnimation[Transform]):
             **kwargs,
         )
 
-    def __init_locker__(
+    def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
         self,
         transform: Transform,
         target_scale: float | Vec3 | list,
         initial_scale: int | float | Vec2 | Vec3 | None = None,
         **kwargs,
-    ):  # type: ignore[reportIncompatibleMethodOverride]
+    ):
         return PropertyLocker({transform: ["scale"]})
 
 
@@ -131,13 +130,13 @@ class RotationAnimation(PropertyAnimation[Transform]):
             **kwargs,
         )
 
-    def __init_locker__(
+    def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
         self,
         transform: Transform,
         target_rotation: float,
         initial_rotation: int | float | None = None,
         **kwargs,
-    ):  # type: ignore[reportIncompatibleMethodOverride]
+    ):
         return PropertyLocker({transform: ["rotation"]})
 
 
@@ -149,6 +148,7 @@ class TransformAnimation(PropertyAnimation[Transform]):
         initial_transform: Transform | None = None,
         **kwargs,
     ):
+        initials: list[InterpolableLike | None]
         if initial_transform:
             initials = [
                 initial_transform.translation,
@@ -169,20 +169,20 @@ class TransformAnimation(PropertyAnimation[Transform]):
             **kwargs,
         )
 
-    def __init_locker__(
+    def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
         self,
         transform: Transform,
         target_transform: Transform,
         initial_transform: Transform | None = None,
         **kwargs,
-    ):  # type: ignore[reportIncompatibleMethodOverride]
+    ):
         return PropertyLocker({transform: ["translation", "scale", "rotation"]})
 
 
-class OpacityAnimation(PropertyAnimation[Color | Element]):
+class OpacityAnimation(PropertyAnimation[HasOpacity]):
     def __init__(
         self,
-        color: Color | Element,
+        color: HasOpacity,
         target_opacity: float,
         initial_opacity: float | None = None,
         **kwargs,
@@ -195,28 +195,29 @@ class OpacityAnimation(PropertyAnimation[Color | Element]):
             **kwargs,
         )
 
-    def __init_locker__(
+    def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
         self,
-        color: Color | Element,
+        color: HasOpacity,
         target_opacity: float,
         initial_opacity: float | None = None,
         **kwargs,
-    ):  # type: ignore[reportIncompatibleMethodOverride]
+    ):
         return PropertyLocker({color: ["opacity"]})
 
 
-class RgbAnimation(PropertyAnimation[Color]):
+class RgbAnimation(PropertyAnimation[HasRgb]):
     def __init__(
         self,
-        color: Color,
-        target_rgb: Rgb,
-        initial_rgb: Rgb | str | None = None,
+        color: HasRgb,
+        target_rgb: Rgb._RgbLike,
+        initial_rgb: Rgb._RgbLike | None = None,
         **kwargs,
     ):
-        if isinstance(target_rgb, str):
-            target_rgb = Color.PALETTE[target_rgb]
-        if isinstance(initial_rgb, str):
-            initial_rgb = Color.PALETTE[initial_rgb]
+
+        target_rgb = Color(target_rgb).rgb
+        if initial_rgb is not None:
+            initial_rgb = Color(initial_rgb).rgb
+
         super().__init__(
             obj=color,
             properties=["rgb"],
@@ -225,11 +226,11 @@ class RgbAnimation(PropertyAnimation[Color]):
             **kwargs,
         )
 
-    def __init_locker__(
+    def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
         self,
-        color: Color,
-        target_rgb: Rgb,
-        initial_rgb: Rgb | str | None = None,
+        color: HasRgb,
+        target_rgb: Rgb._RgbLike,
+        initial_rgb: Rgb._RgbLike | None = None,
         **kwargs,
-    ):  # type: ignore[reportIncompatibleMethodOverride]
+    ):
         return PropertyLocker({color: ["rgb"]})
