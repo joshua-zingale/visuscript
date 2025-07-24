@@ -454,6 +454,3 @@ class Shape:
             top_left + [width / 2, height / 2]
         )
         """The center coordinate of the object's rectangular circumscription."""
-
-
-class DrawableWithTransform(Drawable, HasTransform): pass

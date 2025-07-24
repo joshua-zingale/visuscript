@@ -155,7 +155,7 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
         return self
 
     @classmethod
-    def lazy(cls, *args, **kwargs):
+    def lazy(cls, *args, **kwargs) -> Self:
         """A constructor for a lazy version of this :class:`Animation`,
         in which the constructor is not called until the first advance.
 

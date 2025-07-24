@@ -1,4 +1,4 @@
-from visuscript.drawable.element import Element
+from visuscript.drawable.mixins import HierarchicalDrawable, HasAnchor
 from visuscript.primatives import Vec2
 from pygments import highlight
 from pygments.lexers import PythonLexer as _PythonLexer
@@ -7,13 +7,22 @@ from pygments.styles import get_style_by_name as _get_style_by_name
 import re
 
 
-def get_all_code_blocks(filename):
+def get_all_code_blocks(filename) -> dict[int, str]:
+    """Gets all marked codeblocks in a given file.
+
+    A codeblock is any segment of a text file that begins with "##N",
+    where "N" is a non-negative integer like "0", "49", or "103",
+    and that ends with "##"
+
+    :param filename: The file in which code blocks are found.
+    :return: A dictionary mapping the id of each codeblock to the text thereof.
+    """    
     with open(filename, "r") as f:
         code = f.read()
     pattern = r"##(\d+)(.*?)##"
     matches = re.findall(pattern, code, re.DOTALL)
 
-    segments_dict = {}
+    segments_dict: dict[int, str] = {}
     for x_str, segment_content in matches:
         x = int(x_str)
         full_segment = f"{segment_content}"
@@ -21,9 +30,9 @@ def get_all_code_blocks(filename):
     return segments_dict
 
 
-class PythonText(Element):
-    def __init__(self, text: str, *, font_size: float, style="monokai", **kwargs):
-        super().__init__(**kwargs)
+class PythonText(HierarchicalDrawable, HasAnchor):
+    def __init__(self, text: str, *, font_size: float, style="monokai"):
+        super().__init__()
         self._text = text
         self._font_size = font_size
         self._style = style
@@ -43,17 +52,14 @@ class PythonText(Element):
         return self._font_size * 1.357
 
     # TODO This width is slightly off: figure out what the problem is and fix it
-    @property
-    def width(self):
+    def calculate_width(self):
         return self._font_size * self._max_len / 2
 
-    # TODO This height may be slightly off is slightly off: figure out what the problem is and fix it
-    @property
-    def height(self):
+    # TODO This height may be slightly off: figure out what the problem is and fix it
+    def calculate_height(self):
         return self._spacing * (self._n_lines - 1) + self._font_size * 2
 
-    @property
-    def top_left(self):
+    def calculate_top_left(self):
         return Vec2(0, 0)
 
     def draw_self(self):

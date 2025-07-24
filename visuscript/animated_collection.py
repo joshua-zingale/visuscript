@@ -14,7 +14,7 @@ from visuscript.drawable.text import Text
 from visuscript.organizer import BinaryTreeOrganizer, Organizer, GridOrganizer
 from visuscript.drawable.element import Circle, Pivot, Rect
 from visuscript.primatives import Transform
-from visuscript.drawable.mixins import Drawable, DrawableWithTransform
+from visuscript.drawable.mixins import Drawable, HasTransform, HasTransformableShape
 from visuscript.math_utility import magnitude
 from visuscript.drawable.connector import Edges
 
@@ -28,6 +28,7 @@ from typing import (
     Any,
     Tuple,
     no_type_check,
+    overload
 )
 
 
@@ -160,16 +161,16 @@ class _AnimatedCollectionDrawable(Drawable):
         )
 
 
-# TODO Consider changing Element in all the below to Drawable.
-# Drawable would be sufficient for the ABC
+class CollectionDrawable(Drawable, HasTransformableShape): pass
+
 class AnimatedCollection(Collection[Var]):
     """Stores data in form of :class:`Var` instances alongside corresponding :class:`~visuscript.element.Element` instances
     and organizational functionality to transform the :class:`~visuscript.element.Element` instances according to the rules of the given :class:`AnimatedCollection`.
     """
 
     @abstractmethod
-    def element_for(self, var: Var) -> DrawableWithTransform:
-        """Returns the :class:`~visuscript.drawable.mixins.DrawableWithTransform` for a :class:`Var` stored in this collection."""
+    def element_for(self, var: Var) -> CollectionDrawable:
+        """Returns the :class:`CollectionDrawable` for a :class:`Var` stored in this collection."""
         ...
 
     @abstractmethod
@@ -192,7 +193,7 @@ class AnimatedCollection(Collection[Var]):
         return animation_bundle
 
     @property
-    def elements(self) -> Iterable[DrawableWithTransform]:
+    def elements(self) -> Iterable[CollectionDrawable]:
         """An iterable over the :class:`~visuscript.element.Element` instances managed by this collection
         that correspond to the :class:`Var` instances stored herein."""
         for var in self:
@@ -234,16 +235,15 @@ class AnimatedCollection(Collection[Var]):
 
 
 class AnimatedList(AnimatedCollection, MutableSequence[Var]):
-    def __init__(self, variables: Iterable = [], *, transform: Transform | None = None):
+    def __init__(self, variables: Iterable[Var] = [], *, transform: Transform | None = None):
         self._transform = Transform() if transform is None else Transform(transform)
-        variables = map(lambda v: v if isinstance(v, Var) else Var(v), variables)
         self._vars: list[Var] = []
-        self._elements: list[Element] = []
+        self._elements: list[CollectionDrawable] = []
         for var in variables:
             self.insert(len(self), var).finish()
 
     @property
-    def elements(self) -> list[Element]:
+    def elements(self) -> list[CollectionDrawable]:
         return list(self._elements)
 
     @property
@@ -251,7 +251,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         return self._transform
 
     @abstractmethod
-    def new_element_for(self, var: Var) -> Element:
+    def new_element_for(self, var: Var) -> CollectionDrawable:
         """Initializes and returns an :class:`~visuscript.element.Element` for a :class:`Var` newly inserted into this :class:`AnimatedList`."""
         ...
 
@@ -270,7 +270,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     def target_for(self, var: Var) -> Transform:
         return self._transform(self.organizer[self.is_index(var)])
 
-    def element_for(self, var: Var) -> Element:
+    def element_for(self, var: Var) -> CollectionDrawable:
         if var not in self._vars:
             raise ValueError(
                 f"Var {var} is not present in this {self.__class__.__name__}"
@@ -280,41 +280,49 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     def __len__(self):
         return len(self._vars)
 
+    @overload
+    def __getitem__(self, index: int) -> Var: ...
+    @overload
+    def __getitem__(self, index: slice) -> list[Var]: ...
     def __getitem__(self, index: int | slice):
         return self._vars[index]
 
-    def __setitem__(self, index: int | slice, value: Var):
-        if not isinstance(value, Var):
-            raise TypeError(
-                f"Cannot set value of type {type(value).__name__}: must be of type Var"
-            )
-        if self.is_contains(value):
-            raise ValueError(f"Cannot have the same Var in this AnimatedList twice.")
-        self._vars[index] = value
-        self._elements[index] = self.new_element_for(value)
+    @overload
+    def __setitem__(self, index: int, value: Var) -> None: ...
+    @overload
+    def __setitem__(self, index: slice, value: Iterable[Var]) -> None: ...
+
+    def __setitem__(self, index: int | slice, value: Var | Iterable[Var]) -> None:
+        if not isinstance(value, Iterable):
+            value = [value]
+        if not isinstance(index, slice):
+            index = slice(index, index+1, 1)
+
+        for idx, var in zip(range(index.start, index.stop, index.step), value):
+            if self.is_contains(var):
+                raise ValueError(f"Cannot have the same Var in this AnimatedList twice.")
+            self._vars[idx] = var
+            self._elements[idx] = self.new_element_for(var)
 
     def __delitem__(self, index: int | slice):
         del self._vars[index]
         del self._elements[index]
 
-    def insert(
+
+    def insert( # type: ignore
         self,
         index: int,
         value: Var,
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
-    ):
-        if not isinstance(value, Var):
-            raise TypeError(
-                f"Cannot insert value of type {type(value).__name__}: must be of type Var"
-            )
+    ) -> Animation:
         if self.is_contains(value):
             raise ValueError(f"Cannot have the same Var in this AnimatedList twice.")
         self._vars.insert(index, value)
         self._elements.insert(index, self.new_element_for(value))
         return self.organize(duration=duration)
 
-    def _swap(self, a, b):
+    def _swap(self, a: int | Var, b: int | Var):
         if isinstance(a, Var):
             a = self.is_index(a)
         if isinstance(b, Var):
@@ -360,7 +368,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         b: int | Var,
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
-    ) -> LazyAnimation:
+    ) -> Animation:
         """Swaps the :class:`Var` instances stored at the input indices.
 
         If :class:`Var` is used instead of an index, the index herein of :class:`Var` is used for the index.
@@ -407,12 +415,12 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
 
         return LazyAnimation(get_quadratic_swap)
 
-    def extend(
+    def extend( # type: ignore
         self,
-        values: Iterable,
+        values: Iterable[Var],
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
-    ) -> AnimationBundle:
+    ) -> Animation:
         super().extend(values)
         return self.organize(duration=duration)
 
@@ -443,7 +451,7 @@ class AnimatedBinaryTreeArray(AnimatedList):
         radius: float,
         level_heights: float | None = None,
         node_width: float | None = None,
-        **kwargs,
+        transform: Transform | None = None,
     ):
         self._radius = radius
         self.level_heights = level_heights or 3 * radius
@@ -452,7 +460,7 @@ class AnimatedBinaryTreeArray(AnimatedList):
         self._edges = Edges()
         self.add_auxiliary_element(self._edges)
 
-        super().__init__(variables, **kwargs)
+        super().__init__(variables, transform=transform)
 
     @property
     def edges(self):
@@ -466,7 +474,7 @@ class AnimatedBinaryTreeArray(AnimatedList):
             node_width=self.node_width,
         )
 
-    def new_element_for(self, var):
+    def new_element_for(self, var: Var) -> CollectionDrawable:
         if var.is_none:
             return Pivot()
         n = Circle(radius=self._radius).add_child(
@@ -545,10 +553,10 @@ class AnimatedArray(AnimatedList):
     def get_organizer(self):
         return GridOrganizer((1, len(self)), (self._font_size, self._font_size))
 
-    def new_element_for(self, var):
+    def new_element_for(self, var: Var) -> Text: # type: ignore
         return Text(f"{var.value}", font_size=self._font_size)
 
-    def insert(self, index, value, *, duration=DEFER_TO_CONFIG):
+    def insert(self, index: int, value: Var, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
         if len(self) == self._max_length:
             raise ValueError(
                 "Cannot insert a Var into an AnimatedArray that is already at its maximal length."
@@ -577,12 +585,21 @@ class AnimatedArray2D(AnimatedArray):
 
         return index[0] * self._shape[1] + index[1]
 
-    def __getitem__(self, index: int | slice | Tuple[int, int]):
+    @overload
+    def __getitem__(self, index: int) -> Var: ...
+    @overload
+    def __getitem__(self, index: slice) -> list[Var]: ...
+    def __getitem__(self, index: int | slice | Tuple[int, int]) -> Var | list[Var]:
         if isinstance(index, (int, slice)):
             return super()[index]
-        return super()[self._tuple_to_index[index]]
+        return super()[self._tuple_to_index(index)]
 
-    def insert(self, index, value, *, duration=DEFER_TO_CONFIG):
+    def insert(
+            self,
+            index: int | Tuple[int, int],
+            value: Var, *,
+            duration: float | ConfigurationDeference = DEFER_TO_CONFIG
+            ) -> Animation:
         if isinstance(index, Tuple):
             index = self._tuple_to_index(index)
         return super().insert(index, value, duration=duration)
