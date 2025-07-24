@@ -104,7 +104,7 @@ class GraphNode(Circle):
         return str(self)
 
 
-def get_graph_updater(nodes: set[GraphNode], edges: Edges):
+def get_graph_updater(nodes: list[GraphNode], edges: Edges):
     def graph_physics(t: float, dt: float, edges=edges):
         positions = {
             node: pos
@@ -179,7 +179,7 @@ def spring_force(loc1: Vec2, loc2: Vec2, length: float, constant: float):
     return unit * displacement * constant
 
 
-def get_velocity_mover(nodes: set[GraphNode]):
+def get_velocity_mover(nodes: list[GraphNode]):
     def velocity_mover(t: float, dt: float):
         for node in nodes:
             # print(node.velocity * dt)
@@ -192,8 +192,8 @@ def get_velocity_mover(nodes: set[GraphNode]):
     return velocity_mover
 
 
-def bfs(nodes: list[GraphNode], edges: Edges) -> Generator[GraphNode]:
-    queue = [(0, None, nodes[0])]
+def bfs(nodes: list[GraphNode], edges: Edges) -> Generator[tuple[int, None | GraphNode, GraphNode]]:
+    queue: list[tuple[int, GraphNode | None, GraphNode]] = [(0, None, nodes[0])]
     queued = set(nodes[0])
     while queue:
         distance, source, destination = queue.pop(0)

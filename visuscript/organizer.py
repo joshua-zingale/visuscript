@@ -1,4 +1,6 @@
-from visuscript.drawable.drawable import Drawable
+from visuscript.drawable.mixins import (
+    HasTransform
+    )
 from visuscript.primatives import Transform, Vec3
 from typing import Collection, Tuple, Self, Iterable, Iterator
 from abc import ABC, abstractmethod
@@ -35,7 +37,7 @@ class Organizer(ABC):
         for i in range(len(self)):
             yield self[i]
 
-    def organize(self, drawables: Iterable[Drawable | None]):
+    def organize(self, drawables: Iterable[HasTransform | None]):
         """
         Applies transformations to at most len(self) of the input drawables
 
@@ -71,8 +73,9 @@ class GridOrganizer(Organizer):
         return self._shape[0] * self._shape[1] * self._shape[2]
 
     def transform_for(
-        self, indices: int | Tuple[int, int] | Tuple[int, int, int]
+        self, index: int | Tuple[int, int] | Tuple[int, int, int]
     ) -> Transform:
+        indices = index
         if isinstance(indices, int):
             y = indices // (self._shape[2] * self._shape[1])
             x = (indices // self._shape[2]) % self._shape[1]

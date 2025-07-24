@@ -9,7 +9,7 @@ import svg
 from visuscript.primatives import *
 from visuscript.segment import Path
 from visuscript.drawable.mixins import HierarchicalDrawable, HasGlobalShape, HasAnchor, HasFill, HasStroke, HasOpacity
-
+from visuscript.constants import Anchor
 
 
 def get_base64_from_pil_image(pil_image: PILImage.Image) -> str:
@@ -85,21 +85,20 @@ class Image(HasGlobalShape, HierarchicalDrawable, HasAnchor):
         ).as_str()
 
 
-class Pivot(HierarchicalDrawable):
+class Pivot(HasGlobalShape, HierarchicalDrawable):
     """A Pivot is an Element with no display for itself.
 
     A Pivot can be used to construct more complex object by adding children."""
 
-    @property
-    def top_left(self):
+
+    def calculate_top_left(self):
         return Vec2(0, 0)
 
-    @property
-    def width(self) -> float:
+
+    def calculate_width(self) -> float:
         return 0.0
 
-    @property
-    def height(self) -> float:
+    def calculate_height(self) -> float:
         return 0.0
 
     def draw_self(self):
@@ -110,9 +109,10 @@ class Drawing(HasGlobalShape, HierarchicalDrawable, HasFill, HasStroke, HasAncho
     """A Drawing is an Element for which the self-display is defined by a Path."""
 
     def __init__(self, path: Path):
-        super().__init__()
-
         self._path: Path = path
+        super().__init__()
+        self.set_anchor(Anchor.DEFAULT)
+
 
     def point(self, length: float) -> Vec2:
         return self.transform(
@@ -192,3 +192,4 @@ class Rect(Drawing):
         super().__init__(
             Path().l(width, 0).l(0, height).l(-width, 0).Z()
             )
+        self.set_anchor(Anchor.CENTER)

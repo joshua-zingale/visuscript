@@ -10,7 +10,7 @@ class AnimationSequence(Animation):
     An AnimationSequence can be used to play multiple animation, one before another.
     """
 
-    def __init__(self, *animations: AnimationABC):
+    def __init__(self, *animations: AnimationABC | None):
         super().__init__()
         self._animations: list[AnimationABC] = []
         self._animation_index = 0
@@ -19,7 +19,7 @@ class AnimationSequence(Animation):
         for animation in animations:
             self.push(animation)
 
-    def __init_locker__(self, *animations: AnimationABC):
+    def __init_locker__(self, *animations: AnimationABC | None):
         locker = PropertyLocker()
         for animation in filter(None, animations):
             locker.update(animation.locker, ignore_conflicts=True)
@@ -38,7 +38,7 @@ class AnimationSequence(Animation):
 
     def push(
         self,
-        animation: AnimationABC | Iterable[AnimationABC],
+        animation: AnimationABC | Iterable[AnimationABC | None] | None,
         _call_method: str = "push",
     ):
         if animation is None:
@@ -54,7 +54,7 @@ class AnimationSequence(Animation):
                 f"'{_call_method}' is only implemented for types Animation and Iterable[Animation], not for '{type(animation)}'"
             )
 
-    def __lshift__(self, other: AnimationABC | Iterable[AnimationABC]):
+    def __lshift__(self, other: AnimationABC | Iterable[AnimationABC | None] | None):
         self.push(other, _call_method="<<")
 
 
@@ -64,14 +64,14 @@ class AnimationBundle(Animation):
     An AnimationBundle can be used to play multiple Animation concurrently.
     """
 
-    def __init__(self, *animations: AnimationABC):
+    def __init__(self, *animations: AnimationABC | None):
         super().__init__()
         self._animations: list[AnimationABC] = []
 
         for animation in animations:
             self.push(animation, _update_locker=False)
 
-    def __init_locker__(self, *animations: AnimationABC):
+    def __init_locker__(self, *animations: AnimationABC | None):
         locker = PropertyLocker()
         for animation in filter(None, animations):
             locker.update(animation.locker)
@@ -83,7 +83,7 @@ class AnimationBundle(Animation):
 
     def push(
         self,
-        animation: AnimationABC | Iterable[AnimationABC],
+        animation: AnimationABC | Iterable[AnimationABC | None] | None,
         _call_method: str = "push",
         _update_locker: bool = True,
     ):
@@ -107,6 +107,6 @@ class AnimationBundle(Animation):
                 f"'{_call_method}' is only implemented for types AnimationABC, Iterable[AnimationABC], and None, not for '{type(animation)}'"
             )
 
-    def __lshift__(self, other: AnimationABC | Iterable[AnimationABC]):
+    def __lshift__(self, other: AnimationABC | Iterable[AnimationABC] | None):
         """See :func:AnimationBundle.push"""
         self.push(other, _call_method="<<")

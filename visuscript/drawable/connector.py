@@ -1,5 +1,12 @@
-from visuscript.drawable.drawable import Drawable
-from visuscript.drawable.element import Drawing, Path, Element
+from visuscript.drawable.mixins import (
+    Drawable,
+    HasShape,
+    HasGlobalShape,
+    HasFill,
+    HasStroke,
+    HasOpacity
+    )
+from visuscript.drawable.element import Drawing, Path, Pivot
 from visuscript.primatives import Vec2
 from visuscript.constants import LineTarget
 from visuscript.config import *
@@ -18,7 +25,7 @@ from typing import Tuple, Callable, Iterable
 import itertools
 
 
-class Connector(Element):
+class Connector(Drawable, HasShape, HasFill, HasStroke, HasOpacity):
     """A connector visually connects one Element to another or one location to another."""
 
     POSITIVE = 1
@@ -27,35 +34,38 @@ class Connector(Element):
     def __init__(
         self,
         *,
-        source: Vec2 | Element,
-        destination: Vec2 | Element,
+        source: Vec2 | HasGlobalShape,
+        destination: Vec2 | HasGlobalShape,
         source_target: LineTarget = LineTarget.RADIAL,
         destination_target: LineTarget = LineTarget.RADIAL,
-        **kwargs,
     ):
-        super().__init__(anchor=Anchor.DEFAULT, **kwargs)
-        self._source = source
-        self._destination = destination
+        super().__init__()
+        if isinstance(source, Vec2):
+            source = Pivot().translate(*source)
+        if isinstance(destination, Vec2):
+            destination = Pivot().translate(*destination)
+        self._source: HasGlobalShape = source
+        self._destination: HasGlobalShape = destination
 
         self._source_target = source_target
         self._destination_target = destination_target
 
-    @property
-    def height(self) -> float:
+
+    def calculate_height(self) -> float:
         return abs(
             self._destination.global_shape.center[1]
             - self._source.global_shape.center[1]
         )
 
-    @property
-    def width(self) -> float:
+
+    def calculate_width(self) -> float:
         return abs(
             self._destination.global_shape.center[0]
             - self._source.global_shape.center[0]
         )
 
-    @property
-    def top_left(self) -> float:
+
+    def calculate_top_left(self) -> Vec2:
         return Vec2(
             min(
                 self._destination.global_shape.center[0],
@@ -74,21 +84,18 @@ class Connector(Element):
         return diff / max(magnitude(diff), eps)
 
     def _get_vec2(
-        self, vec2_or_element: Vec2 | Element, target: LineTarget, offset_sign: int
+        self, element: HasGlobalShape, target: LineTarget, offset_sign: int
     ):
-        if isinstance(vec2_or_element, Element):
-            if target == LineTarget.CENTER:
-                return vec2_or_element.global_shape.center
-            elif target == LineTarget.RADIAL:
-                center = vec2_or_element.global_shape.center
-                return (
-                    center
-                    + offset_sign
-                    * vec2_or_element.global_shape.circumscribed_radius
-                    * self._unit_between
-                )
-        else:
-            return Vec2(*vec2_or_element)
+        if target == LineTarget.CENTER:
+            return element.global_shape.center
+        elif target == LineTarget.RADIAL:
+            center = element.global_shape.center
+            return (
+                center
+                + offset_sign
+                * element.global_shape.circumscribed_radius
+                * self._unit_between
+            )
 
     @property
     def source(self) -> Vec2:
@@ -118,14 +125,14 @@ class Connector(Element):
             < distance
         )
 
-    def draw_self(self):
+    def draw(self):
         return self.get_connector(
             source=self.source,
             destination=self.destination,
             stroke=self.stroke,
             stroke_width=self.stroke_width,
             fill=self.fill,
-            opacity=self.global_opacity,
+            opacity=self.opacity,
             overlapped=self.overlapped,
         ).draw()
 
@@ -157,13 +164,13 @@ class Line(Connector):
         opacity: float,
         overlapped: bool,
     ) -> Drawing:
-        return Drawing(
-            path=Path().M(*source).L(*destination),
-            stroke=stroke,
-            stroke_width=stroke_width,
-            fill=fill,
-            opacity=0.0 if overlapped else opacity,
-        )
+        return (
+            Drawing(Path().M(*source).L(*destination))
+            .set_stroke(stroke)
+            .set_stroke_width(stroke_width)
+            .set_fill(fill)
+            .set_opacity(0.0 if overlapped else opacity)
+            )
 
 
 class Arrow(Connector):
@@ -172,24 +179,22 @@ class Arrow(Connector):
     def __init__(
         self,
         *,
-        start_size: float | ConfigurationDeference = DEFER_TO_CONFIG,
+        start_size: float = 0,
         end_size: float | ConfigurationDeference = DEFER_TO_CONFIG,
-        source: Vec2 | Element,
-        destination: Vec2 | Element,
+        source: Vec2 | HasGlobalShape,
+        destination: Vec2 | HasGlobalShape,
         source_target: LineTarget = LineTarget.RADIAL,
         destination_target: LineTarget = LineTarget.RADIAL,
-        **kwargs,
     ):
         super().__init__(
             source=source,
             destination=destination,
             source_target=source_target,
             destination_target=destination_target,
-            **kwargs,
         )
-        self._start_size = 0.0 if start_size is DEFER_TO_CONFIG else start_size
+        self._start_size = start_size
         self._end_size = (
-            config.element_stroke_width * 5 if end_size is DEFER_TO_CONFIG else end_size
+            config.element_stroke_width * 5 if isinstance(end_size, ConfigurationDeference) else end_size
         )
 
     def get_connector(
@@ -211,12 +216,7 @@ class Arrow(Connector):
         line_start = source + unit * self._start_size
         line_end = source + unit * (dist - self._end_size)
 
-        return Drawing(
-            stroke=stroke,
-            stroke_width=stroke_width,
-            fill=fill,
-            opacity=0.0 if overlapped else opacity,
-            path=(
+        return (Drawing((
                 Path()
                 .M(*source)
                 .L(*(line_start - ortho * self._start_size / 2))
@@ -231,6 +231,11 @@ class Arrow(Connector):
                 .L(*line_end)
             ),
         )
+        .set_stroke(stroke)
+        .set_stroke_width(stroke_width)
+        .set_fill(fill)
+        .set_opacity(0.0 if overlapped else opacity)        
+        )
 
 
 class ElementsAlreadyConnectedError(ValueError):
@@ -244,7 +249,7 @@ class ElementsNotConnectedError(ValueError):
 class Edges(Drawable):
     def __init__(self):
         super().__init__()
-        self._edges: dict[Tuple[Element, Element], Line] = dict()
+        self._edges: dict[Tuple[HasGlobalShape, HasGlobalShape], Line] = dict()
         self._fading_away: set[Line] = set()
 
     @property
@@ -260,7 +265,7 @@ class Edges(Drawable):
         return 0.0
 
     def connect_by_rule(
-        self, rule: Callable[[Element, Element], bool], elements: Iterable[Element]
+        self, rule: Callable[[HasGlobalShape, HasGlobalShape], bool], elements: Iterable[HasGlobalShape]
     ) -> Animation:
         bundle = AnimationBundle()
 
@@ -273,7 +278,7 @@ class Edges(Drawable):
 
         return bundle
 
-    def get_edge(self, element1: Element, element2: Element):
+    def get_edge(self, element1: HasGlobalShape, element2: HasGlobalShape):
         if not self.connected(element1, element2):
             raise ElementsNotConnectedError(
                 f"Elements {element1} and {element2} are not connected"
@@ -282,13 +287,13 @@ class Edges(Drawable):
             self._edges.get((element1, element2)) or self._edges[(element2, element1)]
         )
 
-    def connected(self, element1: Element, element2: Element):
+    def connected(self, element1: HasGlobalShape, element2: HasGlobalShape):
         return (element1, element2) in self._edges or (
             element2,
             element1,
         ) in self._edges
 
-    def connect(self, element1: Element, element2: Element):
+    def connect(self, element1: HasGlobalShape, element2: HasGlobalShape):
         if self.connected(element1, element2):
             raise ElementsAlreadyConnectedError(
                 f"Elements {element1} and {element2} are already connected"
@@ -301,7 +306,7 @@ class Edges(Drawable):
 
         return fade_in(edge)
 
-    def disconnect(self, element1: Element, element2: Element):
+    def disconnect(self, element1: HasGlobalShape, element2: HasGlobalShape):
         if not self.connected(element1, element2):
             raise ElementsNotConnectedError(
                 f"Elements {element1} and {element2} are not connected"
