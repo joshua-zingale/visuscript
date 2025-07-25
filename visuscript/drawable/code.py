@@ -1,4 +1,4 @@
-from visuscript.drawable.mixins import HierarchicalDrawable, HasAnchor
+from visuscript.drawable.mixins import HierarchicalDrawable, AnchorMixin
 from visuscript.primatives import Vec2
 from pygments import highlight
 from pygments.lexers import PythonLexer as _PythonLexer
@@ -30,7 +30,7 @@ def get_all_code_blocks(filename) -> dict[int, str]:
     return segments_dict
 
 
-class PythonText(HierarchicalDrawable, HasAnchor):
+class PythonText(HierarchicalDrawable, AnchorMixin):
     def __init__(self, text: str, *, font_size: float, style="monokai"):
         super().__init__()
         self._text = text

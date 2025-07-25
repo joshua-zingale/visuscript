@@ -2,8 +2,8 @@
 from visuscript.drawable.mixins import (
     Color,
     Drawable,
-    HasAnchor,
-    HasTransform,
+    AnchorMixin,
+    TransformMixin,
     )
 from visuscript.constants import Anchor, OutputFormat
 from visuscript.drawable.element import Rect
@@ -17,7 +17,7 @@ from visuscript.animation import AnimationBundle, Animation
 from visuscript.updater import Updater
 
 
-class Scene(Drawable, HasAnchor, HasTransform):
+class Scene(Drawable, AnchorMixin, TransformMixin):
     """A Scene can display Drawable objects under various Animations and Updaters and provides functionality to output the composite image(s).
 
     A Scene can receive:

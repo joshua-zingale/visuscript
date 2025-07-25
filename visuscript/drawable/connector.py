@@ -1,10 +1,10 @@
 from visuscript.drawable.mixins import (
     Drawable,
-    HasShape,
-    HasGlobalShape,
-    HasFill,
-    HasStroke,
-    HasOpacity
+    ShapeMixin,
+    GlobalShapeMixin,
+    FillMixin,
+    StrokeMixin,
+    OpacityMixin
     )
 from visuscript.drawable.element import Drawing, Path, Pivot
 from visuscript.primatives import Vec2
@@ -25,7 +25,7 @@ from typing import Tuple, Callable, Iterable
 import itertools
 
 
-class Connector(Drawable, HasShape, HasFill, HasStroke, HasOpacity):
+class Connector(Drawable, ShapeMixin, FillMixin, StrokeMixin, OpacityMixin):
     """A connector visually connects one Element to another or one location to another."""
 
     POSITIVE = 1
@@ -34,8 +34,8 @@ class Connector(Drawable, HasShape, HasFill, HasStroke, HasOpacity):
     def __init__(
         self,
         *,
-        source: Vec2 | HasGlobalShape,
-        destination: Vec2 | HasGlobalShape,
+        source: Vec2 | GlobalShapeMixin,
+        destination: Vec2 | GlobalShapeMixin,
         source_target: LineTarget = LineTarget.RADIAL,
         destination_target: LineTarget = LineTarget.RADIAL,
     ):
@@ -44,8 +44,8 @@ class Connector(Drawable, HasShape, HasFill, HasStroke, HasOpacity):
             source = Pivot().translate(*source)
         if isinstance(destination, Vec2):
             destination = Pivot().translate(*destination)
-        self._source: HasGlobalShape = source
-        self._destination: HasGlobalShape = destination
+        self._source: GlobalShapeMixin = source
+        self._destination: GlobalShapeMixin = destination
 
         self._source_target = source_target
         self._destination_target = destination_target
@@ -84,7 +84,7 @@ class Connector(Drawable, HasShape, HasFill, HasStroke, HasOpacity):
         return diff / max(magnitude(diff), eps)
 
     def _get_vec2(
-        self, element: HasGlobalShape, target: LineTarget, offset_sign: int
+        self, element: GlobalShapeMixin, target: LineTarget, offset_sign: int
     ):
         if target == LineTarget.CENTER:
             return element.global_shape.center
@@ -181,8 +181,8 @@ class Arrow(Connector):
         *,
         start_size: float = 0,
         end_size: float | ConfigurationDeference = DEFER_TO_CONFIG,
-        source: Vec2 | HasGlobalShape,
-        destination: Vec2 | HasGlobalShape,
+        source: Vec2 | GlobalShapeMixin,
+        destination: Vec2 | GlobalShapeMixin,
         source_target: LineTarget = LineTarget.RADIAL,
         destination_target: LineTarget = LineTarget.RADIAL,
     ):
@@ -249,7 +249,7 @@ class ElementsNotConnectedError(ValueError):
 class Edges(Drawable):
     def __init__(self):
         super().__init__()
-        self._edges: dict[Tuple[HasGlobalShape, HasGlobalShape], Line] = dict()
+        self._edges: dict[Tuple[GlobalShapeMixin, GlobalShapeMixin], Line] = dict()
         self._fading_away: set[Line] = set()
 
     @property
@@ -265,7 +265,7 @@ class Edges(Drawable):
         return 0.0
 
     def connect_by_rule(
-        self, rule: Callable[[HasGlobalShape, HasGlobalShape], bool], elements: Iterable[HasGlobalShape]
+        self, rule: Callable[[GlobalShapeMixin, GlobalShapeMixin], bool], elements: Iterable[GlobalShapeMixin]
     ) -> Animation:
         bundle = AnimationBundle()
 
@@ -278,7 +278,7 @@ class Edges(Drawable):
 
         return bundle
 
-    def get_edge(self, element1: HasGlobalShape, element2: HasGlobalShape):
+    def get_edge(self, element1: GlobalShapeMixin, element2: GlobalShapeMixin):
         if not self.connected(element1, element2):
             raise ElementsNotConnectedError(
                 f"Elements {element1} and {element2} are not connected"
@@ -287,13 +287,13 @@ class Edges(Drawable):
             self._edges.get((element1, element2)) or self._edges[(element2, element1)]
         )
 
-    def connected(self, element1: HasGlobalShape, element2: HasGlobalShape):
+    def connected(self, element1: GlobalShapeMixin, element2: GlobalShapeMixin):
         return (element1, element2) in self._edges or (
             element2,
             element1,
         ) in self._edges
 
-    def connect(self, element1: HasGlobalShape, element2: HasGlobalShape):
+    def connect(self, element1: GlobalShapeMixin, element2: GlobalShapeMixin):
         if self.connected(element1, element2):
             raise ElementsAlreadyConnectedError(
                 f"Elements {element1} and {element2} are already connected"
@@ -306,7 +306,7 @@ class Edges(Drawable):
 
         return fade_in(edge)
 
-    def disconnect(self, element1: HasGlobalShape, element2: HasGlobalShape):
+    def disconnect(self, element1: GlobalShapeMixin, element2: GlobalShapeMixin):
         if not self.connected(element1, element2):
             raise ElementsNotConnectedError(
                 f"Elements {element1} and {element2} are not connected"

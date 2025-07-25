@@ -8,7 +8,7 @@ import svg
 
 from visuscript.primatives import *
 from visuscript.segment import Path
-from visuscript.drawable.mixins import HierarchicalDrawable, HasGlobalShape, HasAnchor, HasFill, HasStroke, HasOpacity
+from visuscript.drawable.mixins import HierarchicalDrawable, GlobalShapeMixin, AnchorMixin, FillMixin, StrokeMixin, OpacityMixin
 from visuscript.constants import Anchor
 
 
@@ -26,7 +26,7 @@ def get_base64_from_pil_image(pil_image: PILImage.Image) -> str:
     return img_str
 
 
-class Image(HasGlobalShape, HierarchicalDrawable, HasAnchor):
+class Image(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin):
     @no_type_check
     def __init__(
         self,
@@ -85,7 +85,7 @@ class Image(HasGlobalShape, HierarchicalDrawable, HasAnchor):
         ).as_str()
 
 
-class Pivot(HasGlobalShape, HierarchicalDrawable):
+class Pivot(GlobalShapeMixin, HierarchicalDrawable):
     """A Pivot is an Element with no display for itself.
 
     A Pivot can be used to construct more complex object by adding children."""
@@ -105,7 +105,7 @@ class Pivot(HasGlobalShape, HierarchicalDrawable):
         return ""
 
 
-class Drawing(HasGlobalShape, HierarchicalDrawable, HasFill, HasStroke, HasAnchor, HasOpacity):
+class Drawing(GlobalShapeMixin, HierarchicalDrawable, FillMixin, StrokeMixin, AnchorMixin, OpacityMixin):
     """A Drawing is an Element for which the self-display is defined by a Path."""
 
     def __init__(self, path: Path):
@@ -151,7 +151,7 @@ opacity="{self.global_opacity}"\
 
 
 # TODO Make Circle a Drawing by adding a Path that approximates the circle
-class Circle(HasGlobalShape, HierarchicalDrawable, HasFill, HasStroke, HasAnchor, HasOpacity):
+class Circle(GlobalShapeMixin, HierarchicalDrawable, FillMixin, StrokeMixin, AnchorMixin, OpacityMixin):
     """A Circle"""
 
     def __init__(self, radius: float):

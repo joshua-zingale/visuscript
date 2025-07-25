@@ -7,9 +7,9 @@ from visuscript.constants import Anchor
 from visuscript.primatives import Transform, Vec3, Vec2, Rgb
 from visuscript._internal._invalidator import Invalidatable
 from visuscript.config import config
-from .color import Color, HasOpacity, HasRgb
+from .color import Color, OpacityMixin, RgbMixin
 
-class HasTransform:
+class TransformMixin:
     def __init__(self):
         super().__init__()
         self._transform = Transform()
@@ -54,7 +54,7 @@ class HasTransform:
         return self
     
 
-class HasFill:
+class FillMixin:
     def __init__(self):
         super().__init__()
         self._fill = Color(config.element_fill)
@@ -74,7 +74,7 @@ class HasFill:
         self._fill.opacity = color.opacity
         return self
     
-class HasStroke:
+class StrokeMixin:
     def __init__(self):
         super().__init__()
         self._stroke = Color(config.element_stroke)
@@ -108,7 +108,7 @@ class HasStroke:
         return self
 
 
-class HasShape(ABC):
+class ShapeMixin(ABC):
     @abstractmethod
     def calculate_top_left(self) -> Vec2:
         """Returns the un-transformed top-left (x,y) coordinate for this object's `:class:Shape`."""
@@ -132,7 +132,7 @@ class HasShape(ABC):
         """The un-transformed Shape for this object."""
         return Shape(self)
     
-class HasTransformableShape(HasShape, HasTransform):
+class TransformableShapeMixin(ShapeMixin, TransformMixin):
     @cached_property
     def transformed_shape(self):
         """The Shape for this Drawable when it has been transformed by its Transform."""
@@ -142,7 +142,7 @@ class HasTransformableShape(HasShape, HasTransform):
         if hasattr(self, "transformed_shape"):
             del self.transformed_shape
 
-class HasAnchor(HasShape):
+class AnchorMixin(ShapeMixin):
     def __init__(self):
         super().__init__()
         self._anchor: Anchor = Anchor.CENTER
@@ -159,12 +159,12 @@ class HasAnchor(HasShape):
 
         self._anchor = anchor
 
-        if isinstance(self, HasTransform) and keep_position:
+        if isinstance(self, TransformMixin) and keep_position:
             self.translate(*old_anchor_offset - self.anchor_offset)
             # Invalidate shapes
             if hasattr(self, "shape"):
                 del self.shape
-            if isinstance(self, HasTransformableShape) and hasattr(self, "transformed_shape"):
+            if isinstance(self, TransformableShapeMixin) and hasattr(self, "transformed_shape"):
                 del self.transformed_shape
         return self
 
@@ -204,7 +204,7 @@ class Drawable(ABC):
         ...
 
 
-class HierarchicalDrawable(Drawable, HasTransform, HasOpacity, Iterable["HierarchicalDrawable"], Invalidatable):
+class HierarchicalDrawable(Drawable, TransformMixin, OpacityMixin, Iterable["HierarchicalDrawable"], Invalidatable):
     def __init__(self):
         super().__init__()
         self._children: list[HierarchicalDrawable] = []
@@ -386,7 +386,7 @@ class HierarchicalDrawable(Drawable, HasTransform, HasOpacity, Iterable["Hierarc
         return "".join(map(lambda element: element.draw_self(), self))
 
 
-class HasGlobalShape(HierarchicalDrawable, HasTransformableShape):
+class GlobalShapeMixin(HierarchicalDrawable, TransformableShapeMixin):
     def _invalidate(self):
         super()._invalidate()
         if hasattr(self, "global_shape"):
@@ -395,16 +395,19 @@ class HasGlobalShape(HierarchicalDrawable, HasTransformableShape):
     def global_shape(self):
         return Shape(self, self.global_transform)
 
+
+class Element(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin, StrokeMixin): pass
+
 class Shape:
     """Holds geometric properties for an object."""
 
-    def __init__(self, obj: HasShape, transform: Transform = Transform()):
+    def __init__(self, obj: ShapeMixin, transform: Transform = Transform()):
         """
         :param obj: The object for which to initialize a :class:`Shape`.
         :param transform: Applies this transform to the :class:`Shape` of obj, defaults to Transform()
         """
 
-        top_left = obj.calculate_top_left() + (obj.anchor_offset if isinstance(obj, HasAnchor) else 0)
+        top_left = obj.calculate_top_left() + (obj.anchor_offset if isinstance(obj, AnchorMixin) else 0)
         width = obj.calculate_width()
         height = obj.calculate_height()
         circumscribed_radius = obj.calculate_circumscribed_radius()

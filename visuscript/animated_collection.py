@@ -14,7 +14,7 @@ from visuscript.drawable.text import Text
 from visuscript.organizer import BinaryTreeOrganizer, Organizer, GridOrganizer
 from visuscript.drawable.element import Circle, Pivot, Rect
 from visuscript.primatives import Transform
-from visuscript.drawable.mixins import Drawable, HasTransform, HasTransformableShape
+from visuscript.drawable.mixins import Drawable, Shape
 from visuscript.math_utility import magnitude
 from visuscript.drawable.connector import Edges
 
@@ -28,7 +28,10 @@ from typing import (
     Any,
     Tuple,
     no_type_check,
-    overload
+    overload,
+    TypeVar,
+    Generic,
+    Protocol,
 )
 
 
@@ -150,8 +153,12 @@ NilVar = Var(None)
 """A :class:`Var` representing no value."""
 
 
+
+
+T = TypeVar("T", bound=CollectionDrawable)
+
 class _AnimatedCollectionDrawable(Drawable):
-    def __init__(self, animated_collection: "AnimatedCollection"):
+    def __init__(self, animated_collection: "AnimatedCollection[T]"):
         super().__init__()
         self._animated_collection = animated_collection
 
@@ -159,17 +166,13 @@ class _AnimatedCollectionDrawable(Drawable):
         return "".join(
             element.draw() for element in self._animated_collection.all_elements
         )
-
-
-class CollectionDrawable(Drawable, HasTransformableShape): pass
-
-class AnimatedCollection(Collection[Var]):
+class AnimatedCollection(Generic[T], Collection[Var]):
     """Stores data in form of :class:`Var` instances alongside corresponding :class:`~visuscript.element.Element` instances
     and organizational functionality to transform the :class:`~visuscript.element.Element` instances according to the rules of the given :class:`AnimatedCollection`.
     """
 
     @abstractmethod
-    def element_for(self, var: Var) -> CollectionDrawable:
+    def element_for(self, var: Var) -> T:
         """Returns the :class:`CollectionDrawable` for a :class:`Var` stored in this collection."""
         ...
 
@@ -193,7 +196,7 @@ class AnimatedCollection(Collection[Var]):
         return animation_bundle
 
     @property
-    def elements(self) -> Iterable[CollectionDrawable]:
+    def elements(self) -> Iterable[T]:
         """An iterable over the :class:`~visuscript.element.Element` instances managed by this collection
         that correspond to the :class:`Var` instances stored herein."""
         for var in self:
@@ -234,16 +237,16 @@ class AnimatedCollection(Collection[Var]):
         return self
 
 
-class AnimatedList(AnimatedCollection, MutableSequence[Var]):
+class AnimatedList(AnimatedCollection[T], MutableSequence[Var]):
     def __init__(self, variables: Iterable[Var] = [], *, transform: Transform | None = None):
         self._transform = Transform() if transform is None else Transform(transform)
         self._vars: list[Var] = []
-        self._elements: list[CollectionDrawable] = []
+        self._elements: list[T] = []
         for var in variables:
             self.insert(len(self), var).finish()
 
     @property
-    def elements(self) -> list[CollectionDrawable]:
+    def elements(self) -> list[T]:
         return list(self._elements)
 
     @property
@@ -251,7 +254,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         return self._transform
 
     @abstractmethod
-    def new_element_for(self, var: Var) -> CollectionDrawable:
+    def new_element_for(self, var: Var) -> T:
         """Initializes and returns an :class:`~visuscript.element.Element` for a :class:`Var` newly inserted into this :class:`AnimatedList`."""
         ...
 
@@ -270,7 +273,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
     def target_for(self, var: Var) -> Transform:
         return self._transform(self.organizer[self.is_index(var)])
 
-    def element_for(self, var: Var) -> CollectionDrawable:
+    def element_for(self, var: Var) -> T:
         if var not in self._vars:
             raise ValueError(
                 f"Var {var} is not present in this {self.__class__.__name__}"
@@ -443,7 +446,7 @@ class AnimatedList(AnimatedCollection, MutableSequence[Var]):
         return sum(map(lambda x: x is var, self)) > 0
 
 
-class AnimatedBinaryTreeArray(AnimatedList):
+class AnimatedBinaryTreeArray(AnimatedList[T]):
     def __init__(
         self,
         variables: Iterable[Var],
@@ -474,7 +477,7 @@ class AnimatedBinaryTreeArray(AnimatedList):
             node_width=self.node_width,
         )
 
-    def new_element_for(self, var: Var) -> CollectionDrawable:
+    def new_element_for(self, var: Var) -> T:
         if var.is_none:
             return Pivot()
         n = Circle(radius=self._radius).add_child(
@@ -539,7 +542,7 @@ class AnimatedBinaryTreeArray(AnimatedList):
         return map(lambda x: not x.is_none, [self.get_left(var), self.get_right(var)])
 
 
-class AnimatedArray(AnimatedList):
+class AnimatedArray(AnimatedList[Text]):
     def __init__(self, variables: Iterable[Var], font_size: float, *args, **kwargs):
         variables = list(variables)
         self._max_length = len(variables)
@@ -564,7 +567,7 @@ class AnimatedArray(AnimatedList):
         return super().insert(index, value, duration=duration)
 
 
-class AnimatedArray2D(AnimatedArray):
+class AnimatedArray2D(AnimatedArray[T]):
     def __init__(
         self,
         variables: Iterable[Var],

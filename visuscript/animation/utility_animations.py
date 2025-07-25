@@ -1,22 +1,22 @@
 from typing import Tuple
 
 
-from visuscript.drawable.mixins import HasOpacity, HasRgb
+from visuscript.drawable.mixins import OpacityMixin, RgbMixin
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG, config
 from . import AnimationSequence, OpacityAnimation, RgbAnimation, LazyAnimation
 
-def fade_in(element: HasOpacity, **kwargs) -> OpacityAnimation:
+def fade_in(element: OpacityMixin, **kwargs) -> OpacityAnimation:
     """Returns an Animation to fade an Element in."""
     return OpacityAnimation.lazy(element, 1.0, **kwargs)
 
 
-def fade_out(element: HasOpacity, **kwargs) -> OpacityAnimation:
+def fade_out(element: OpacityMixin, **kwargs) -> OpacityAnimation:
     """Returns an Animation to fade an Element out."""
     return OpacityAnimation.lazy(element, 0.0, **kwargs)
 
 
 def flash(
-    color: HasRgb,
+    color: RgbMixin,
     rgb: str | Tuple[int, int, int],
     duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     **kwargs,

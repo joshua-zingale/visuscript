@@ -1,4 +1,4 @@
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Sequence
 from copy import deepcopy
 
 from visuscript._internal._interpolable import InterpolableLike, interpolate
@@ -9,7 +9,7 @@ from visuscript.property_locker import PropertyLocker
 
 from visuscript.primatives import Transform, Rgb, Vec2, Vec3
 from visuscript.drawable import Color
-from visuscript.drawable.mixins import HasOpacity, HasTransform, HasRgb
+from visuscript.drawable.mixins import OpacityMixin, RgbMixin
 
 
 class NotInterpolableError(ValueError):
@@ -66,7 +66,7 @@ class TranslationAnimation(PropertyAnimation[Transform]):
     def __init__(
         self,
         transform: Transform,
-        target_translation: Vec2 | list,
+        target_translation: Vec2 | Vec3 | Sequence[float],
         initial_translation: Vec2 | Vec3 | None = None,
         **kwargs,
     ):
@@ -81,7 +81,7 @@ class TranslationAnimation(PropertyAnimation[Transform]):
     def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
         self,
         transform: Transform,
-        target_translation: Vec2 | list,
+        target_translation: Vec2 | Vec3 | Sequence[float],
         initial_translation: Vec2 | Vec3 | None = None,
         **kwargs,
     ):  
@@ -179,10 +179,10 @@ class TransformAnimation(PropertyAnimation[Transform]):
         return PropertyLocker({transform: ["translation", "scale", "rotation"]})
 
 
-class OpacityAnimation(PropertyAnimation[HasOpacity]):
+class OpacityAnimation(PropertyAnimation[OpacityMixin]):
     def __init__(
         self,
-        color: HasOpacity,
+        color: OpacityMixin,
         target_opacity: float,
         initial_opacity: float | None = None,
         **kwargs,
@@ -197,7 +197,7 @@ class OpacityAnimation(PropertyAnimation[HasOpacity]):
 
     def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
         self,
-        color: HasOpacity,
+        color: OpacityMixin,
         target_opacity: float,
         initial_opacity: float | None = None,
         **kwargs,
@@ -205,10 +205,10 @@ class OpacityAnimation(PropertyAnimation[HasOpacity]):
         return PropertyLocker({color: ["opacity"]})
 
 
-class RgbAnimation(PropertyAnimation[HasRgb]):
+class RgbAnimation(PropertyAnimation[RgbMixin]):
     def __init__(
         self,
-        color: HasRgb,
+        color: RgbMixin,
         target_rgb: Rgb._RgbLike,
         initial_rgb: Rgb._RgbLike | None = None,
         **kwargs,
@@ -228,7 +228,7 @@ class RgbAnimation(PropertyAnimation[HasRgb]):
 
     def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
         self,
-        color: HasRgb,
+        color: RgbMixin,
         target_rgb: Rgb._RgbLike,
         initial_rgb: Rgb._RgbLike | None = None,
         **kwargs,
