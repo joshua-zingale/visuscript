@@ -14,7 +14,8 @@ from visuscript.drawable.text import Text
 from visuscript.organizer import BinaryTreeOrganizer, Organizer, GridOrganizer
 from visuscript.drawable.element import Circle, Pivot, Rect
 from visuscript.primatives import Transform
-from visuscript.drawable.mixins import Drawable, Shape
+from visuscript.drawable.mixins import Drawable
+from visuscript.drawable.protocols import HasShape, HasTransform, CanBeDrawn
 from visuscript.math_utility import magnitude
 from visuscript.drawable.connector import Edges
 
@@ -31,7 +32,7 @@ from typing import (
     overload,
     TypeVar,
     Generic,
-    Protocol,
+    Protocol
 )
 
 
@@ -153,7 +154,7 @@ NilVar = Var(None)
 """A :class:`Var` representing no value."""
 
 
-
+class CollectionDrawable(HasShape, HasTransform, CanBeDrawn, Protocol): pass
 
 T = TypeVar("T", bound=CollectionDrawable)
 
@@ -446,7 +447,7 @@ class AnimatedList(AnimatedCollection[T], MutableSequence[Var]):
         return sum(map(lambda x: x is var, self)) > 0
 
 
-class AnimatedBinaryTreeArray(AnimatedList[T]):
+class AnimatedBinaryTreeArray(Generic[T], AnimatedList[T]):
     def __init__(
         self,
         variables: Iterable[Var],
@@ -543,11 +544,11 @@ class AnimatedBinaryTreeArray(AnimatedList[T]):
 
 
 class AnimatedArray(AnimatedList[Text]):
-    def __init__(self, variables: Iterable[Var], font_size: float, *args, **kwargs):
+    def __init__(self, variables: Iterable[Var], font_size: float, transform: Transform | None = None):
         variables = list(variables)
         self._max_length = len(variables)
         self._font_size = font_size
-        super().__init__(variables, *args, **kwargs)
+        super().__init__(variables, transform=transform)
         for transform in self.organizer:
             self.add_auxiliary_element(
                 Rect(font_size, font_size).set_transform(self.transform @ transform)
@@ -556,7 +557,7 @@ class AnimatedArray(AnimatedList[Text]):
     def get_organizer(self):
         return GridOrganizer((1, len(self)), (self._font_size, self._font_size))
 
-    def new_element_for(self, var: Var) -> Text: # type: ignore
+    def new_element_for(self, var: Var) -> Text:
         return Text(f"{var.value}", font_size=self._font_size)
 
     def insert(self, index: int, value: Var, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
@@ -567,17 +568,16 @@ class AnimatedArray(AnimatedList[Text]):
         return super().insert(index, value, duration=duration)
 
 
-class AnimatedArray2D(AnimatedArray[T]):
+class AnimatedArray2D(AnimatedArray):
     def __init__(
         self,
         variables: Iterable[Var],
         font_size: float,
         shape: Tuple[int, int],
-        *args,
-        **kwargs,
+        transform: Transform | None = None
     ):
         self._shape = shape
-        super().__init__(variables, font_size, *args, **kwargs)
+        super().__init__(variables, font_size, transform=transform)
 
     def _tuple_to_index(self, index: Tuple[int, int]):
         for axis, (idx, size) in enumerate(zip(index, self._shape)):
