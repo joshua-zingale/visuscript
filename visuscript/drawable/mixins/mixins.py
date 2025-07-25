@@ -197,7 +197,7 @@ class AnchorMixin(ShapeMixin):
         else:
             raise NotImplementedError()
 
-class Drawable(Protocol):
+class Drawable(ABC):
     @abstractmethod
     def draw(self) -> str:
         """Returns the SVG representation of this object."""

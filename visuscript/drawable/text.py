@@ -69,7 +69,6 @@ class Text(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin):
 
         return size_updating_method
 
-    @update_size
     def __init__(
         self,
         text: str,
@@ -82,16 +81,17 @@ class Text(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin):
         if isinstance(font_family, ConfigurationDeference):
             font_family = config.text_font_family
         
-        self._text: str = xml_escape(text)
+        self._text: str = text
         self._font_size: float = font_size
         self._font_family: str = font_family
+   
 
         # Initialized by the wrapper returned by "update_size"
+        Text.update_size(lambda self: None)(self)
         self._width: float
         self._height: float
 
         super().__init__()
-
         self.set_fill(config.text_fill)
 
     @property
@@ -110,7 +110,7 @@ class Text(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin):
     @text.setter
     @update_size
     def text(self, value: str):
-        self._text = xml_escape(value)
+        self._text = value
 
     def set_text(self, text: str) -> Self:
         self.text = text
@@ -146,4 +146,4 @@ font-style="normal" \
 fill="{self.fill.rgb}" \
 fill-opacity="{self.fill.opacity}" \
 opacity="{self.global_opacity}"\
->{self.text}</text><text/>""" # The extra tag is to skirt a bug in the rendering of the SVG
+>{xml_escape(self.text)}</text><text/>""" # The extra tag is to skirt a bug in the rendering of the SVG
