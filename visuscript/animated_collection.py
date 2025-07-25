@@ -447,7 +447,7 @@ class AnimatedList(AnimatedCollection[T], MutableSequence[Var]):
         return sum(map(lambda x: x is var, self)) > 0
 
 
-class AnimatedBinaryTreeArray(Generic[T], AnimatedList[T]):
+class AnimatedBinaryTreeArray(AnimatedList[T]):
     def __init__(
         self,
         variables: Iterable[Var],

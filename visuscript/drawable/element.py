@@ -172,9 +172,10 @@ class Circle(GlobalShapeMixin, HierarchicalDrawable, FillMixin, StrokeMixin, Anc
         return self.radius
 
     def draw_self(self):
+        x, y = self.anchor_offset
         return f"""<circle \
-cx="0" \
-cy="0" \
+cx="{x}" \
+cy="{y}" \
 r="{self.radius}" \
 transform="{self.global_transform.svg_transform}" \
 stroke="{self.stroke.rgb}" \
