@@ -9,7 +9,7 @@ from ..primatives import *
 from PIL import ImageFont
 
 
-from visuscript.drawable.mixins import HierarchicalDrawable, HasAnchor, HasFill, HasGlobalShape
+from visuscript.drawable.mixins import HierarchicalDrawable, AnchorMixin, FillMixin, GlobalShapeMixin
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 
 # TODO Figure out why league mono is not centered properly
@@ -37,7 +37,7 @@ _P = ParamSpec("_P")
 _T = TypeVar("_T")
 _Text = TypeVar("_Text", bound="Text")
 
-class Text(HasGlobalShape, HierarchicalDrawable, HasAnchor, HasFill):
+class Text(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin):
     
     @staticmethod
     def update_size(
@@ -82,7 +82,7 @@ class Text(HasGlobalShape, HierarchicalDrawable, HasAnchor, HasFill):
         if isinstance(font_family, ConfigurationDeference):
             font_family = config.text_font_family
         
-        self._text: str = text
+        self._text: str = xml_escape(text)
         self._font_size: float = font_size
         self._font_family: str = font_family
 
@@ -110,11 +110,10 @@ class Text(HasGlobalShape, HierarchicalDrawable, HasAnchor, HasFill):
     @text.setter
     @update_size
     def text(self, value: str):
-        self._text = value
+        self._text = xml_escape(value)
 
-    @update_size
     def set_text(self, text: str) -> Self:
-        self._text = text
+        self.text = text
         return self
 
     @property

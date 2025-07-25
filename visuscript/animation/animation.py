@@ -3,7 +3,7 @@
 
 
 
-from typing import Callable, no_type_check
+from typing import Callable, no_type_check, Any
 from abc import ABC, abstractmethod, ABCMeta
 import inspect
 
@@ -268,14 +268,14 @@ class NoAnimation(Animation):
 class RunFunction(Animation):
     """A RunFunction Animation runs only a single advance, during which it calls a function."""
 
-    def __init__(self, function: Callable[[], None], consume_frame=False):
+    def __init__(self, function: Callable[[], Any], consume_frame=False):
         super().__init__()
         self._function = function
         self._has_been_run = False
         self._locker = PropertyLocker()
         self._consume_frame = consume_frame
 
-    def __init_locker__(self, function: Callable[[], None], consume_frame=False):  # type: ignore[reportIncompatibleMethodOverride]
+    def __init_locker__(self, function: Callable[[], Any], consume_frame=False):  # type: ignore[reportIncompatibleMethodOverride]
         return PropertyLocker()
 
     def advance(self) -> bool:

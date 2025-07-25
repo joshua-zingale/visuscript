@@ -1,5 +1,5 @@
 from visuscript.drawable.mixins import (
-    HasTransform
+    TransformMixin
     )
 from visuscript.primatives import Transform, Vec3
 from typing import Collection, Tuple, Self, Iterable, Iterator
@@ -37,7 +37,7 @@ class Organizer(ABC):
         for i in range(len(self)):
             yield self[i]
 
-    def organize(self, drawables: Iterable[HasTransform | None]):
+    def organize(self, drawables: Iterable[TransformMixin | None]):
         """
         Applies transformations to at most len(self) of the input drawables
 
