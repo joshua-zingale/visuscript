@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Sequence, Self, Union, Iterable, Callable, Iterator, TypeAlias
+from typing import Sequence, Self, Union, Iterable, Callable, Iterator, Protocol
 from copy import deepcopy
 
 from visuscript.constants import Anchor
-from visuscript.primatives import Transform, Vec3, Vec2, Rgb
+from visuscript.primatives import Transform, Vec3, Vec2
 from visuscript._internal._invalidator import Invalidatable
 from visuscript.config import config
-from .color import Color, OpacityMixin, RgbMixin
+from .color import Color, OpacityMixin
 
 class TransformMixin:
     def __init__(self):
@@ -18,7 +18,7 @@ class TransformMixin:
             self._transform._add_invalidatable(self)
 
     @property
-    def transform(self):
+    def transform(self) -> Transform:
         return self._transform
 
     def translate(
@@ -197,7 +197,7 @@ class AnchorMixin(ShapeMixin):
         else:
             raise NotImplementedError()
 
-class Drawable(ABC):
+class Drawable(Protocol):
     @abstractmethod
     def draw(self) -> str:
         """Returns the SVG representation of this object."""
