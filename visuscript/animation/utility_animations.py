@@ -1,6 +1,6 @@
 from typing import Tuple
 
-
+from visuscript.primatives import Rgb
 from visuscript.drawable.mixins import OpacityMixin, RgbMixin
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG, config
 from . import AnimationSequence, OpacityAnimation, RgbAnimation, LazyAnimation
@@ -17,7 +17,7 @@ def fade_out(element: OpacityMixin, **kwargs) -> OpacityAnimation:
 
 def flash(
     color: RgbMixin,
-    rgb: str | Tuple[int, int, int],
+    rgb: Rgb._RgbLike,
     duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     **kwargs,
 ):
