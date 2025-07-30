@@ -275,6 +275,7 @@ class HierarchicalDrawable(Drawable, TransformMixin, OpacityMixin, Iterable["Hie
 
             parent._children.append(self)
             self._parent = parent
+            self._invalidate()
 
             if preserve_global_transform:
                 self.global_transform = global_transform # type: ignore
