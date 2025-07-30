@@ -185,7 +185,7 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
         return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {view_width} {view_height}">\
 {background.draw()}\
 <g transform="{transform.svg_transform}">\
-{" ".join([drawable.draw() for drawable in self._drawables])}\
+{" ".join([drawable.draw() for drawable in sorted(self._drawables, key=lambda d: d.extrusion)])}\
 </g></svg>"""
 
     def print(self):

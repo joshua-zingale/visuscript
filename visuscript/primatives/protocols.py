@@ -6,6 +6,8 @@ from visuscript.primatives import Transform
 
 @runtime_checkable
 class CanBeDrawn(Protocol):
+    extrusion: float
+
     def draw(self) -> str: ...
 
 
