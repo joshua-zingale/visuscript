@@ -1,6 +1,6 @@
 """This module contains the abstract base class of all Animations alongside a bevy of basic animations and easing functions."""
 
-from typing import Callable, no_type_check, Any
+from typing import Callable, no_type_check, Any, Generic, TypeVar
 from abc import ABC, abstractmethod, ABCMeta
 import inspect
 
@@ -10,7 +10,7 @@ from visuscript.primatives import *
 from visuscript.segment import Path
 from visuscript.property_locker import PropertyLocker
 from visuscript.updater import Updater
-from visuscript.lazy_object import evaluate_lazy, LazyObject
+from visuscript.lazy_object import evaluate_lazy
 
 from .easing import sin_easing2
 from copy import deepcopy
@@ -19,6 +19,7 @@ from copy import deepcopy
 class AnimationMetaClass(ABCMeta):
     @no_type_check
     def __new__(meta, name, bases, attrs):
+
         # Set all parent classes' initializers to their default.
         for base in bases:
             if hasattr(base, "_original_init"):
@@ -37,18 +38,22 @@ class AnimationMetaClass(ABCMeta):
                 f"The '__init__' method and the '__init_locker__' method must have the exact same signature for class '{cls.__name__}', including type hints, parameter names, parameter order, and keyword argument default values. This error could result from overloading one but not the other."
             )
 
-        # TODO find a way around using "_is_lazy" because this hack is not good style
-        # "_is_lazy" tracks what kind of initializer should be called
-        cls._is_lazy = False
-        # Set initializer to call __init_locker__ unless the animation is lazy
         cls._original_init = cls.__init__
 
-        @no_type_check
-        def combined_init(self, *args, **kwargs):
-            if self._is_lazy:
+        if name in ["AnimationBundle", "AnimationSequence"]:
+            # AnimationBundle and AnimationSequence should not accept lazy arguments
+            # and their initializations should not be delayed until the first init
+            @no_type_check
+            def combined_init(self, *args, **kwargs):
+                self._locker = self.__init_locker__(*args, **kwargs)
+                self._original_init(*args, **kwargs)
+        else:
+            ## Set initializer to call __init_locker__, delaying __init__ until the first advance
+            @no_type_check
+            def combined_init(self, *args, **kwargs):
+                self._locker = self.__init_locker__(*args, **kwargs)
                 self._init_args = args
                 self._init_kwargs = kwargs
-                self._locker = self.__init_locker__(*args, **kwargs)
                 self._original_advance = self.advance
 
                 def initializing_advance(*args, **kwargs):
@@ -60,22 +65,10 @@ class AnimationMetaClass(ABCMeta):
                     return self.advance(*args, **kwargs)
 
                 self.advance = initializing_advance
-                cls._is_lazy = False
-            else:
-                for arg in [*args] + [*kwargs.values()]:
-                    if isinstance(arg, LazyObject):
-                        raise TypeError(
-                            "Cannot pass a LazyObject as an argument to an Animation's initializer that is not being lazily constructed. Use Animation.lazy(...) to pass in LazyObject arguments."
-                        )
-                self._locker = self.__init_locker__(*args, **kwargs)
-                cls._original_init(self, *args, **kwargs)
 
         cls.__init__ = combined_init
 
         return cls
-
-
-# TODO Remove FPS as a parameter for all Animations because set_speed on Updater assumes that the FPS will always match the config
 
 
 class AnimationABC(ABC, metaclass=AnimationMetaClass):
@@ -152,25 +145,9 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
         self._animation_speed = speed
         return self
 
-    @classmethod
-    def lazy(cls, *args, **kwargs) -> Self:
-        """A constructor for a lazy version of this :class:`Animation`,
-        in which the constructor is not called until the first advance.
 
-        This differs from :class:`LazyAnimation` in that the arguments are evaluated when
-        passed hereinto, whereas :class:`LazyAnimation` allows even the arguments to be
-        evaluated lazily.
-
-        :param *args: Positional arguments to be passed into this :class:`Animation`'s constructor.
-        :param **kwargs: Keyword arguments to be passed into this :class:`Animation`'s constructor.
-        :return: A lazy version of this :class:`Animation`
-        :rtype: LazyAnimation
-        """
-        cls._is_lazy = True
-        return cls(*args, **kwargs)
-
-
-class CompressedAnimation(AnimationABC):
+T = TypeVar("T", bound="Animation")
+class CompressedAnimation(AnimationABC, Generic[T]):
     """:class:`CompressedAnimation` wraps around another :class:`Animation`, compressing it into an :class:`Animation` with a single advance that runs all of the advances in the original :class:`Animation`."""
 
     def __init__(self, animation: AnimationABC):
@@ -190,7 +167,7 @@ class CompressedAnimation(AnimationABC):
 class Animation(AnimationABC):
     """An Animation can be used to modify properties of objects in a programmatic manner."""
 
-    def compress(self) -> CompressedAnimation:
+    def compress(self) -> CompressedAnimation[Self]:
         """Returns a compressed version of this Animation.
 
         The CompressedAnimation will have only a single advance (or frame), during which all of the advances (or frames) for this Animation will complete.
@@ -207,26 +184,27 @@ class Animation(AnimationABC):
 class LazyAnimation(Animation):
     """A LazyAnimation allows the initialization of an Animation to be delayed until its first advance.
 
-    The passed-in callable must have no side effects because it is called twice: once to initialize the
-    PropertyLocker and once to initialize the the Animation.
+    Because the passed-in animation is not initialized until the first advance, the properties that are
+    locked by a LazyAnimation cannot be known either.
+    :class:'LazyAnimation' thus does not have PropertyLocker safety.
 
     A LazyAnimation can be useful when chaining together multiple animations in an AnimationSequence,
     where the initial state of one object being animated should not be determined until the previous animation completes.
-    Often, Animation.lazy in conjuction with lazy arguments could and propably should be used instead of
+    Often, Animation in conjuction with lazy arguments could and propably should be used instead of
     :class:`LazyAnimation`: it is in cases where the argumets cannot reasonably be made lazy that :class:`LazyAnimation`
     shines.
     """
 
-    def __init__(self, animation_function: Callable[[], Animation]):  # type: ignore[reportIncompatibleMethodOverride]
+    def __init__(self, animation_function: Callable[[], AnimationABC]):  # type: ignore[reportIncompatibleMethodOverride]
         super().__init__()
         self._animation_function = animation_function
 
-    def __init_locker__(self, animation_function: Callable[[], Animation]):  # type: ignore[reportIncompatibleMethodOverride]
-        return deepcopy(animation_function().locker)
+    def __init_locker__(self, animation_function: Callable[[], AnimationABC]):  # type: ignore[reportIncompatibleMethodOverride]
+        return PropertyLocker()
 
     def advance(self):
         if not hasattr(self, "_animation"):
-            self._animation: Animation = self._animation_function()
+            self._animation: AnimationABC = self._animation_function()
         return self._animation.next_frame()
 
 

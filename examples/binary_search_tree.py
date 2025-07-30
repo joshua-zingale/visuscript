@@ -23,7 +23,7 @@ def main():
     s.player << fade_in(text)
     s.player << AnimationBundle(
         RunFunction(lambda: text.set_anchor(Anchor.TOP_LEFT, keep_position=True)),
-        TransformAnimation.lazy(
+        TransformAnimation(
             text.transform, Transform(s.shape.top_left + [10, 10], scale=0.5)
         ),
     )
@@ -163,12 +163,12 @@ def compare(
     sequence = AnimationSequence()
 
     sequence << AnimationBundle(
-        TranslationAnimation.lazy(
+        TranslationAnimation(
             element2.transform,
             element1.transformed_shape.right
             + (element2.shape.right - element2.shape.left) / 1.25,
         ),
-        ScaleAnimation.lazy(element2.transform, 0.5),
+        ScaleAnimation(element2.transform, 0.5),
     )
 
     sequence << AnimationBundle(
@@ -302,7 +302,7 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size=16):
 
         if node is NilVar and parent:
             sequence << AnimationBundle(
-                TranslationAnimation.lazy(
+                TranslationAnimation(
                     glass.transform,
                     tree.target_for(parent).translation + [0, 3 * RADIUS, 0],
                 ),
@@ -311,7 +311,7 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size=16):
             )
         elif not node is NilVar:
             sequence << AnimationBundle(
-                TransformAnimation.lazy(
+                TransformAnimation(
                     glass.transform, tree.element_for(node).transform
                 ),
                 OpacityAnimation(check.fill, 0.0),
@@ -361,7 +361,7 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray):
             parent = swap_node
             swap_node = tree.get_right(swap_node)
             sequence << AnimationBundle(
-                RgbAnimation.lazy(tree.element_for(parent).stroke, "off_white"),
+                RgbAnimation(tree.element_for(parent).stroke, "off_white"),
                 RgbAnimation(tree.element_for(swap_node).stroke, "blue"),
             )
 
@@ -403,7 +403,7 @@ def animate_remove(var: Var, tree: AnimatedBinaryTreeArray):
             tree.quadratic_swap(removal_node, swap_node),
         )
 
-        sequence << RgbAnimation.lazy(tree.element_for(swap_node).stroke, "off_white")
+        sequence << RgbAnimation(tree.element_for(swap_node).stroke, "off_white")
 
     elif tree.get_parent(removal_node):
         sequence << AnimationBundle(

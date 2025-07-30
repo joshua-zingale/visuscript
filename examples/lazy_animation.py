@@ -1,9 +1,12 @@
 """
-.lazy and :class:`LazyAnimation` allow the initialization of an Animation to be delayed until its first advance.
+:class:`~visuscript.lazy_object.LazyObject` and :class:`LazyAnimation` allow the initialization of an Animation to be delayed until its first advance.
 This helps in cases where two animations are sequenced in a way that the initialization arguments
 for the second animation depend on the final state resultant from the first animation.
 
-This example shows the difference between sequencing animations with and without .lazy and LazyAnimation.
+Objects like :class:`Transform` and :class:`Color` can have their attributes lazily accessed with `.lazy`.
+For example, `Transform.lazy.translation` or `Color.lazy.rgb`.
+
+This example shows the difference between sequencing animations with and without `.lazy` and :class:`LazyAnimation`.
 The goal is to move the circle first down and then to the right.
 """
 
@@ -37,7 +40,8 @@ with scene as s:
     )
 ##
 
-text.set_text("With .lazy: Half Correct Sequencing")
+
+text.set_text("With lazy argument: Correct Sequencing")
 ##2
 with scene as s:
     circle = Circle(20)
@@ -46,8 +50,8 @@ with scene as s:
         TranslationAnimation(
             circle.transform, circle.transform.translation + [0, 75, 0]
         ),
-        TranslationAnimation.lazy(
-            circle.transform, circle.transform.translation + [100, 0, 0]
+        TranslationAnimation(
+            circle.transform, circle.transform.lazy.translation.add([100, 0, 0])
         ),
         NoAnimation(),
     )
@@ -56,27 +60,8 @@ with scene as s:
     )
 ##
 
-text.set_text("With .lazy & lazy argument: Correct Sequencing")
-##3
-with scene as s:
-    circle = Circle(20)
-    s << circle
-    s.animations << AnimationSequence(
-        TranslationAnimation(
-            circle.transform, circle.transform.translation + [0, 75, 0]
-        ),
-        TranslationAnimation.lazy(
-            circle.transform, circle.transform.lazy.translation.add([100, 0, 0])
-        ),
-        NoAnimation(),
-    )
-    s << PythonText(code_blocks[3], font_size=6).set_anchor(Anchor.TOP_LEFT).translate(
-        *s.shape.top_left + [10, 22.5]
-    )
-##
-
 text.set_text("With LazyAnimation: Correct Sequencing")
-##4
+##3
 with scene as s:
     circle = Circle(20)
     s << circle
@@ -91,7 +76,7 @@ with scene as s:
         ),
         NoAnimation(),
     )
-    s << PythonText(code_blocks[4], font_size=6).set_anchor(Anchor.TOP_LEFT).translate(
+    s << PythonText(code_blocks[3], font_size=6).set_anchor(Anchor.TOP_LEFT).translate(
         *s.shape.top_left + [10, 22.5]
     )
 ##

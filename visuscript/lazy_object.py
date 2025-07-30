@@ -1,16 +1,14 @@
-from typing import cast, Generic, TypeVar, Any, Tuple, Self
+from typing import cast, Any, Tuple, Self
 from functools import cached_property
 
 
-T = TypeVar("T")
 
-
-class LazyObject(Generic[T]):
+class LazyObject:
     def __init__(
         self,
-        obj: T,
-        _attribute_chain: list[str] = None,
-        _calls: dict[int, Tuple[Tuple[Any, ...], dict[str, Any]]] = None,
+        obj: Any,
+        _attribute_chain: list[str]  | None = None,
+        _calls: dict[int, Tuple[Tuple[Any, ...], dict[str, Any]]] | None = None,
     ):
         self._obj = obj
         self._attribute_chain = _attribute_chain or []
@@ -20,21 +18,21 @@ class LazyObject(Generic[T]):
     def _level(self) -> int:
         return len(self._attribute_chain)
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Self:
+    def __call__(self, *args: Any, **kwargs: Any) -> "LazyObject":
         calls = self._calls.copy()
         calls[self._level] = (args, kwargs)
         return LazyObject(
             self._obj, _attribute_chain=self._attribute_chain, _calls=calls
         )
 
-    def __getattr__(self, attribute: str) -> Self:
+    def __getattr__(self, attribute: str) -> "LazyObject":
         return LazyObject(
             self._obj,
             _attribute_chain=self._attribute_chain + [attribute],
             _calls=self._calls,
         )
 
-    def _lazy_call(self, obj, index: int):
+    def _lazy_call(self, obj: Any, index: int):
         args, kwargs = self._calls[index]
         return obj(*args, **kwargs)
 
@@ -49,16 +47,16 @@ class LazyObject(Generic[T]):
         return attr
 
 
-def evaluate_lazy(args: list[Any], kwargs: list[Any]):
+def evaluate_lazy(args: list[Any], kwargs: dict[str, Any]):
     """Runs through arguments and keyword arguments and returns a new set
     with any LazyObjects having been evaluated."""
-    new_args = []
+    new_args: list[Any] = []
     for arg in args:
         if isinstance(arg, LazyObject):
             new_args.append(arg.evaluate_lazy_object())
         else:
             new_args.append(arg)
-    new_kwargs = dict()
+    new_kwargs: dict[str, Any] = dict()
     for key, value in kwargs.items():
         if isinstance(value, LazyObject):
             new_kwargs[key] = value.evaluate_lazy_object()
@@ -77,6 +75,5 @@ class Lazible:
         this function "lies" by claiming to return the type of Self.
 
         :return: A :class:`LazyObject` that wraps self.
-        :rtype: LazyObject[Self]
         """
         return cast(Self, LazyObject(self))

@@ -9,7 +9,7 @@ with Scene() as s:
             ScaleAnimation(rect.transform, 2),
             RotationAnimation(rect.transform, 135),
         ),
-        TransformAnimation.lazy(rect.transform, Transform([0, 0], 1, 0)),
+        TransformAnimation(rect.transform, Transform([0, 0], 1, 0)),
     )
     s.animations << RgbAnimation(rect.stroke, Rgb(255, 0, 0))
     s.animations << RgbAnimation(rect.fill, "yellow")
