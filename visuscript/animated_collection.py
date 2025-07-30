@@ -196,7 +196,7 @@ class AnimatedCollection(Generic[T], Collection[Var]):
         corresponding to :class:`Var` instances in this :class:`AnimatedCollection` according to its rules."""
         animation_bundle = AnimationBundle(NoAnimation(duration=duration))
         for var in self:
-            animation_bundle << TransformAnimation.lazy(
+            animation_bundle << TransformAnimation(
                 self.element_for(var).transform, self.target_for(var), duration=duration
             )
         return animation_bundle
@@ -370,8 +370,8 @@ class AnimatedList(AnimatedCollection[T], MutableSequence[Var]):
         element_a, element_b = self._swap(a, b)
 
         return AnimationBundle(
-            TransformAnimation.lazy(element_a.transform, element_b.transform),
-            TransformAnimation.lazy(element_b.transform, element_a.transform),
+            TransformAnimation(element_a.transform, element_b.transform),
+            TransformAnimation(element_b.transform, element_a.transform),
         )
 
     def quadratic_swap(

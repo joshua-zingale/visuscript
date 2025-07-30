@@ -274,7 +274,7 @@ def main():
                 .L(*drawing.shape.center),
                 duration=2,
             ),
-            ScaleAnimation.lazy(drawing.transform, 3),
+            ScaleAnimation(drawing.transform, 3),
             fade_out(drawing),
         )
         s << (

@@ -12,17 +12,18 @@ from visuscript.animation import (
 )
 from visuscript.property_locker import PropertyLocker, LockedPropertyError
 from visuscript import Transform, Vec3, Color, Rgb, Circle
-from visuscript.lazy_object import Lazible
+from visuscript.lazy_object import Lazible, LazyObject
 from visuscript.config import config
 from visuscript.primatives import Vec
 
 
 class TestAnimation(VisuscriptTestCase):
     def test_set_speed_number_of_advances(self):
+        num_advances = 17
         for speed in [1, 2, 10, 11]:
-            animation = MockAnimation(17).set_speed(speed)
+            animation = MockAnimation(num_advances).set_speed(speed)
             self.assertAlmostEqual(
-                int(animation.total_advances / speed),
+                int(num_advances / speed),
                 number_of_frames(animation),
                 msg=f"speed={speed}",
             )
@@ -37,15 +38,24 @@ class TestAnimation(VisuscriptTestCase):
         self.assertTrue(animation.advance())
         self.assertFalse(animation.advance())
 
-    def test_lazy(self):
+    def test_non_lazy_argument(self):
         arr = [3]
         x = 1
-        adder = lambda: x
-        animation = MockAnimation.lazy(13, obj=arr, adder=adder())
+        animation = MockAnimation(13, obj=arr, adder=1)
         arr[0] = 1
         x = 90
         animation.finish()
         self.assertEqual(arr[0], 2)
+
+    def test_lazy_argument(self):
+        arr = [3]
+        x = 1
+        adder = lambda: x
+        animation = MockAnimation(13, obj=arr, adder=LazyObject(adder)())
+        arr[0] = 1
+        x = 90
+        animation.finish()
+        self.assertEqual(arr[0], 91)
 
 
 class TestRunFunction(VisuscriptTestCase):
@@ -415,6 +425,9 @@ class MockObject(Lazible):
 
 
 class MockAnimation(Animation):
+    actual_advaces = 0
+    total_advances = 0
+    
     def __init__(
         self,
         total_advances,
@@ -428,6 +441,7 @@ class MockAnimation(Animation):
         self.obj = obj
         self.obj_value = obj[0]
         self.adder = adder
+        
 
     def advance(self):
         self.actual_advances += 1
