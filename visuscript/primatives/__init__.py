@@ -1,2 +1,2 @@
 from .primatives import *
-from mixins import *
+from .mixins import *

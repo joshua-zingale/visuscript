@@ -2,7 +2,7 @@ from typing import Self, Union, TypeAlias
 
 
 from visuscript.constants import PALETTE
-from visuscript.primatives import Rgb
+from visuscript.primatives.primatives import Rgb
 from visuscript.lazy_object import Lazible
 
 

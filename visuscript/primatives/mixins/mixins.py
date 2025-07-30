@@ -4,7 +4,7 @@ from typing import Sequence, Self, Union, Iterable, Callable, Iterator
 from copy import deepcopy
 
 from visuscript.constants import Anchor
-from visuscript.primatives import Transform, Vec3, Vec2
+from visuscript.primatives.primatives import Transform, Vec3, Vec2
 from visuscript._internal._invalidator import Invalidatable
 from visuscript.config import config
 from .color import Color, OpacityMixin
@@ -207,10 +207,16 @@ class AnchorMixin(ShapeMixin):
 
 
 class Drawable(ABC):
+    extrusion: float = 0
+
     @abstractmethod
     def draw(self) -> str:
         """Returns the SVG representation of this object."""
         ...
+
+    def set_extrusion(self, extrusion: float) -> Self:
+        self.extrusion = extrusion
+        return self
 
 
 class HierarchicalDrawable(
@@ -408,7 +414,7 @@ class HierarchicalDrawable(
         for child in self._children:
             elements.extend(child)
 
-        yield from sorted(elements, key=lambda d: d.global_transform.translation.z)
+        yield from sorted(elements, key=lambda d: d.extrusion)
 
     def draw(self) -> str:
         return "".join(map(lambda element: element.draw_self(), self))
