@@ -239,7 +239,8 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size=16):
     go_right_text = f"< {var.value} →"
     go_left_text = f"< {var.value} ←"
     glass.add_children(
-        check := Text(not_found_text).set_fill(Color("red", 0.0))
+        check := Text(not_found_text)
+        .set_fill(Color("red", 0.0))
         .set_anchor(Anchor.RIGHT)
         .translate(*glass.shape.left + font_size * LEFT / 2),
         comparison := Pivot()
