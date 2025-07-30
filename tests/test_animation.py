@@ -11,11 +11,16 @@ from visuscript.animation import (
     RotationAnimation,
 )
 from visuscript.property_locker import PropertyLocker, LockedPropertyError
-from visuscript.primatives import Vec, Transform, Vec3, Color, Rgb
+from visuscript import (
+    Transform,
+    Vec3,
+    Color,
+    Rgb,
+    Circle
+    )
 from visuscript.lazy_object import Lazible
 from visuscript.config import config
-from visuscript.drawable.element import Circle
-
+from visuscript.primatives import Vec
 
 class TestAnimation(VisuscriptTestCase):
     def test_set_speed_number_of_advances(self):
@@ -342,7 +347,7 @@ class TestFades(VisuscriptTestCase):
     def test_flash(self):
         from visuscript.animation import flash
 
-        circle = Circle(5, stroke=Color(Rgb(0, 0, 0)))
+        circle = Circle(5).set_stroke(Color(Rgb(0, 0, 0)))
 
         animation = flash(circle.stroke, Rgb(100, 100, 100), duration=4)
 
@@ -359,7 +364,7 @@ class TestFades(VisuscriptTestCase):
     def test_sequence(self):
         from visuscript.animation import fade_in, fade_out, flash
 
-        circle = Circle(5, stroke=Color(Rgb(50, 50, 50))).set_opacity(0.25)
+        circle = Circle(5).set_stroke(Color(Rgb(50, 50, 50))).set_opacity(0.25)
 
         sequence = AnimationSequence(
             fade_in(circle, duration=2),
@@ -395,7 +400,7 @@ class TestFades(VisuscriptTestCase):
         self.assertEqual(circle.opacity, 0)
 
 
-def run_for(animation: Animation, duration: float):
+def run_for(animation: Animation, duration: int):
     total_frames = config.fps * duration
     for _ in range(total_frames):
         animation.advance()

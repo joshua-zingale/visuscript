@@ -1,5 +1,5 @@
 from .base_class import VisuscriptTestCase
-from visuscript.drawable.element import Element
+from visuscript.drawable.mixins import Element
 from visuscript.primatives import Vec2, Vec3
 from visuscript.config import config
 
@@ -11,16 +11,13 @@ class TestElement(VisuscriptTestCase):
             self._width = width
             self._height = height
 
-        @property
-        def top_left(self):
+        def calculate_top_left(self):
             return Vec2(0, 0)
 
-        @property
-        def width(self):
+        def calculate_width(self):
             return self._width
 
-        @property
-        def height(self):
+        def calculate_height(self):
             return self._height
 
         def draw_self(self):
@@ -88,14 +85,20 @@ class TestElement(VisuscriptTestCase):
 
     def test_relative_position(self):
         parent = self.MockElement(10, 10)
-        child = self.MockElement(10, 10)
-        parent.add_child(child)
+        child1 = self.MockElement(10, 10)
+        child2 = self.MockElement(10, 10)
+        parent.add_child(child1)
+        parent.add_child(child2.translate(-100))
 
         parent.translate(100)
-        self.assertVecAlmostEqual(child.transform.translation, Vec3(0, 0, 0))
+        child1.translate(0, 100)
+        self.assertVecAlmostEqual(child1.transform.translation, Vec3(0, 100, 0))
+        self.assertVecAlmostEqual(child2.transform.translation, Vec3(-100, 0, 0))
+        self.assertVecAlmostEqual(parent.transform.translation, Vec3(100, 0, 0))
 
-        child.translate(0, 100)
-        self.assertVecAlmostEqual(child.transform.translation, Vec3(0, 100, 0))
+        
+        self.assertVecAlmostEqual(child1.global_transform.translation, Vec3(100, 100, 0))
+        self.assertVecAlmostEqual(child2.global_transform.translation, Vec3(0, 0, 0))
         self.assertVecAlmostEqual(parent.transform.translation, Vec3(100, 0, 0))
 
     def test_global_position(self):
