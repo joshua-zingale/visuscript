@@ -447,7 +447,7 @@ class AnimatedList(AnimatedCollection[T], MutableSequence[Var]):
         return sum(map(lambda x: x is var, self)) > 0
 
 
-class AnimatedBinaryTreeArray(AnimatedList[T]):
+class AnimatedBinaryTreeArray(AnimatedList[Pivot | Circle]):
     def __init__(
         self,
         variables: Iterable[Var],
@@ -478,7 +478,7 @@ class AnimatedBinaryTreeArray(AnimatedList[T]):
             node_width=self.node_width,
         )
 
-    def new_element_for(self, var: Var) -> T:
+    def new_element_for(self, var: Var) -> Circle | Pivot:
         if var.is_none:
             return Pivot()
         n = Circle(radius=self._radius).add_child(
