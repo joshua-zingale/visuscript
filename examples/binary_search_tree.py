@@ -311,9 +311,7 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size=16):
             )
         elif not node is NilVar:
             sequence << AnimationBundle(
-                TransformAnimation(
-                    glass.transform, tree.element_for(node).transform
-                ),
+                TransformAnimation(glass.transform, tree.element_for(node).transform),
                 OpacityAnimation(check.fill, 0.0),
                 OpacityAnimation(comparison, 0.0),
             )

@@ -14,8 +14,8 @@ from visuscript.drawable.text import Text
 from visuscript.organizer import BinaryTreeOrganizer, Organizer, GridOrganizer
 from visuscript.drawable.element import Circle, Pivot, Rect
 from visuscript.primatives import Transform
-from visuscript.drawable.mixins import Drawable
-from visuscript.drawable.protocols import HasShape, HasTransform, CanBeDrawn
+from visuscript.primatives.mixins import Drawable
+from visuscript.primatives.protocols import HasShape, HasTransform, CanBeDrawn
 from visuscript.math_utility import magnitude
 from visuscript.drawable.connector import Edges
 
@@ -40,9 +40,11 @@ import numpy as np
 
 
 # TODO find a way to do type checking correctly
+@no_type_check
 class Var:
     """An immutable wrapper around any other type: the foundational bit of data to be stored in an :class:`AnimatedCollection`."""
 
+    @no_type_check
     def __init__(self, value: Any, *, type_: type | None = None):
         """
         :param value: The value to be stored.
@@ -69,11 +71,13 @@ class Var:
         self._type = type_
 
     @property
-    def value(self):
+    @no_type_check
+    def value(self) -> Any:
         """The value stored in this :class:`Var`."""
         return self._value
 
     @property
+    @no_type_check
     def is_none(self) -> bool:
         """True if and only if None is the value stored herein."""
         return self.value is None
@@ -140,12 +144,15 @@ class Var:
     def __lt__(self, other: "Var") -> bool:
         return self.value < other.value
 
+    @no_type_check
     def __str__(self):
         return f"Var({self.value}, type={self._type.__name__})"
 
+    @no_type_check
     def __repr__(self):
         return str(self)
 
+    @no_type_check
     def __bool__(self):
         return self.value is not None and self.value is not False
 
@@ -198,7 +205,7 @@ class AnimatedCollection(Generic[T], Collection[Var]):
         for var in self:
             animation_bundle << TransformAnimation(
                 self.element_for(var).transform, self.target_for(var), duration=duration
-            )
+            )  # type: ignore[reportUnusedExpression]
         return animation_bundle
 
     @property
@@ -209,35 +216,35 @@ class AnimatedCollection(Generic[T], Collection[Var]):
             yield self.element_for(var)
 
     @property
-    def all_elements(self) -> Iterable[Drawable]:
+    def all_elements(self) -> Iterable[CanBeDrawn]:
         """An iterable over all :class:`~visuscript.element.Element` instances that comprise
         this :class:`AnimatedCollection`'s visual component."""
         yield from self.auxiliary_elements
         yield from self.elements
 
     @property
-    def collection_element(self) -> Drawable:
+    def collection_element(self) -> CanBeDrawn:
         """A :class:`~visuscript.drawable.Drawable` that, when drawn,
         draws all :class:`~visuscript.element.Element` instances that comprise this
         :class:`AnimatedCollection`'s visual component."""
         return _AnimatedCollectionDrawable(self)
 
     @property
-    def auxiliary_elements(self) -> list[Drawable]:
+    def auxiliary_elements(self) -> list[CanBeDrawn]:
         """A list of all auxiliary :class:`~visuscript.element.Element` instances that comprise this
         :class:`AnimatedCollection`'s visual component.
         """
         if not hasattr(self, "_auxiliary_elements"):
-            self._auxiliary_elements: list[Drawable] = []
+            self._auxiliary_elements: list[CanBeDrawn] = []
         return self._auxiliary_elements
 
-    def add_auxiliary_element(self, element: Drawable) -> Self:
+    def add_auxiliary_element(self, element: CanBeDrawn) -> Self:
         """Adds an :class:`~visuscript.element.Element` to de displayed along with the :class:`~visuscript.element.Element`
         instances that correspond to the :class:`Var` instances stored herein."""
         self.auxiliary_elements.append(element)
         return self
 
-    def remove_auxiliary_element(self, element: Drawable) -> Self:
+    def remove_auxiliary_element(self, element: CanBeDrawn) -> Self:
         """Removes an auxiliar element form this :class:`AnimatedCollection`."""
         self.auxiliary_elements.remove(element)
         return self

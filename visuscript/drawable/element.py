@@ -8,7 +8,7 @@ import svg
 
 from visuscript.primatives import *
 from visuscript.segment import Path
-from visuscript.drawable.mixins import (
+from visuscript.primatives.mixins import (
     HierarchicalDrawable,
     GlobalShapeMixin,
     AnchorMixin,

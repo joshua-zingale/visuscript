@@ -1,6 +1,6 @@
 """This module contains Scene, which allows display of Drawable and animation thereof."""
 
-from visuscript.drawable.mixins import (
+from visuscript.primatives.mixins import (
     Color,
     Drawable,
     AnchorMixin,
@@ -10,6 +10,7 @@ from visuscript.constants import Anchor, OutputFormat
 from visuscript.drawable.element import Rect
 from visuscript.updater import UpdaterBundle
 from visuscript.primatives import *
+from visuscript.primatives.protocols import CanBeDrawn
 from visuscript.config import config
 from typing import Iterable, Iterator
 from copy import copy
@@ -72,7 +73,7 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
             and self._width / self._logical_width == self._height / self._logical_height
         )
 
-        self._drawables: list[Drawable] = []
+        self._drawables: list[CanBeDrawn] = []
         self.color: Color = config.scene_color
 
         self._output_format = config.scene_output_format
@@ -91,32 +92,32 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
         """Removes all :class:`~visuscript.drawable.Drawable` instances from the display."""
         self._drawables = []
 
-    def add_drawable(self, drawable: Drawable) -> Self:
+    def add_drawable(self, drawable: CanBeDrawn) -> Self:
         """Adds a :class:`~visuscript.drawable.Drawable` to the display."""
         self._drawables.append(drawable)
         return self
 
-    def add_drawables(self, drawables: Iterable[Drawable]) -> Self:
+    def add_drawables(self, drawables: Iterable[CanBeDrawn]) -> Self:
         """Adds multiple :class:`~visuscript.drawable.Drawable` instances to the display."""
         self._drawables.extend(drawables)
         return self
 
-    def remove_drawable(self, drawable: Drawable) -> Self:
+    def remove_drawable(self, drawable: CanBeDrawn) -> Self:
         """Removes a :class:`~visuscript.drawable.Drawable` from the display."""
         self._drawables.remove(drawable)
         return self
 
-    def remove_drawables(self, drawables: list[Drawable]) -> Self:
+    def remove_drawables(self, drawables: list[CanBeDrawn]) -> Self:
         """Removes multiple :class:`~visuscript.drawable.Drawable` instnaces from the display."""
         for drawable in drawables:
             self._drawables.remove(drawable)
         return self
 
-    def __lshift__(self, other: Drawable | Iterable[Drawable]):
+    def __lshift__(self, other: CanBeDrawn | Iterable[CanBeDrawn] | None):
         if other is None:
             return
 
-        if isinstance(other, Drawable):
+        if isinstance(other, CanBeDrawn):
             self.add_drawable(other)
         elif isinstance(other, Iterable):
             for drawable in other:
@@ -319,7 +320,7 @@ class _AnimationManager:
                 self.push(a, _call_method)
         else:
             raise TypeError(
-                f"'{_call_method}' is only implemented for types Updater and Iterable[Animation], not for '{type(animation)}'"
+                f"'{_call_method}' is only implemented for types Animation and Iterable[Animation], not for '{type(animation)}'"
             )
 
     def __lshift__(self, other: Animation | Iterable[Animation]):
@@ -351,10 +352,6 @@ class _UpdaterManager:
         elif isinstance(updater, Iterable):
             for u in updater:
                 self.push(u, _call_method)
-        else:
-            raise TypeError(
-                f"'{_call_method}' is only implemented for types Updater and Iterable[Updater], not for '{type(updater)}'"
-            )
 
     def __lshift__(self, other: Updater | Iterable[Updater]):
         """See :func:_UpdaterManager.push"""

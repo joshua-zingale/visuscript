@@ -1,9 +1,10 @@
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 from functools import cached_property
 from .mixins import Shape
 from visuscript.primatives import Transform
 
 
+@runtime_checkable
 class CanBeDrawn(Protocol):
     def draw(self) -> str: ...
 

@@ -26,7 +26,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pyright>=1.1.402",
+    "pyright>=1.1.403",
     "ruff>=0.12.1",
 ]
 
@@ -58,6 +58,13 @@ branch = true
 source = ["visuscript"]
 
 [tool.pyright]
+include = [
+    "visuscript/**.py",
+    # "examples/**.py",
+]
+basic = [
+    "examples/**.py"
+]
 strict = [
     "visuscript/**.py",
 ]

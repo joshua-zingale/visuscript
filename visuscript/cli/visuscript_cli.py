@@ -113,6 +113,8 @@ def main():
             text=True,
             encoding="utf-8",
         )
+    else:
+        raise ValueError(f"Invalid output mode: '{mode}'")
 
     if theme == "dark":
         config.scene_color = Color("dark_slate", 1.0)
@@ -134,17 +136,32 @@ def main():
 
     config.scene_output_stream = animate_proc.stdin
 
-    try:
-        spec = importlib.util.spec_from_file_location("script", input_filename)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
+    spec = importlib.util.spec_from_file_location("script", input_filename)
 
-        if hasattr(mod, "main"):
-            mod.main()
-    finally:
-        animate_proc.stdin.flush()
-        animate_proc.stdin.close()
-        animate_proc.wait()
+    could_not_load_message = "Could not load '{input_filename}' as a Python script."
+    if spec is None:
+        print(could_not_load_message, file=sys.stderr)
+        exit()
+
+    mod = importlib.util.module_from_spec(spec)
+
+    if spec.loader is None:
+        print(could_not_load_message, file=sys.stderr)
+        exit()
+    spec.loader.exec_module(mod)
+
+    if hasattr(mod, "main"):
+        mod.main()
+
+    if animate_proc.stdin is None:
+        print(
+            "There was an internal problem communicating with the animation subprocess."
+        )
+        exit()
+
+    animate_proc.stdin.flush()
+    animate_proc.stdin.close()
+    animate_proc.wait()
 
     if animate_proc.returncode == 0:
         print(f'Successfully created "{output_filename}"')

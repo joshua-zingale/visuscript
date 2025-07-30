@@ -1,4 +1,4 @@
-from visuscript.drawable.mixins import HierarchicalDrawable, AnchorMixin
+from visuscript.primatives.mixins import HierarchicalDrawable, AnchorMixin
 from visuscript.primatives import Vec2
 from pygments import highlight
 from pygments.lexers import PythonLexer as _PythonLexer

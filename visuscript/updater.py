@@ -5,7 +5,7 @@ from visuscript.primatives import Transform
 from visuscript.property_locker import PropertyLocker
 from visuscript.math_utility import magnitude
 from visuscript.config import config
-from typing import Iterable, Self, Callable
+from typing import Iterable, Self, Callable, cast
 import numpy as np
 
 
@@ -51,7 +51,7 @@ class Updater(ABC):
             self._num_frames * self._updates_per_frame - self._num_updates_processed
         )
         sub_dt = 1 / self._updates_per_second
-        for i in range(num_updates_to_make):
+        for _ in range(num_updates_to_make):
             self.update(self._num_updates_processed / self._updates_per_second, sub_dt)
 
         self._num_updates_processed += num_updates_to_make
@@ -78,8 +78,6 @@ class Updater(ABC):
         If this is set, then the updater can run more
         or less often than once per frame.
         """
-        if not isinstance(updates_per_second, (int, float)) or updates_per_second <= 0:
-            raise ValueError("Update rate must be a positive number.")
         self._updates_per_second = updates_per_second
         self._updates_per_frame = updates_per_second / config.fps
         return self
@@ -102,16 +100,21 @@ class UpdaterBundle(Updater):
     def locker(self):
         return self._locker
 
-    def push(self, updater: Updater | Iterable[Updater], _call_method="push"):
+    def push(
+        self, updater: Updater | Iterable[Updater] | None, _call_method: str = ".push"
+    ):
+        if updater is None:
+            return
+
         if isinstance(updater, Updater):
             self._locker.update(updater.locker)
             self._updaters.append(updater)
-        elif isinstance(updater, Iterable):
+        elif isinstance(updater, Iterable):  # type: ignore
             for updater_ in updater:
                 self.push(updater_)
         else:
             raise TypeError(
-                f"Cannot push type '{updater.__class__.__name__}' to '{self.__class__.__name__}': must push types 'Updater' or 'Iterable[Updater]' "
+                f"'{_call_method}' is only implemented for types Updater and Iterable[Updater], not for '{type(animation)}'"
             )
 
     def __lshift__(self, other: Updater | Iterable[Updater]):
@@ -131,7 +134,7 @@ class FunctionUpdater(Updater):
     def locker(self):
         return self._locker
 
-    def update(self, t, dt) -> Self:
+    def update(self, t: float, dt: float) -> Self:
         self._function(t, dt)
         return self
 
@@ -162,13 +165,14 @@ class TranslationUpdater(Updater):
     def update(self, t: float, dt: float) -> Self:
         if self._max_speed is None and self._acceleration is None:
             self._transform.translation = self._target.translation
-            return
+            return self
 
         diff = self._target.translation - self._transform.translation
         dist = magnitude(diff)
         unit = diff / max(dist, 1e-16)
 
         if self._acceleration is None:
+            self._max_speed = cast(float, self._max_speed)
             max_speed = self._max_speed
             if max_speed * dt < dist:
                 self._transform.translation += unit * max_speed * dt
@@ -203,6 +207,6 @@ def run_updater(updater: Updater, duration: float):
     t = 0
     dt = 1 / config.fps
 
-    for _ in range(duration * config.fps):
+    for _ in range(round(duration * config.fps)):
         updater.update(t, dt)
         t += dt

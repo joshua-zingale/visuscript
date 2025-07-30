@@ -1,13 +1,13 @@
 """This module contains the abstract base class of all Animations alongside a bevy of basic animations and easing functions."""
 
-from typing import Callable, no_type_check, Any, Generic, TypeVar
+from typing import Callable, no_type_check, Any, Generic, TypeVar, Self
 from abc import ABC, abstractmethod, ABCMeta
 import inspect
 
 from visuscript.config import config
 from visuscript.config import *
-from visuscript.primatives import *
 from visuscript.segment import Path
+from visuscript.primatives import Transform
 from visuscript.property_locker import PropertyLocker
 from visuscript.updater import Updater
 from visuscript.lazy_object import evaluate_lazy
@@ -19,7 +19,6 @@ from copy import deepcopy
 class AnimationMetaClass(ABCMeta):
     @no_type_check
     def __new__(meta, name, bases, attrs):
-
         # Set all parent classes' initializers to their default.
         for base in bases:
             if hasattr(base, "_original_init"):
@@ -147,6 +146,8 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
 
 
 T = TypeVar("T", bound="Animation")
+
+
 class CompressedAnimation(AnimationABC, Generic[T]):
     """:class:`CompressedAnimation` wraps around another :class:`Animation`, compressing it into an :class:`Animation` with a single advance that runs all of the advances in the original :class:`Animation`."""
 

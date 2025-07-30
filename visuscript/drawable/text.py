@@ -1,13 +1,13 @@
-from typing import Concatenate, ParamSpec, Callable, TypeVar
+from typing import Concatenate, ParamSpec, Callable, TypeVar, Self
 import os
 
 
 from xml.sax.saxutils import escape
-from ..primatives import *
+from visuscript.primatives import Vec2
 from PIL import ImageFont
 
 
-from visuscript.drawable.mixins import (
+from visuscript.primatives.mixins import (
     HierarchicalDrawable,
     AnchorMixin,
     FillMixin,

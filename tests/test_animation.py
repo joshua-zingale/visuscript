@@ -427,7 +427,7 @@ class MockObject(Lazible):
 class MockAnimation(Animation):
     actual_advaces = 0
     total_advances = 0
-    
+
     def __init__(
         self,
         total_advances,
@@ -441,7 +441,6 @@ class MockAnimation(Animation):
         self.obj = obj
         self.obj_value = obj[0]
         self.adder = adder
-        
 
     def advance(self):
         self.actual_advances += 1
