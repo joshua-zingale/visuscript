@@ -1,8 +1,10 @@
 from .base_class import VisuscriptTestCase
-from visuscript.drawable.text import Text
 from visuscript.animated_collection import AnimatedArray, Var, AnimatedBinaryTreeArray
-from visuscript.animation import AnimationSequence
-from visuscript.drawable.element import Rect
+from visuscript import (
+    Rect,
+    AnimationSequence,
+    Text,
+    )
 
 from .test_animation import run_for
 
