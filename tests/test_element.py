@@ -96,8 +96,9 @@ class TestElement(VisuscriptTestCase):
         self.assertVecAlmostEqual(child2.transform.translation, Vec3(-100, 0, 0))
         self.assertVecAlmostEqual(parent.transform.translation, Vec3(100, 0, 0))
 
-        
-        self.assertVecAlmostEqual(child1.global_transform.translation, Vec3(100, 100, 0))
+        self.assertVecAlmostEqual(
+            child1.global_transform.translation, Vec3(100, 100, 0)
+        )
         self.assertVecAlmostEqual(child2.global_transform.translation, Vec3(0, 0, 0))
         self.assertVecAlmostEqual(parent.transform.translation, Vec3(100, 0, 0))
 

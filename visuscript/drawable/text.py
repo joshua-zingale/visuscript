@@ -1,5 +1,3 @@
-
-
 from typing import Concatenate, ParamSpec, Callable, TypeVar
 import os
 
@@ -9,7 +7,12 @@ from ..primatives import *
 from PIL import ImageFont
 
 
-from visuscript.drawable.mixins import HierarchicalDrawable, AnchorMixin, FillMixin, GlobalShapeMixin
+from visuscript.drawable.mixins import (
+    HierarchicalDrawable,
+    AnchorMixin,
+    FillMixin,
+    GlobalShapeMixin,
+)
 from visuscript.config import config, ConfigurationDeference, DEFER_TO_CONFIG
 
 # TODO Figure out why league mono is not centered properly
@@ -31,14 +34,12 @@ def xml_escape(data: str) -> str:
     )
 
 
-
-
 _P = ParamSpec("_P")
 _T = TypeVar("_T")
 _Text = TypeVar("_Text", bound="Text")
 
+
 class Text(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin):
-    
     @staticmethod
     def update_size(
         foo: Callable[Concatenate[_Text, _P], _T],
@@ -75,16 +76,14 @@ class Text(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin):
         font_size: float | ConfigurationDeference = DEFER_TO_CONFIG,
         font_family: str | ConfigurationDeference = DEFER_TO_CONFIG,
     ):
-        
         if isinstance(font_size, ConfigurationDeference):
             font_size = config.text_font_size
         if isinstance(font_family, ConfigurationDeference):
             font_family = config.text_font_family
-        
+
         self._text: str = text
         self._font_size: float = font_size
         self._font_family: str = font_family
-   
 
         # Initialized by the wrapper returned by "update_size"
         Text.update_size(lambda self: None)(self)
@@ -125,11 +124,12 @@ class Text(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin):
     def font_size(self, value: float):
         self._font_size = value
 
-
     def calculate_top_left(self) -> Vec2:
         return Vec2(0, -self._height)
+
     def calculate_width(self) -> float:
         return self._width
+
     def calculate_height(self) -> float:
         return self._height
 
@@ -146,4 +146,4 @@ font-style="normal" \
 fill="{self.fill.rgb}" \
 fill-opacity="{self.fill.opacity}" \
 opacity="{self.global_opacity}"\
->{xml_escape(self.text)}</text><text/>""" # The extra tag is to skirt a bug in the rendering of the SVG
+>{xml_escape(self.text)}</text><text/>"""  # The extra tag is to skirt a bug in the rendering of the SVG

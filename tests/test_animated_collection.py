@@ -4,7 +4,7 @@ from visuscript import (
     Rect,
     AnimationSequence,
     Text,
-    )
+)
 
 from .test_animation import run_for
 

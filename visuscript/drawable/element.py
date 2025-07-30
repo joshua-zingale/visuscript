@@ -8,7 +8,14 @@ import svg
 
 from visuscript.primatives import *
 from visuscript.segment import Path
-from visuscript.drawable.mixins import HierarchicalDrawable, GlobalShapeMixin, AnchorMixin, FillMixin, StrokeMixin, OpacityMixin
+from visuscript.drawable.mixins import (
+    HierarchicalDrawable,
+    GlobalShapeMixin,
+    AnchorMixin,
+    FillMixin,
+    StrokeMixin,
+    OpacityMixin,
+)
 from visuscript.constants import Anchor
 
 
@@ -90,10 +97,8 @@ class Pivot(GlobalShapeMixin, HierarchicalDrawable):
 
     A Pivot can be used to construct more complex object by adding children."""
 
-
     def calculate_top_left(self):
         return Vec2(0, 0)
-
 
     def calculate_width(self) -> float:
         return 0.0
@@ -105,14 +110,20 @@ class Pivot(GlobalShapeMixin, HierarchicalDrawable):
         return ""
 
 
-class Drawing(GlobalShapeMixin, HierarchicalDrawable, FillMixin, StrokeMixin, AnchorMixin, OpacityMixin):
+class Drawing(
+    GlobalShapeMixin,
+    HierarchicalDrawable,
+    FillMixin,
+    StrokeMixin,
+    AnchorMixin,
+    OpacityMixin,
+):
     """A Drawing is an Element for which the self-display is defined by a Path."""
 
     def __init__(self, path: Path):
         self._path: Path = path
         super().__init__()
         self.set_anchor(Anchor.DEFAULT)
-
 
     def point(self, length: float) -> Vec2:
         return self.transform(
@@ -128,14 +139,16 @@ class Drawing(GlobalShapeMixin, HierarchicalDrawable, FillMixin, StrokeMixin, An
         return self.global_transform(
             Transform(self._path.set_offset(*self.anchor_offset).point(length))
         ).translation.xy
-    
 
     def calculate_top_left(self):
         return self._path.top_left
+
     def calculate_width(self):
         return self._path.width
+
     def calculate_height(self):
         return self._path.height
+
     def draw_self(self):
         self._path.set_offset(*self.anchor_offset)
         return f"""<path \
@@ -151,13 +164,19 @@ opacity="{self.global_opacity}"\
 
 
 # TODO Make Circle a Drawing by adding a Path that approximates the circle
-class Circle(GlobalShapeMixin, HierarchicalDrawable, FillMixin, StrokeMixin, AnchorMixin, OpacityMixin):
+class Circle(
+    GlobalShapeMixin,
+    HierarchicalDrawable,
+    FillMixin,
+    StrokeMixin,
+    AnchorMixin,
+    OpacityMixin,
+):
     """A Circle"""
 
     def __init__(self, radius: float):
         super().__init__()
         self.radius = radius
-
 
     def calculate_top_left(self):
         return Vec2(-self.radius, -self.radius)
@@ -186,11 +205,10 @@ fill-opacity="{self.fill.opacity}" \
 opacity="{self.global_opacity}"\
 />"""
 
+
 class Rect(Drawing):
     """A Rectangle"""
 
     def __init__(self, width, height):
-        super().__init__(
-            Path().l(width, 0).l(0, height).l(-width, 0).Z()
-            )
+        super().__init__(Path().l(width, 0).l(0, height).l(-width, 0).Z())
         self.set_anchor(Anchor.CENTER)

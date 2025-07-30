@@ -6,11 +6,10 @@ from visuscript.primatives import Rgb
 from visuscript.lazy_object import Lazible
 
 
-    
 class RgbMixin:
     def __init__(self):
         super().__init__()
-        self._rgb: Rgb = PALETTE['off_white']
+        self._rgb: Rgb = PALETTE["off_white"]
 
     def set_rgb(self, rgb: Rgb._RgbLike) -> Self:
         self.rgb = rgb
@@ -27,6 +26,7 @@ class RgbMixin:
         else:
             self._rgb = Rgb(*value)
 
+
 class OpacityMixin:
     def __init__(self):
         super().__init__()
@@ -35,7 +35,7 @@ class OpacityMixin:
     @property
     def opacity(self) -> float:
         return self._opacity
-    
+
     @opacity.setter
     def opacity(self, other: float):
         self._opacity = other
@@ -43,10 +43,11 @@ class OpacityMixin:
     def set_opacity(self, opacity: float) -> Self:
         self.opacity = opacity
         return self
-    
+
 
 class Color(RgbMixin, OpacityMixin, Lazible):
     _ColorLike: TypeAlias = Union[Rgb._RgbLike, "Color"]
+
     def __init__(self, rgb: _ColorLike, opacity: float | None = None):
         super().__init__()
 

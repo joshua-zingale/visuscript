@@ -5,6 +5,7 @@ from visuscript.drawable.mixins import OpacityMixin, RgbMixin
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG, config
 from . import AnimationSequence, OpacityAnimation, RgbAnimation, LazyAnimation
 
+
 def fade_in(element: OpacityMixin, **kwargs) -> OpacityAnimation:
     """Returns an Animation to fade an Element in."""
     return OpacityAnimation.lazy(element, 1.0, **kwargs)

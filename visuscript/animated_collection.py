@@ -32,7 +32,7 @@ from typing import (
     overload,
     TypeVar,
     Generic,
-    Protocol
+    Protocol,
 )
 
 
@@ -154,9 +154,12 @@ NilVar = Var(None)
 """A :class:`Var` representing no value."""
 
 
-class CollectionDrawable(HasShape, HasTransform, CanBeDrawn, Protocol): pass
+class CollectionDrawable(HasShape, HasTransform, CanBeDrawn, Protocol):
+    pass
+
 
 T = TypeVar("T", bound=CollectionDrawable)
+
 
 class _AnimatedCollectionDrawable(Drawable):
     def __init__(self, animated_collection: "AnimatedCollection[T]"):
@@ -167,6 +170,8 @@ class _AnimatedCollectionDrawable(Drawable):
         return "".join(
             element.draw() for element in self._animated_collection.all_elements
         )
+
+
 class AnimatedCollection(Generic[T], Collection[Var]):
     """Stores data in form of :class:`Var` instances alongside corresponding :class:`~visuscript.element.Element` instances
     and organizational functionality to transform the :class:`~visuscript.element.Element` instances according to the rules of the given :class:`AnimatedCollection`.
@@ -239,7 +244,9 @@ class AnimatedCollection(Generic[T], Collection[Var]):
 
 
 class AnimatedList(AnimatedCollection[T], MutableSequence[Var]):
-    def __init__(self, variables: Iterable[Var] = [], *, transform: Transform | None = None):
+    def __init__(
+        self, variables: Iterable[Var] = [], *, transform: Transform | None = None
+    ):
         self._transform = Transform() if transform is None else Transform(transform)
         self._vars: list[Var] = []
         self._elements: list[T] = []
@@ -300,11 +307,13 @@ class AnimatedList(AnimatedCollection[T], MutableSequence[Var]):
         if not isinstance(value, Iterable):
             value = [value]
         if not isinstance(index, slice):
-            index = slice(index, index+1, 1)
+            index = slice(index, index + 1, 1)
 
         for idx, var in zip(range(index.start, index.stop, index.step), value):
             if self.is_contains(var):
-                raise ValueError(f"Cannot have the same Var in this AnimatedList twice.")
+                raise ValueError(
+                    f"Cannot have the same Var in this AnimatedList twice."
+                )
             self._vars[idx] = var
             self._elements[idx] = self.new_element_for(var)
 
@@ -312,8 +321,7 @@ class AnimatedList(AnimatedCollection[T], MutableSequence[Var]):
         del self._vars[index]
         del self._elements[index]
 
-
-    def insert( # type: ignore
+    def insert(  # type: ignore
         self,
         index: int,
         value: Var,
@@ -419,7 +427,7 @@ class AnimatedList(AnimatedCollection[T], MutableSequence[Var]):
 
         return LazyAnimation(get_quadratic_swap)
 
-    def extend( # type: ignore
+    def extend(  # type: ignore
         self,
         values: Iterable[Var],
         *,
@@ -544,7 +552,12 @@ class AnimatedBinaryTreeArray(AnimatedList[Pivot | Circle]):
 
 
 class AnimatedArray(AnimatedList[Text]):
-    def __init__(self, variables: Iterable[Var], font_size: float, transform: Transform | None = None):
+    def __init__(
+        self,
+        variables: Iterable[Var],
+        font_size: float,
+        transform: Transform | None = None,
+    ):
         variables = list(variables)
         self._max_length = len(variables)
         self._font_size = font_size
@@ -560,7 +573,13 @@ class AnimatedArray(AnimatedList[Text]):
     def new_element_for(self, var: Var) -> Text:
         return Text(f"{var.value}", font_size=self._font_size)
 
-    def insert(self, index: int, value: Var, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG):
+    def insert(
+        self,
+        index: int,
+        value: Var,
+        *,
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
+    ):
         if len(self) == self._max_length:
             raise ValueError(
                 "Cannot insert a Var into an AnimatedArray that is already at its maximal length."
@@ -574,7 +593,7 @@ class AnimatedArray2D(AnimatedArray):
         variables: Iterable[Var],
         font_size: float,
         shape: Tuple[int, int],
-        transform: Transform | None = None
+        transform: Transform | None = None,
     ):
         self._shape = shape
         super().__init__(variables, font_size, transform=transform)
@@ -598,11 +617,12 @@ class AnimatedArray2D(AnimatedArray):
         return super()[self._tuple_to_index(index)]
 
     def insert(
-            self,
-            index: int | Tuple[int, int],
-            value: Var, *,
-            duration: float | ConfigurationDeference = DEFER_TO_CONFIG
-            ) -> Animation:
+        self,
+        index: int | Tuple[int, int],
+        value: Var,
+        *,
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
+    ) -> Animation:
         if isinstance(index, Tuple):
             index = self._tuple_to_index(index)
         return super().insert(index, value, duration=duration)
