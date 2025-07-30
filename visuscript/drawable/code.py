@@ -16,7 +16,7 @@ def get_all_code_blocks(filename) -> dict[int, str]:
 
     :param filename: The file in which code blocks are found.
     :return: A dictionary mapping the id of each codeblock to the text thereof.
-    """    
+    """
     with open(filename, "r") as f:
         code = f.read()
     pattern = r"##(\d+)(.*?)##"

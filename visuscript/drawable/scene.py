@@ -1,10 +1,11 @@
 """This module contains Scene, which allows display of Drawable and animation thereof."""
+
 from visuscript.drawable.mixins import (
     Color,
     Drawable,
     AnchorMixin,
     TransformMixin,
-    )
+)
 from visuscript.constants import Anchor, OutputFormat
 from visuscript.drawable.element import Rect
 from visuscript.updater import UpdaterBundle
@@ -144,14 +145,11 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
         horizontal/vertical dimension from left to right/top to bottom."""
         return Vec2(self.x(x_percentage), self.y(y_percentage))
 
-
     def calculate_top_left(self) -> Vec2:
         return Vec2(0, 0)
 
-
     def calculate_width(self) -> float:
         return self._logical_width
-
 
     def calculate_height(self) -> float:
         return self._logical_height
@@ -172,10 +170,15 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
             rotation=-self.transform.rotation,
         )
 
-        background = Rect(
-            width=self.shape.width * self.logical_scaling,
-            height=self.shape.height * self.logical_scaling,
-        ).set_fill(self.color).set_stroke(self.color).set_anchor(Anchor.TOP_LEFT)
+        background = (
+            Rect(
+                width=self.shape.width * self.logical_scaling,
+                height=self.shape.height * self.logical_scaling,
+            )
+            .set_fill(self.color)
+            .set_stroke(self.color)
+            .set_anchor(Anchor.TOP_LEFT)
+        )
         view_width = self.shape.width * self.logical_scaling
         view_height = self.shape.height * self.logical_scaling
         return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {view_width} {view_height}">\

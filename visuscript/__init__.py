@@ -37,12 +37,7 @@ from .constants import (
     FORWARD,
     BACKWARD,
 )
-from .updater import (
-    UpdaterBundle,
-    TranslationUpdater,
-    FunctionUpdater,
-    run_updater
-    )
+from .updater import UpdaterBundle, TranslationUpdater, FunctionUpdater, run_updater
 from .animation import (
     AnimationBundle,
     AnimationSequence,
@@ -63,21 +58,17 @@ from .animation import (
 
 __all__ = [
     "Scene",
-
     "Color",
     "Circle",
     "Rect",
     "Image",
     "Pivot",
     "Drawing",
-
     "Text",
-
     "Transform",
     "Vec2",
     "Vec3",
     "Rgb",
-
     "AnimationBundle",
     "AnimationSequence",
     "TransformAnimation",
@@ -93,12 +84,10 @@ __all__ = [
     "fade_in",
     "fade_out",
     "flash",
-
     "UpdaterBundle",
     "TranslationUpdater",
     "FunctionUpdater",
     "run_updater",
-
     "Anchor",
     "OutputFormat",
     "UP",
@@ -107,7 +96,6 @@ __all__ = [
     "LEFT",
     "FORWARD",
     "BACKWARD",
-
     "Path",
     "GridOrganizer",
 ]

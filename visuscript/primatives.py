@@ -184,7 +184,8 @@ class Vec3(Vec):
 
 
 class Rgb(Interpolable["Rgb"]):
-    _RgbLike: TypeAlias = Union["Rgb", str, tuple[int,int,int]]
+    _RgbLike: TypeAlias = Union["Rgb", str, tuple[int, int, int]]
+
     def __init__(self, r: int, g: int, b: int):
         for v in [r, g, b]:
             if v < 0 or v > 255:
@@ -229,7 +230,7 @@ class Rgb(Interpolable["Rgb"]):
 
     def __repr__(self):
         return str(self)
-    
+
     @property
     def svg(self):
         r, g, b = self._rgb
@@ -365,9 +366,10 @@ class Transform(Invalidator, Interpolable["Transform"], Lazible):
     def __call__(self, other: Vec2) -> Vec2: ...
     @overload
     def __call__(self, other: Vec3) -> Vec3: ...
-    def __call__(self, other: Union["Transform", Vec2, Vec3]) -> Union["Transform", Vec2, Vec3]:
+    def __call__(
+        self, other: Union["Transform", Vec2, Vec3]
+    ) -> Union["Transform", Vec2, Vec3]:
         return self @ other
-
 
     @overload
     def __matmul__(self, other: "Transform") -> "Transform": ...

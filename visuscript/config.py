@@ -67,9 +67,9 @@ config: _AnimationConfig = _AnimationConfig()
 The global singleton configuration object for Visuscript, which sets defaults for various Visuscript features.
 """
 
+
 class ConfigurationDeference:
-    """As an parameter type hint, specifies that passing in `DEFER_TO_CONFIG` as the argument will lead to the global configuration setting the value.
-    """
+    """As an parameter type hint, specifies that passing in `DEFER_TO_CONFIG` as the argument will lead to the global configuration setting the value."""
 
 
 DEFER_TO_CONFIG: ConfigurationDeference = ConfigurationDeference()

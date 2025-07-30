@@ -9,6 +9,7 @@ from visuscript._internal._invalidator import Invalidatable
 from visuscript.config import config
 from .color import Color, OpacityMixin
 
+
 class TransformMixin:
     def __init__(self):
         super().__init__()
@@ -52,7 +53,7 @@ class TransformMixin:
         """Sets this Drawable's Transform."""
         self._transform.update(Transform(transform))
         return self
-    
+
 
 class FillMixin:
     def __init__(self):
@@ -62,7 +63,7 @@ class FillMixin:
     @property
     def fill(self) -> Color:
         return self._fill
-    
+
     @fill.setter
     def fill(self, other: Color._ColorLike):
         self.set_fill(other)
@@ -73,7 +74,8 @@ class FillMixin:
         self._fill.rgb = color.rgb
         self._fill.opacity = color.opacity
         return self
-    
+
+
 class StrokeMixin:
     def __init__(self):
         super().__init__()
@@ -83,7 +85,7 @@ class StrokeMixin:
     @property
     def stroke(self) -> Color:
         return self._stroke
-    
+
     @stroke.setter
     def stroke(self, other: Color._ColorLike):
         self.set_stroke(other)
@@ -94,14 +96,15 @@ class StrokeMixin:
         self._stroke.rgb = color.rgb
         self._stroke.opacity = color.opacity
         return self
-    
+
     @property
     def stroke_width(self) -> float:
         return self._stroke_width
+
     @stroke_width.setter
     def stroke_width(self, other: float):
         self.set_stroke_width(other)
-    
+
     def set_stroke_width(self, width: float) -> Self:
         """Sets the stroke width for this object."""
         self._stroke_width = width
@@ -113,6 +116,7 @@ class ShapeMixin(ABC):
     def calculate_top_left(self) -> Vec2:
         """Returns the un-transformed top-left (x,y) coordinate for this object's `:class:Shape`."""
         ...
+
     @abstractmethod
     def calculate_width(self) -> float:
         """Returns the un-transformed width of this object's :class:`Shape`."""
@@ -125,22 +129,24 @@ class ShapeMixin(ABC):
 
     def calculate_circumscribed_radius(self):
         """The radius of the smallest circle centered at this un-transformed objects's center that can circumscribe this object's :class:`Shape`."""
-        return (self.calculate_width()**2 + self.calculate_height()**2) ** 0.5 / 2
-    
+        return (self.calculate_width() ** 2 + self.calculate_height() ** 2) ** 0.5 / 2
+
     @cached_property
     def shape(self):
         """The un-transformed Shape for this object."""
         return Shape(self)
-    
+
+
 class TransformableShapeMixin(ShapeMixin, TransformMixin):
     @cached_property
     def transformed_shape(self):
         """The Shape for this Drawable when it has been transformed by its Transform."""
         return Shape(self, self.transform)
-    
+
     def _invalidate(self):
         if hasattr(self, "transformed_shape"):
             del self.transformed_shape
+
 
 class AnchorMixin(ShapeMixin):
     def __init__(self):
@@ -164,7 +170,9 @@ class AnchorMixin(ShapeMixin):
             # Invalidate shapes
             if hasattr(self, "shape"):
                 del self.shape
-            if isinstance(self, TransformableShapeMixin) and hasattr(self, "transformed_shape"):
+            if isinstance(self, TransformableShapeMixin) and hasattr(
+                self, "transformed_shape"
+            ):
                 del self.transformed_shape
         return self
 
@@ -197,6 +205,7 @@ class AnchorMixin(ShapeMixin):
         else:
             raise NotImplementedError()
 
+
 class Drawable(ABC):
     @abstractmethod
     def draw(self) -> str:
@@ -204,7 +213,13 @@ class Drawable(ABC):
         ...
 
 
-class HierarchicalDrawable(Drawable, TransformMixin, OpacityMixin, Iterable["HierarchicalDrawable"], Invalidatable):
+class HierarchicalDrawable(
+    Drawable,
+    TransformMixin,
+    OpacityMixin,
+    Iterable["HierarchicalDrawable"],
+    Invalidatable,
+):
     def __init__(self):
         super().__init__()
         self._children: list[HierarchicalDrawable] = []
@@ -251,7 +266,9 @@ class HierarchicalDrawable(Drawable, TransformMixin, OpacityMixin, Iterable["Hie
         return False
 
     def set_parent(
-        self, parent: Union["HierarchicalDrawable", None], preserve_global_transform: bool = False
+        self,
+        parent: Union["HierarchicalDrawable", None],
+        preserve_global_transform: bool = False,
     ) -> Self:
         """
         Sets this object's parent, replacing any that may have already existed.
@@ -278,13 +295,17 @@ class HierarchicalDrawable(Drawable, TransformMixin, OpacityMixin, Iterable["Hie
             self._invalidate()
 
             if preserve_global_transform:
-                self.global_transform = global_transform # type: ignore
+                self.global_transform = global_transform  # type: ignore
 
         return self
 
     def add_child(
         self,
-        child_or_initializer: "HierarchicalDrawable" | Callable[["HierarchicalDrawable"], "HierarchicalDrawable" | Iterable["HierarchicalDrawable"]],
+        child_or_initializer: "HierarchicalDrawable"
+        | Callable[
+            ["HierarchicalDrawable"],
+            "HierarchicalDrawable" | Iterable["HierarchicalDrawable"],
+        ],
         preserve_global_transform: bool = False,
     ) -> Self:
         """
@@ -308,7 +329,9 @@ class HierarchicalDrawable(Drawable, TransformMixin, OpacityMixin, Iterable["Hie
                         self, preserve_global_transform=preserve_global_transform
                     )
         else:
-            child_or_initializer.set_parent(self, preserve_global_transform=preserve_global_transform)
+            child_or_initializer.set_parent(
+                self, preserve_global_transform=preserve_global_transform
+            )
         return self
 
     def remove_child(
@@ -327,7 +350,11 @@ class HierarchicalDrawable(Drawable, TransformMixin, OpacityMixin, Iterable["Hie
 
     def add_children(
         self,
-        *children: "HierarchicalDrawable" | Callable[["HierarchicalDrawable"], "HierarchicalDrawable" | Iterable["HierarchicalDrawable"]],
+        *children: "HierarchicalDrawable"
+        | Callable[
+            ["HierarchicalDrawable"],
+            "HierarchicalDrawable" | Iterable["HierarchicalDrawable"],
+        ],
         preserve_global_transform: bool = False,
     ) -> Self:
         """
@@ -392,12 +419,17 @@ class GlobalShapeMixin(HierarchicalDrawable, TransformableShapeMixin):
         super()._invalidate()
         if hasattr(self, "global_shape"):
             del self.global_shape
+
     @cached_property
     def global_shape(self):
         return Shape(self, self.global_transform)
 
 
-class Element(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin, StrokeMixin): pass
+class Element(
+    GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin, StrokeMixin
+):
+    pass
+
 
 class Shape:
     """Holds geometric properties for an object."""
@@ -408,7 +440,9 @@ class Shape:
         :param transform: Applies this transform to the :class:`Shape` of obj, defaults to Transform()
         """
 
-        top_left = obj.calculate_top_left() + (obj.anchor_offset if isinstance(obj, AnchorMixin) else 0)
+        top_left = obj.calculate_top_left() + (
+            obj.anchor_offset if isinstance(obj, AnchorMixin) else 0
+        )
         width = obj.calculate_width()
         height = obj.calculate_height()
         circumscribed_radius = obj.calculate_circumscribed_radius()
@@ -439,22 +473,14 @@ class Shape:
         self.bottom_left: Vec2 = transform @ (top_left + [0, height])
         """The bottom-left coordinate of the object's rectangular circumscription."""
 
-        self.bottom: Vec2 = transform @ (
-            top_left + [width / 2, height]
-        )
+        self.bottom: Vec2 = transform @ (top_left + [width / 2, height])
         """The bottom-middle coordinate of the object's rectangular circumscription."""
 
-        self.bottom_right: Vec2 = transform @ (
-            top_left + [width, height]
-        )
+        self.bottom_right: Vec2 = transform @ (top_left + [width, height])
         """The bottom-right coordinate of the object's rectangular circumscription."""
 
-        self.right: Vec2 = transform @ (
-            top_left + [width, height / 2]
-        )
+        self.right: Vec2 = transform @ (top_left + [width, height / 2])
         """The right-middle coordinate of the object's rectangular circumscription."""
 
-        self.center: Vec2 = transform @ (
-            top_left + [width / 2, height / 2]
-        )
+        self.center: Vec2 = transform @ (top_left + [width / 2, height / 2])
         """The center coordinate of the object's rectangular circumscription."""

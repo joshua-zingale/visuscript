@@ -4,8 +4,8 @@ from visuscript.drawable.mixins import (
     GlobalShapeMixin,
     FillMixin,
     StrokeMixin,
-    OpacityMixin
-    )
+    OpacityMixin,
+)
 from visuscript.drawable.element import Drawing, Path, Pivot
 from visuscript.primatives import Vec2
 from visuscript.constants import LineTarget
@@ -50,20 +50,17 @@ class Connector(Drawable, ShapeMixin, FillMixin, StrokeMixin, OpacityMixin):
         self._source_target = source_target
         self._destination_target = destination_target
 
-
     def calculate_height(self) -> float:
         return abs(
             self._destination.global_shape.center[1]
             - self._source.global_shape.center[1]
         )
 
-
     def calculate_width(self) -> float:
         return abs(
             self._destination.global_shape.center[0]
             - self._source.global_shape.center[0]
         )
-
 
     def calculate_top_left(self) -> Vec2:
         return Vec2(
@@ -170,7 +167,7 @@ class Line(Connector):
             .set_stroke_width(stroke_width)
             .set_fill(fill)
             .set_opacity(0.0 if overlapped else opacity)
-            )
+        )
 
 
 class Arrow(Connector):
@@ -194,7 +191,9 @@ class Arrow(Connector):
         )
         self._start_size = start_size
         self._end_size = (
-            config.element_stroke_width * 5 if isinstance(end_size, ConfigurationDeference) else end_size
+            config.element_stroke_width * 5
+            if isinstance(end_size, ConfigurationDeference)
+            else end_size
         )
 
     def get_connector(
@@ -216,25 +215,27 @@ class Arrow(Connector):
         line_start = source + unit * self._start_size
         line_end = source + unit * (dist - self._end_size)
 
-        return (Drawing((
-                Path()
-                .M(*source)
-                .L(*(line_start - ortho * self._start_size / 2))
-                .M(*source)
-                .L(*(line_start + ortho * self._start_size / 2))
-                .L(*line_start)
-                .L(*line_start)
-                .L(*line_end)
-                .L(*(line_end + ortho * self._end_size / 2))
-                .L(*(source + unit * dist))
-                .L(*(line_end - ortho * self._end_size / 2))
-                .L(*line_end)
-            ),
-        )
-        .set_stroke(stroke)
-        .set_stroke_width(stroke_width)
-        .set_fill(fill)
-        .set_opacity(0.0 if overlapped else opacity)        
+        return (
+            Drawing(
+                (
+                    Path()
+                    .M(*source)
+                    .L(*(line_start - ortho * self._start_size / 2))
+                    .M(*source)
+                    .L(*(line_start + ortho * self._start_size / 2))
+                    .L(*line_start)
+                    .L(*line_start)
+                    .L(*line_end)
+                    .L(*(line_end + ortho * self._end_size / 2))
+                    .L(*(source + unit * dist))
+                    .L(*(line_end - ortho * self._end_size / 2))
+                    .L(*line_end)
+                ),
+            )
+            .set_stroke(stroke)
+            .set_stroke_width(stroke_width)
+            .set_fill(fill)
+            .set_opacity(0.0 if overlapped else opacity)
         )
 
 
@@ -265,7 +266,9 @@ class Edges(Drawable):
         return 0.0
 
     def connect_by_rule(
-        self, rule: Callable[[GlobalShapeMixin, GlobalShapeMixin], bool], elements: Iterable[GlobalShapeMixin]
+        self,
+        rule: Callable[[GlobalShapeMixin, GlobalShapeMixin], bool],
+        elements: Iterable[GlobalShapeMixin],
     ) -> Animation:
         bundle = AnimationBundle()
 

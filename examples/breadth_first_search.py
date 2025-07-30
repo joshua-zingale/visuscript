@@ -192,7 +192,9 @@ def get_velocity_mover(nodes: list[GraphNode]):
     return velocity_mover
 
 
-def bfs(nodes: list[GraphNode], edges: Edges) -> Generator[tuple[int, None | GraphNode, GraphNode]]:
+def bfs(
+    nodes: list[GraphNode], edges: Edges
+) -> Generator[tuple[int, None | GraphNode, GraphNode]]:
     queue: list[tuple[int, GraphNode | None, GraphNode]] = [(0, None, nodes[0])]
     queued = set(nodes[0])
     while queue:

@@ -1,8 +1,5 @@
 """This module contains the abstract base class of all Animations alongside a bevy of basic animations and easing functions."""
 
-
-
-
 from typing import Callable, no_type_check, Any
 from abc import ABC, abstractmethod, ABCMeta
 import inspect
@@ -17,6 +14,7 @@ from visuscript.lazy_object import evaluate_lazy, LazyObject
 
 from .easing import sin_easing2
 from copy import deepcopy
+
 
 class AnimationMetaClass(ABCMeta):
     @no_type_check
@@ -89,7 +87,7 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
 
     # This needs to be here because of the metaclass:
     # __init_locker__ and __init__ must share the same signatures.
-    def __init__(self): ... 
+    def __init__(self): ...
 
     @abstractmethod
     def __init_locker__(self) -> PropertyLocker:
@@ -313,7 +311,7 @@ class UpdaterAnimation(Animation):
         updater: Updater,
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
-    ): 
+    ):
         return deepcopy(updater.locker)
 
     def advance(self) -> bool:
@@ -334,7 +332,7 @@ class AlphaAnimation(Animation):
         super().__init__()
         if isinstance(duration, ConfigurationDeference):
             duration = config.animation_duration
-        
+
         self._duration = duration
 
         self._frame_number: int = 1
@@ -342,13 +340,12 @@ class AlphaAnimation(Animation):
         self._easing_function = easing_function
 
     @abstractmethod
-    def __init_locker__( # type: ignore[reportIncompatibleMethodOverride]
+    def __init_locker__(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
         easing_function: Callable[[float], float] = sin_easing2,
-    ):  
-        ...
+    ): ...
 
     def advance(self) -> bool:
         if self._frame_number > self._num_frames:

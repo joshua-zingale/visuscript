@@ -2,7 +2,12 @@ from visuscript import *
 from visuscript.drawable.connector import *
 import numpy as np
 from visuscript.config import *
-from visuscript.animated_collection import AnimatedBinaryTreeArray, Var, NilVar, CollectionDrawable
+from visuscript.animated_collection import (
+    AnimatedBinaryTreeArray,
+    Var,
+    NilVar,
+    CollectionDrawable,
+)
 from typing import Sequence
 import random
 
@@ -24,7 +29,9 @@ def main():
     )
 
     tree = AnimatedBinaryTreeArray(
-        [Var(None) for _ in range(NUM_NODES)], radius=RADIUS, transform=Transform([0, -75])
+        [Var(None) for _ in range(NUM_NODES)],
+        radius=RADIUS,
+        transform=Transform([0, -75]),
     )
 
     s << tree.collection_element
@@ -125,7 +132,12 @@ def insert(var: Var, tree: AnimatedBinaryTreeArray) -> Var:
     return var
 
 
-def compare(operator: str, element1: CollectionDrawable, element2: CollectionDrawable, is_true: bool):
+def compare(
+    operator: str,
+    element1: CollectionDrawable,
+    element2: CollectionDrawable,
+    is_true: bool,
+):
     if is_true:
         color = "green"
         text = "✓"
@@ -139,9 +151,7 @@ def compare(operator: str, element1: CollectionDrawable, element2: CollectionDra
         .set_fill(color)
         .translate(*(element2.shape.left * 1.5))
         .add_child(
-            question_mark := Text(
-                text, font_size=element2.shape.height / 2
-            )
+            question_mark := Text(text, font_size=element2.shape.height / 2)
             .set_anchor(Anchor.BOTTOM)
             .set_fill(color)
         )
@@ -253,9 +263,9 @@ def animate_find(var: Var, tree: AnimatedBinaryTreeArray, font_size=16):
             .set_anchor(Anchor.LEFT)
             .translate(*glass.shape.right + UP * font_size / 2 + font_size * RIGHT / 2),
         ),
-        center_cross := Text("X", font_size=glass.shape.height).set_opacity(
-            0.0
-        ).set_fill("red"),
+        center_cross := Text("X", font_size=glass.shape.height)
+        .set_opacity(0.0)
+        .set_fill("red"),
     )
 
     tree.add_auxiliary_element(glass)

@@ -11,16 +11,11 @@ from visuscript.animation import (
     RotationAnimation,
 )
 from visuscript.property_locker import PropertyLocker, LockedPropertyError
-from visuscript import (
-    Transform,
-    Vec3,
-    Color,
-    Rgb,
-    Circle
-    )
+from visuscript import Transform, Vec3, Color, Rgb, Circle
 from visuscript.lazy_object import Lazible
 from visuscript.config import config
 from visuscript.primatives import Vec
+
 
 class TestAnimation(VisuscriptTestCase):
     def test_set_speed_number_of_advances(self):
