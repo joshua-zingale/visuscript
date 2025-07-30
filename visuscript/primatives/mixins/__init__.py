@@ -1,7 +1,4 @@
-from .color import (
-    RgbMixin,
-    OpacityMixin,
-    Color)
+from .color import RgbMixin, OpacityMixin, Color
 from .mixins import (
     Drawable,
     TransformMixin,

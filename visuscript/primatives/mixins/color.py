@@ -30,15 +30,7 @@ class RgbMixin:
 class OpacityMixin:
     def __init__(self):
         super().__init__()
-        self._opacity: float = 1
-
-    @property
-    def opacity(self) -> float:
-        return self._opacity
-
-    @opacity.setter
-    def opacity(self, other: float):
-        self._opacity = other
+        self.opacity: float = 1
 
     def set_opacity(self, opacity: float) -> Self:
         self.opacity = opacity

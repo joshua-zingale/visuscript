@@ -147,7 +147,7 @@ class Var:
     @no_type_check
     def __str__(self):
         return f"Var({self.value}, type={self._type.__name__})"
-    
+
     @no_type_check
     def __repr__(self):
         return str(self)
@@ -205,7 +205,7 @@ class AnimatedCollection(Generic[T], Collection[Var]):
         for var in self:
             animation_bundle << TransformAnimation(
                 self.element_for(var).transform, self.target_for(var), duration=duration
-            ) # type: ignore[reportUnusedExpression]
+            )  # type: ignore[reportUnusedExpression]
         return animation_bundle
 
     @property
