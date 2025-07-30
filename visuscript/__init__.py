@@ -21,12 +21,13 @@ If the utility is not added to your PATH, the following works as well:
 """
 
 from .drawable.element import Circle, Rect, Image, Pivot, Drawing
-from .drawable import Color
+from .primatives import Color
 from .primatives import Transform, Vec2, Vec3, Rgb
 from .drawable.scene import Scene
 from .organizer import GridOrganizer
 from .drawable.text import Text
 from .segment import Path
+from .primatives import mixins
 from .constants import (
     Anchor,
     OutputFormat,
@@ -57,8 +58,8 @@ from .animation import (
 )
 
 __all__ = [
+    "mixins",
     "Scene",
-    "Color",
     "Circle",
     "Rect",
     "Image",
@@ -69,6 +70,9 @@ __all__ = [
     "Vec2",
     "Vec3",
     "Rgb",
+    "Color",
+    "Path",
+    "GridOrganizer",
     "AnimationBundle",
     "AnimationSequence",
     "TransformAnimation",
@@ -96,6 +100,4 @@ __all__ = [
     "LEFT",
     "FORWARD",
     "BACKWARD",
-    "Path",
-    "GridOrganizer",
 ]

@@ -2,12 +2,11 @@ from typing import cast, Any, Tuple, Self
 from functools import cached_property
 
 
-
 class LazyObject:
     def __init__(
         self,
         obj: Any,
-        _attribute_chain: list[str]  | None = None,
+        _attribute_chain: list[str] | None = None,
         _calls: dict[int, Tuple[Tuple[Any, ...], dict[str, Any]]] | None = None,
     ):
         self._obj = obj

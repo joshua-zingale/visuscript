@@ -1,4 +1,4 @@
-from visuscript.drawable.mixins import (
+from visuscript.primatives.mixins import (
     Drawable,
     ShapeMixin,
     GlobalShapeMixin,

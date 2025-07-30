@@ -52,7 +52,7 @@ FORWARD: Vec3 = Vec3(0, 0, 1)
 """A three-dimensional unit-vector pointing forward, i.e. toward from the camera."""
 
 
-PALETTE: dict[str, Rgb] = {
+PALETTE: dict[str, Rgb] = {  # type: ignore[reportConstantRedefinition]
     "dark_slate": Rgb(*[28, 28, 28]),
     "soft_blue": Rgb(*[173, 216, 230]),
     "vibrant_orange": Rgb(*[255, 165, 0]),

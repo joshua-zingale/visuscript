@@ -1,7 +1,7 @@
 import sys
 
 from visuscript.constants import OutputFormat
-from visuscript.drawable.mixins.color import Color
+from visuscript.primatives import Color
 
 
 class _AnimationConfig:

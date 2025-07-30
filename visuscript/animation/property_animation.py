@@ -7,9 +7,8 @@ from visuscript._internal._constructors import construct_vec3
 from .animation import AlphaAnimation
 from visuscript.property_locker import PropertyLocker
 
-from visuscript.primatives import Transform, Rgb, Vec2, Vec3
-from visuscript.drawable import Color
-from visuscript.drawable.mixins import OpacityMixin, RgbMixin
+from visuscript.primatives import Transform, Rgb, Vec2, Vec3, Color
+from visuscript.primatives.mixins import OpacityMixin, RgbMixin
 
 
 class NotInterpolableError(ValueError):

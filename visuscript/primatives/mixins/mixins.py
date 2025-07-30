@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Sequence, Self, Union, Iterable, Callable, Iterator, Protocol
+from typing import Sequence, Self, Union, Iterable, Callable, Iterator
 from copy import deepcopy
 
 from visuscript.constants import Anchor
