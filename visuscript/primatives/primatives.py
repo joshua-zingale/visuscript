@@ -30,7 +30,7 @@ _VecLike: TypeAlias = Sequence[float]
 
 
 # TODO Add support for arbitrary dimensions in a base class, which can be used for matrices etc later
-class Vec(Sequence[float], Interpolable[_VecLike]):
+class Vec(Sequence[float], Interpolable):
     # @staticmethod
     # def size_check(operation):
     #     def size_check_function(self, other):
@@ -183,7 +183,7 @@ class Vec3(Vec):
         return Vec2(*self[:2])
 
 
-class Rgb(Interpolable["Rgb"]):
+class Rgb(Interpolable):
     _RgbLike: TypeAlias = Union["Rgb", str, tuple[int, int, int]]
 
     def __init__(self, r: int, g: int, b: int):
@@ -248,7 +248,7 @@ def get_vec3(values: Sequence[float], z_fill: float = 0.0) -> Vec3:
         )
 
 
-class Transform(Invalidator, Interpolable["Transform"], Lazible):
+class Transform(Invalidator, Interpolable, Lazible):
     def __init__(
         self,
         translation: Vec2 | Vec3 | Sequence[float] | Self = [0, 0, 0],
