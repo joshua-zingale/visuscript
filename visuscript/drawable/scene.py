@@ -7,7 +7,7 @@ from visuscript.primatives.mixins import (
     TransformMixin,
 )
 from visuscript.constants import Anchor, OutputFormat
-from visuscript.drawable.element import Rect
+from visuscript.drawable import Rect
 from visuscript.updater import UpdaterBundle
 from visuscript.primatives import *
 from visuscript.primatives.protocols import CanBeDrawn

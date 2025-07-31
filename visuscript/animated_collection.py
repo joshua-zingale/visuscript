@@ -12,7 +12,7 @@ from visuscript.segment import Path
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
 from visuscript.drawable.text import Text
 from visuscript.organizer import BinaryTreeOrganizer, Organizer, GridOrganizer
-from visuscript.drawable.element import Circle, Pivot, Rect
+from visuscript.drawable import Circle, Pivot, Rect
 from visuscript.primatives import Transform
 from visuscript.primatives.mixins import Drawable
 from visuscript.primatives.protocols import HasShape, HasTransform, CanBeDrawn

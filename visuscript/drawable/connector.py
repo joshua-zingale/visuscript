@@ -6,7 +6,8 @@ from visuscript.primatives.mixins import (
     StrokeMixin,
     OpacityMixin,
 )
-from visuscript.drawable.element import Drawing, Path, Pivot
+from visuscript.segment import Path
+from visuscript.drawable import Drawing, Pivot
 from visuscript.primatives import Vec2
 from visuscript.constants import LineTarget
 from visuscript.config import *

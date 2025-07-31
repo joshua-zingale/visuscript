@@ -1,10 +1,7 @@
 """Contains things that can be drawn"""
 
-from .element import (
-    Circle,
-    Rect,
-    Image,
-)
+from .elements import Circle, Rect, Pivot, Drawing
+from .image import Image
 from .text import Text
 from .code import PythonText
 
