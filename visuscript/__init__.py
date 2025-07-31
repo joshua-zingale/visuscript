@@ -22,7 +22,7 @@ If the utility is not added to your PATH, the following works as well:
 
 from .drawable import Circle, Rect, Image, Pivot, Drawing
 from .primatives import Color
-from .primatives import Transform, Vec2, Vec3, Rgb
+from .primatives import Transform, Vec2, Rgb
 from .drawable.scene import Scene
 from .organizer import GridOrganizer
 from .drawable.text import Text
@@ -35,8 +35,6 @@ from .constants import (
     RIGHT,
     DOWN,
     LEFT,
-    FORWARD,
-    BACKWARD,
 )
 from .updater import UpdaterBundle, TranslationUpdater, FunctionUpdater, run_updater
 from .animation import (
@@ -68,7 +66,6 @@ __all__ = [
     "Text",
     "Transform",
     "Vec2",
-    "Vec3",
     "Rgb",
     "Color",
     "Path",
@@ -98,6 +95,4 @@ __all__ = [
     "RIGHT",
     "DOWN",
     "LEFT",
-    "FORWARD",
-    "BACKWARD",
 ]

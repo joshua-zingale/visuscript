@@ -2,12 +2,11 @@ from typing import TypeVar, Generic, Sequence
 from copy import deepcopy
 
 from visuscript._internal._interpolable import InterpolableLike, interpolate
-from visuscript._internal._constructors import construct_vec3
 
 from .animation import AlphaAnimation
 from visuscript.property_locker import PropertyLocker
 
-from visuscript.primatives import Transform, Rgb, Vec2, Vec3, Color
+from visuscript.primatives import Transform, Rgb, Vec2, Color
 from visuscript.primatives.protocols import HasRgb, HasOpacity
 
 
@@ -65,23 +64,25 @@ class TranslationAnimation(PropertyAnimation[Transform]):
     def __init__(
         self,
         transform: Transform,
-        target_translation: Vec2 | Vec3 | Sequence[float],
-        initial_translation: Vec2 | Vec3 | None = None,
+        target_translation: Vec2._Vec2Like,
+        initial_translation: Vec2._Vec2Like | None = None,
         **kwargs,
     ):
         super().__init__(
             obj=transform,
             properties=["translation"],
-            destinations=[construct_vec3(target_translation, transform.translation.z)],
-            initials=[construct_vec3(initial_translation, transform.translation.z)],
+            destinations=[Vec2.construct(target_translation)],
+            initials=[
+                Vec2.construct(initial_translation) if initial_translation else None
+            ],
             **kwargs,
         )
 
     def __init_locker__(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         transform: Transform,
-        target_translation: Vec2 | Vec3 | Sequence[float],
-        initial_translation: Vec2 | Vec3 | None = None,
+        target_translation: Vec2._Vec2Like,
+        initial_translation: Vec2._Vec2Like | None = None,
         **kwargs,
     ):
         return PropertyLocker({transform: ["translation"]})
@@ -91,23 +92,33 @@ class ScaleAnimation(PropertyAnimation[Transform]):
     def __init__(
         self,
         transform: Transform,
-        target_scale: float | Vec3 | list,
-        initial_scale: int | float | Vec2 | Vec3 | None = None,
+        target_scale: Vec2._Vec2Like | float,
+        initial_scale: Vec2._Vec2Like | float | None = None,
         **kwargs,
     ):
         super().__init__(
             obj=transform,
             properties=["scale"],
-            destinations=[construct_vec3(target_scale, transform.scale.z)],
-            initials=[construct_vec3(initial_scale, transform.scale.z)],
+            destinations=[
+                Vec2(target_scale, target_scale)
+                if isinstance(target_scale, (int, float))
+                else Vec2.construct(target_scale)
+            ],
+            initials=[
+                (
+                    Vec2(initial_scale, initial_scale)
+                    if isinstance(initial_scale, (int, float))
+                    else (Vec2.construct(initial_scale) if initial_scale else None)
+                )
+            ],
             **kwargs,
         )
 
     def __init_locker__(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         transform: Transform,
-        target_scale: float | Vec3 | list,
-        initial_scale: int | float | Vec2 | Vec3 | None = None,
+        target_scale: Vec2._Vec2Like | float,
+        initial_scale: Vec2._Vec2Like | float | None = None,
         **kwargs,
     ):
         return PropertyLocker({transform: ["scale"]})
@@ -143,10 +154,17 @@ class TransformAnimation(PropertyAnimation[Transform]):
     def __init__(
         self,
         transform: Transform,
-        target_transform: Transform,
-        initial_transform: Transform | None = None,
+        target_transform: Transform._TransformLike,
+        initial_transform: Transform._TransformLike | None = None,
         **kwargs,
     ):
+        target_transform = Transform.construct(target_transform)
+
+        if initial_transform is not None and not isinstance(
+            initial_transform, Transform
+        ):
+            initial_transform = Transform.construct(initial_transform)
+
         initials: list[InterpolableLike | None]
         if initial_transform:
             initials = [
@@ -171,8 +189,8 @@ class TransformAnimation(PropertyAnimation[Transform]):
     def __init_locker__(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         transform: Transform,
-        target_transform: Transform,
-        initial_transform: Transform | None = None,
+        target_transform: Transform._TransformLike,
+        initial_transform: Transform._TransformLike | None = None,
         **kwargs,
     ):
         return PropertyLocker({transform: ["translation", "scale", "rotation"]})

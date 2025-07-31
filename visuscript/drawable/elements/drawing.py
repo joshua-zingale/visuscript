@@ -29,17 +29,17 @@ class Drawing(
     def point(self, length: float) -> Vec2:
         return self.transform(
             Transform(self._path.set_offset(*self.anchor_offset).point(length))
-        ).translation.xy
+        ).translation
 
     def point_percentage(self, p: float) -> Vec2:
         return self.transform(
             Transform(self._path.set_offset(*self.anchor_offset).point_percentage(p))
-        ).translation.xy
+        ).translation
 
     def global_point(self, length: float) -> Vec2:
         return self.global_transform(
             Transform(self._path.set_offset(*self.anchor_offset).point(length))
-        ).translation.xy
+        ).translation
 
     def calculate_top_left(self):
         return self._path.top_left

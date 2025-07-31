@@ -1,4 +1,4 @@
-from visuscript.primatives import Vec
+from visuscript.primatives.primatives import Vec
 from typing import Sequence, TypeVar
 
 import numpy as np

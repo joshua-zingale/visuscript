@@ -75,7 +75,7 @@ class TestTranslationUpdater(VisuscriptTestCase):
         updater = TranslationUpdater(source, destination, max_speed=2)
         for t, dt in frame_sequence(100):
             self.assertVecNotAlmostEqual(source.translation, destination.translation)
-            destination.translation += [1 * dt, 0, 0]
+            destination.translation += [1 * dt, 0]
             updater.update(t, dt)
         self.assertVecAlmostEqual(source.translation, destination.translation)
 
