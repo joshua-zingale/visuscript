@@ -166,7 +166,7 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
             translation=-inv_rotation(
                 self.transform.translation * self.logical_scaling / self.transform.scale
             )
-            - self.anchor_offset.extend(0) * self.logical_scaling,
+            - self.anchor_offset * self.logical_scaling,
             scale=self.logical_scaling / self.transform.scale,
             rotation=-self.transform.rotation,
         )

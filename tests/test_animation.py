@@ -11,10 +11,10 @@ from visuscript.animation import (
     RotationAnimation,
 )
 from visuscript.property_locker import PropertyLocker, LockedPropertyError
-from visuscript import Transform, Vec3, Color, Rgb, Circle
+from visuscript import Transform, Color, Rgb, Circle
 from visuscript.lazy_object import Lazible, LazyObject
 from visuscript.config import config
-from visuscript.primatives import Vec
+from visuscript.primatives import Vec2
 
 
 class TestAnimation(VisuscriptTestCase):
@@ -161,44 +161,44 @@ class TestAnimationBundle(VisuscriptTestCase):
 
 class TestPropertyAnimation(VisuscriptTestCase):
     def test_approach(self):
-        obj = MockObject(a=Vec(0, 0), b=Vec(1, 1))
+        obj = MockObject(a=Vec2(0, 0), b=Vec2(1, 1))
 
         animation = PropertyAnimation(
             obj=obj,
-            destinations=[Vec(1, 1), Vec(0, 1)],
+            destinations=[Vec2(1, 1), Vec2(0, 1)],
             properties=["a", "b"],
             duration=2,
             initials=[None, None],
         )
-        self.assertEqual(obj.a, Vec(0, 0))
-        self.assertEqual(obj.b, Vec(1, 1))
+        self.assertEqual(obj.a, Vec2(0, 0))
+        self.assertEqual(obj.b, Vec2(1, 1))
         run_for(animation, 1)
-        self.assertVecAlmostEqual(obj.a, Vec(0.5, 0.5))
-        self.assertVecAlmostEqual(obj.b, Vec(0.5, 1))
+        self.assertVecAlmostEqual(obj.a, Vec2(0.5, 0.5))
+        self.assertVecAlmostEqual(obj.b, Vec2(0.5, 1))
         run_for(animation, 1)
-        self.assertEqual(obj.a, Vec(1, 1))
-        self.assertEqual(obj.b, Vec(0, 1))
+        self.assertEqual(obj.a, Vec2(1, 1))
+        self.assertEqual(obj.b, Vec2(0, 1))
 
 
 class TestTranslationAnimation(VisuscriptTestCase):
     def test_approach(self):
         obj = Transform()
 
-        animation = TranslationAnimation(obj, Vec3(1, 1, 1), duration=2)
-        self.assertEqual(obj.translation, Vec3(0, 0, 0))
+        animation = TranslationAnimation(obj, Vec2(1, 1), duration=2)
+        self.assertEqual(obj.translation, Vec2(0, 0))
         run_for(animation, 1)
-        self.assertVecAlmostEqual(obj.translation, Vec(0.5, 0.5, 0.5))
+        self.assertVecAlmostEqual(obj.translation, Vec2(0.5, 0.5))
         run_for(animation, 1)
-        self.assertEqual(obj.translation, Vec(1, 1, 1))
+        self.assertEqual(obj.translation, Vec2(1, 1))
 
     def test_conflict(self):
         obj = Transform()
 
-        animation1 = TranslationAnimation(obj, Vec3(1, 1, 1), duration=2)
+        animation1 = TranslationAnimation(obj, Vec2(1, 1), duration=2)
         locker = PropertyLocker()
         locker.update(animation1.locker)
 
-        animation2 = TranslationAnimation(obj, Vec3(2, 2, 2), duration=2)
+        animation2 = TranslationAnimation(obj, Vec2(2, 2), duration=2)
 
         def conflict():
             locker.update(animation2.locker)
@@ -210,21 +210,21 @@ class TestScaleAnimation(VisuscriptTestCase):
     def test_approach(self):
         obj = Transform()
 
-        animation = ScaleAnimation(obj, Vec3(3, 2, 1), duration=2)
-        self.assertEqual(obj.scale, Vec3(1, 1, 1))
+        animation = ScaleAnimation(obj, Vec2(3, 2), duration=2)
+        self.assertEqual(obj.scale, Vec2(1, 1))
         run_for(animation, 1)
-        self.assertVecAlmostEqual(obj.scale, Vec(2, 1.5, 1))
+        self.assertVecAlmostEqual(obj.scale, Vec2(2, 1.5))
         run_for(animation, 1)
-        self.assertEqual(obj.scale, Vec(3, 2, 1))
+        self.assertEqual(obj.scale, Vec2(3, 2))
 
     def test_conflict(self):
         obj = Transform()
 
-        animation1 = ScaleAnimation(obj, Vec3(3, 2, 1), duration=2)
+        animation1 = ScaleAnimation(obj, Vec2(3, 2), duration=2)
         locker = PropertyLocker()
         locker.update(animation1.locker)
 
-        animation2 = ScaleAnimation(obj, Vec3(3, 2, 1), duration=2)
+        animation2 = ScaleAnimation(obj, Vec2(3, 2), duration=2)
 
         def conflict():
             locker.update(animation2.locker)
@@ -264,19 +264,19 @@ class TestTransformAnimation(VisuscriptTestCase):
 
         animation = TransformAnimation(
             obj,
-            Transform(translation=Vec3(1, 1, 1), scale=Vec3(3, 2, 1), rotation=180),
+            Transform(translation=Vec2(1, 1), scale=Vec2(3, 2), rotation=180),
             duration=2,
         )
-        self.assertEqual(obj.translation, Vec3(0, 0, 0))
-        self.assertEqual(obj.scale, Vec3(1, 1, 1))
+        self.assertEqual(obj.translation, Vec2(0, 0))
+        self.assertEqual(obj.scale, Vec2(1, 1))
         self.assertEqual(obj.rotation, 0)
         run_for(animation, 1)
-        self.assertVecAlmostEqual(obj.translation, Vec(0.5, 0.5, 0.5))
-        self.assertVecAlmostEqual(obj.scale, Vec(2, 1.5, 1))
+        self.assertVecAlmostEqual(obj.translation, Vec2(0.5, 0.5))
+        self.assertVecAlmostEqual(obj.scale, Vec2(2, 1.5))
         self.assertAlmostEqual(obj.rotation, 90)
         run_for(animation, 1)
-        self.assertEqual(obj.translation, Vec(1, 1, 1))
-        self.assertEqual(obj.scale, Vec3(3, 2, 1))
+        self.assertEqual(obj.translation, Vec2(1, 1))
+        self.assertEqual(obj.scale, Vec2(3, 2))
         self.assertEqual(obj.rotation, 180)
 
     def test_conflict(self):
@@ -284,21 +284,21 @@ class TestTransformAnimation(VisuscriptTestCase):
 
         animation1 = TransformAnimation(
             obj,
-            Transform(translation=Vec3(1, 1, 1), scale=Vec3(3, 2, 1), rotation=180),
+            Transform(translation=Vec2(1, 1), scale=Vec2(3, 2), rotation=180),
             duration=2,
         )
         locker = PropertyLocker()
         locker.update(animation1.locker)
 
-        animation2 = TranslationAnimation(obj, Vec3(2, 2, 2), duration=2)
+        animation2 = TranslationAnimation(obj, Vec2(2, 2), duration=2)
 
-        animation3 = ScaleAnimation(obj, Vec3(2, 2, 2), duration=2)
+        animation3 = ScaleAnimation(obj, Vec2(2, 2), duration=2)
 
         animation4 = RotationAnimation(obj, 180, duration=2)
 
         animation5 = TransformAnimation(
             obj,
-            Transform(translation=Vec3(1, 1, 1), scale=Vec3(3, 2, 1), rotation=180),
+            Transform(translation=Vec2(1, 1), scale=Vec2(3, 2), rotation=180),
             duration=2,
         )
 

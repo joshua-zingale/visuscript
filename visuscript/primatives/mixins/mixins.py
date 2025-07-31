@@ -4,7 +4,7 @@ from typing import Sequence, Self, Union, Iterable, Callable, Iterator
 from copy import deepcopy
 
 from visuscript.constants import Anchor
-from visuscript.primatives.primatives import Transform, Vec3, Vec2
+from visuscript.primatives.primatives import Transform, Vec2
 from visuscript._internal._invalidator import Invalidatable
 from visuscript.config import config
 from .color import Color, OpacityMixin
@@ -22,9 +22,7 @@ class TransformMixin:
     def transform(self) -> Transform:
         return self._transform
 
-    def translate(
-        self, x: float | None = None, y: float | None = None, z: float | None = None
-    ) -> Self:
+    def translate(self, x: float | None = None, y: float | None = None) -> Self:
         """Sets the translation on this Drawable's Transform.
 
         Any of x,y, and z not set will be set in the new translation to match the current value on this Drawable's Transfom.translation.
@@ -33,10 +31,8 @@ class TransformMixin:
             x = self.transform.translation.x
         if y is None:
             y = self.transform.translation.y
-        if z is None:
-            z = self.transform.translation.z
 
-        self.transform.translation = Vec3(x, y, z)
+        self.transform.translation = Vec2(x, y)
         return self
 
     def scale(self, scale: int | float | Sequence[float]) -> Self:
@@ -49,9 +45,9 @@ class TransformMixin:
         self.transform.rotation = degrees
         return self
 
-    def set_transform(self, transform: Transform) -> Self:
+    def set_transform(self, transform: Transform._TransformLike) -> Self:
         """Sets this Drawable's Transform."""
-        self._transform.update(Transform(transform))
+        self._transform.update(Transform.construct(transform))
         return self
 
 
@@ -459,9 +455,7 @@ class Shape:
         self.height: float = height * transform.scale.y
         """The height of the object's rectangular circumscription."""
 
-        self.circumscribed_radius: float = (
-            circumscribed_radius * transform.scale.xy.max()
-        )
+        self.circumscribed_radius: float = circumscribed_radius * transform.scale.max()
         """The radius of the smallest circle that circumscribes the obj."""
 
         self.top_left: Vec2 = transform @ (top_left)

@@ -254,7 +254,9 @@ class AnimatedList(AnimatedCollection[T], MutableSequence[Var]):
     def __init__(
         self, variables: Iterable[Var] = [], *, transform: Transform | None = None
     ):
-        self._transform = Transform() if transform is None else Transform(transform)
+        self._transform = (
+            Transform() if transform is None else Transform.construct(transform)
+        )
         self._vars: list[Var] = []
         self._elements: list[T] = []
         for var in variables:
@@ -405,29 +407,27 @@ class AnimatedList(AnimatedCollection[T], MutableSequence[Var]):
         element_a, element_b = self._swap(a, b)
 
         def get_quadratic_swap():
-            diff = (
-                element_b.transform.translation.xy - element_a.transform.translation.xy
-            )
+            diff = element_b.transform.translation - element_a.transform.translation
             distance = magnitude(diff)
             direction = diff / distance
             ortho = Vec2(-direction.y, direction.x)
 
-            mid = element_a.transform.translation.xy + direction * distance / 2
+            mid = element_a.transform.translation + direction * distance / 2
             lift = ortho * element_a.shape.circumscribed_radius * 2
 
             return AnimationBundle(
                 PathAnimation(
                     element_a.transform,
                     Path()
-                    .M(*element_a.transform.translation.xy)
-                    .Q(*(mid - lift), *element_b.transform.translation.xy),
+                    .M(*element_a.transform.translation)
+                    .Q(*(mid - lift), *element_b.transform.translation),
                     duration=duration,
                 ),
                 PathAnimation(
                     element_b.transform,
                     Path()
-                    .M(*element_b.transform.translation.xy)
-                    .Q(*(mid + lift), *element_a.transform.translation.xy),
+                    .M(*element_b.transform.translation)
+                    .Q(*(mid + lift), *element_a.transform.translation),
                     duration=duration,
                 ),
             )

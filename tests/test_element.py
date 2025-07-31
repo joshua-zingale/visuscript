@@ -1,6 +1,6 @@
 from .base_class import VisuscriptTestCase
 from visuscript.primatives.mixins import Element
-from visuscript.primatives import Vec2, Vec3
+from visuscript.primatives import Vec2
 from visuscript.config import config
 
 
@@ -41,7 +41,7 @@ class TestElement(VisuscriptTestCase):
         child = self.MockElement(10, 10)
         parent.add_child(lambda p: child.translate(*p.shape.bottom_right))
         self.assertVecAlmostEqual(
-            child.transform.translation, parent.shape.bottom_right.extend(0)
+            child.transform.translation, parent.shape.bottom_right
         )
         self.assertTrue(child in parent)
 
@@ -56,7 +56,7 @@ class TestElement(VisuscriptTestCase):
         for i, child in enumerate(children):
             self.assertVecAlmostEqual(
                 child.transform.translation,
-                parent.shape.right.extend(0) + Vec3(10 * i, 0, 0),
+                parent.shape.right + Vec2(10 * i, 0),
             )
 
     def test_children_have_parent(self):
@@ -92,15 +92,13 @@ class TestElement(VisuscriptTestCase):
 
         parent.translate(100)
         child1.translate(0, 100)
-        self.assertVecAlmostEqual(child1.transform.translation, Vec3(0, 100, 0))
-        self.assertVecAlmostEqual(child2.transform.translation, Vec3(-100, 0, 0))
-        self.assertVecAlmostEqual(parent.transform.translation, Vec3(100, 0, 0))
+        self.assertVecAlmostEqual(child1.transform.translation, Vec2(0, 100))
+        self.assertVecAlmostEqual(child2.transform.translation, Vec2(-100, 0))
+        self.assertVecAlmostEqual(parent.transform.translation, Vec2(100, 0))
 
-        self.assertVecAlmostEqual(
-            child1.global_transform.translation, Vec3(100, 100, 0)
-        )
-        self.assertVecAlmostEqual(child2.global_transform.translation, Vec3(0, 0, 0))
-        self.assertVecAlmostEqual(parent.transform.translation, Vec3(100, 0, 0))
+        self.assertVecAlmostEqual(child1.global_transform.translation, Vec2(100, 100))
+        self.assertVecAlmostEqual(child2.global_transform.translation, Vec2(0, 0))
+        self.assertVecAlmostEqual(parent.transform.translation, Vec2(100, 0))
 
     def test_global_position(self):
         parent = self.MockElement(10, 10)
@@ -108,8 +106,8 @@ class TestElement(VisuscriptTestCase):
         parent.add_child(child)
 
         parent.translate(100)
-        self.assertVecAlmostEqual(child.global_transform.translation, Vec3(100, 0, 0))
+        self.assertVecAlmostEqual(child.global_transform.translation, Vec2(100, 0))
 
         child.translate(0, 100)
-        self.assertVecAlmostEqual(child.global_transform.translation, Vec3(100, 100, 0))
-        self.assertVecAlmostEqual(parent.global_transform.translation, Vec3(100, 0, 0))
+        self.assertVecAlmostEqual(child.global_transform.translation, Vec2(100, 100))
+        self.assertVecAlmostEqual(parent.global_transform.translation, Vec2(100, 0))

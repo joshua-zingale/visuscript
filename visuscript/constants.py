@@ -46,10 +46,6 @@ DOWN: Vec2 = Vec2(0, 1)
 """A two-dimensional unit vector pointing downward."""
 LEFT: Vec2 = Vec2(-1, 0)
 """A two-dimensional unit vector pointing leftward."""
-BACKWARD: Vec3 = Vec3(0, 0, -1)
-"""A three-dimensional unit-vector pointing backward, i.e. away from the camera."""
-FORWARD: Vec3 = Vec3(0, 0, 1)
-"""A three-dimensional unit-vector pointing forward, i.e. toward from the camera."""
 
 
 PALETTE: dict[str, Rgb] = {  # type: ignore[reportConstantRedefinition]

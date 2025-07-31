@@ -1,6 +1,6 @@
 from visuscript.primatives.mixins import TransformMixin
-from visuscript.primatives import Transform, Vec3
-from typing import Collection, Tuple, Self, Iterable, Iterator
+from visuscript.primatives.primatives import Transform, Vec2
+from typing import Self, Iterable, Iterator
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -48,43 +48,21 @@ class Organizer(ABC):
 
 
 class GridOrganizer(Organizer):
-    """GridOrganizer arranges its output Transform objects into a three dimensional grid."""
+    """GridOrganizer arranges its output Transform objects into a two dimensional grid."""
 
-    def __init__(self, shape: Collection[int], sizes: Collection[float]):
-        if len(shape) == 2:
-            shape = tuple(shape) + (1,)
-        elif len(shape) == 3:
-            shape = tuple(shape)
-        else:
-            raise ValueError("shape must be of length 2 or 3")
-        if len(sizes) == 2:
-            sizes = tuple(sizes) + (1,)
-        elif len(sizes) == 3:
-            sizes = tuple(sizes)
-        else:
-            raise ValueError("sizes must be of length 2 or 3")
-
+    def __init__(self, shape: tuple[int, int], sizes: tuple[float, float]):
         self._shape = shape
         self._sizes = sizes
 
     def __len__(self):
-        return self._shape[0] * self._shape[1] * self._shape[2]
+        return self._shape[0] * self._shape[1]
 
-    def transform_for(
-        self, index: int | Tuple[int, int] | Tuple[int, int, int]
-    ) -> Transform:
+    def transform_for(self, index: int | tuple[int, int]) -> Transform:
         indices = index
         if isinstance(indices, int):
-            y = indices // (self._shape[2] * self._shape[1])
-            x = (indices // self._shape[2]) % self._shape[1]
-            z = indices % self._shape[2]
-            indices = (y, x, z)
-        elif len(indices) == 2:
-            indices = tuple(indices) + (0,)
-        elif len(indices) == 3:
-            indices = tuple(indices)
-        else:
-            raise ValueError("indices must be a tuple of length 2 or 3 or an int")
+            y = (indices // self._shape[1]) % self._shape[0]
+            x = indices % self._shape[1]
+            indices = (y, x)
 
         for i, (index, size) in enumerate(zip(indices, self._shape)):
             if index >= size:
@@ -94,7 +72,7 @@ class GridOrganizer(Organizer):
 
         translation = [i * size for i, size in zip(indices, self._sizes)]
 
-        translation = [translation[1], translation[0], translation[2]]
+        translation = [translation[1], translation[0]]
 
         return Transform(translation=translation)
 
@@ -129,8 +107,8 @@ class BinaryTreeOrganizer(Organizer):
         level = int(np.log2(index + 1))
         row_index = index - 2 ** (level) + 1
 
-        horizontal_separation = Vec3(
-            self._node_width * 2 ** (self._num_levels - level - 1), 0, 0
+        horizontal_separation = Vec2(
+            self._node_width * 2 ** (self._num_levels - level - 1), 0
         )
 
         start_x = (
@@ -138,5 +116,5 @@ class BinaryTreeOrganizer(Organizer):
             + (2 ** (self._num_levels - level - 1) - 1) * self._node_width / 2
         )
         start_y = self._heights[level]
-        start_of_row = Vec3(start_x, start_y, 0)
+        start_of_row = Vec2(start_x, start_y)
         return Transform(translation=start_of_row + row_index * horizontal_separation)

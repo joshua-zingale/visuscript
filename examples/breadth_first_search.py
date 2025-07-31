@@ -185,7 +185,7 @@ def get_velocity_mover(nodes: list[GraphNode]):
             # print(node.velocity * dt)
             if node.moveable:
                 node.transform.translation = (
-                    node.transform.translation.xy + node.velocity * dt
+                    node.transform.translation + node.velocity * dt
                 )
         return
 
