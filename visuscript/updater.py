@@ -114,7 +114,7 @@ class UpdaterBundle(Updater):
                 self.push(updater_)
         else:
             raise TypeError(
-                f"'{_call_method}' is only implemented for types Updater and Iterable[Updater], not for '{type(animation)}'"
+                f"'{_call_method}' is only implemented for types Updater and Iterable[Updater], not for '{type(updater)}'"
             )
 
     def __lshift__(self, other: Updater | Iterable[Updater]):
