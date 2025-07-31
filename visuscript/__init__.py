@@ -20,7 +20,7 @@ If the utility is not added to your PATH, the following works as well:
 
 """
 
-from .drawable.element import Circle, Rect, Image, Pivot, Drawing
+from .drawable import Circle, Rect, Image, Pivot, Drawing
 from .primatives import Color
 from .primatives import Transform, Vec2, Vec3, Rgb
 from .drawable.scene import Scene

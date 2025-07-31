@@ -1,4 +1,4 @@
-from typing import Self, Union, TypeAlias
+from typing import Self, Union, TypeAlias, cast
 
 
 from visuscript.constants import PALETTE
@@ -47,10 +47,12 @@ class Color(RgbMixin, OpacityMixin, Lazible):
             self.rgb = rgb.rgb
             self.opacity = rgb.opacity
         else:
-            self.rgb = rgb
+            self.rgb = cast(
+                Rgb, rgb
+            )  # The setter in RgbMixin ensures this property is Rgb
 
         if opacity is not None:
             self.opacity = opacity
 
     def __str__(self) -> str:
-        return f"Color(color={tuple(self._rgb)}, opacity={self.opacity}"
+        return f"Color(color={tuple(self.rgb)}, opacity={self.opacity}"

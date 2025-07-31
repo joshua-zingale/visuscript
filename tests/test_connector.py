@@ -4,7 +4,7 @@ from visuscript.drawable.connector import (
     ElementsAlreadyConnectedError,
     ElementsNotConnectedError,
 )
-from visuscript.drawable.element import Circle
+from visuscript.drawable import Circle
 
 
 class TestEdges(VisuscriptTestCase):

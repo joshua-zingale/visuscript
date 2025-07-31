@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Self
 from abc import ABC, abstractmethod
-from visuscript.primatives import Vec2
+from visuscript.primatives.primatives import Vec2
 from visuscript.math_utility import magnitude
 
 

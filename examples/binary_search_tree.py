@@ -134,8 +134,8 @@ def insert(var: Var, tree: AnimatedBinaryTreeArray) -> Var:
 
 def compare(
     operator: str,
-    element1: CollectionDrawable,
-    element2: CollectionDrawable,
+    element1: Pivot | Circle,
+    element2: Pivot | Circle,
     is_true: bool,
 ):
     if is_true:
