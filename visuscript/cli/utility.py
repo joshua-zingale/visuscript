@@ -4,7 +4,7 @@ import sys
 import shutil
 
 
-def convert_svg_to_png(svg_file_path, output_dir):
+def convert_svg_to_png(svg_file_path: str, output_dir: str) -> None:
     """
     Converts a single SVG file to a PNG file using rsvg-convert.
     This function is designed to be run in a separate thread/process.
@@ -32,7 +32,7 @@ def convert_svg_to_png(svg_file_path, output_dir):
         raise
 
 
-def check_tool_availability(*tool_names: str, print_errors=True) -> bool:
+def check_tool_availability(*tool_names: str, print_errors: bool = True) -> bool:
     """
     Checks if a given command-line tool is available in the system's PATH.
 

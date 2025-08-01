@@ -22,7 +22,7 @@ def main():
     frame_rate = sys.argv[1]
     output_file = sys.argv[2]
 
-    svg_files = []
+    svg_files: list[str] = []
     with tempfile.TemporaryDirectory() as temp_dir:
         counter = 1
         for svg_blob in sys.stdin:

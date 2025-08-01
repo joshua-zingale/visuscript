@@ -1,6 +1,15 @@
 """This module contains the abstract base class of all Animations alongside a bevy of basic animations and easing functions."""
 
-from typing import Callable, no_type_check, Any, Generic, TypeVar, Self
+from typing import (
+    Callable,
+    no_type_check,
+    Any,
+    Generic,
+    TypeVar,
+    Self,
+    TypedDict,
+    Unpack,
+)
 from abc import ABC, abstractmethod, ABCMeta
 import inspect
 
@@ -55,6 +64,7 @@ class AnimationMetaClass(ABCMeta):
                 self._init_kwargs = kwargs
                 self._original_advance = self.advance
 
+                @no_type_check
                 def initializing_advance(*args, **kwargs):
                     init_args, init_kwargs = evaluate_lazy(
                         self._init_args, self._init_kwargs
@@ -139,7 +149,7 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
         :return: self
         :rtype: Self
         """
-        if not isinstance(speed, int) or speed <= 0:
+        if not isinstance(speed, int) or speed <= 0:  # type: ignore
             raise ValueError("Animation speed must be a positive integer.")
         self._animation_speed = speed
         return self
@@ -245,14 +255,14 @@ class NoAnimation(Animation):
 class RunFunction(Animation):
     """A RunFunction Animation runs only a single advance, during which it calls a function."""
 
-    def __init__(self, function: Callable[[], Any], consume_frame=False):
+    def __init__(self, function: Callable[[], Any], consume_frame: bool = False):
         super().__init__()
         self._function = function
         self._has_been_run = False
         self._locker = PropertyLocker()
         self._consume_frame = consume_frame
 
-    def __init_locker__(self, function: Callable[[], Any], consume_frame=False):  # type: ignore[reportIncompatibleMethodOverride]
+    def __init_locker__(self, function: Callable[[], Any], consume_frame: bool = False):  # type: ignore[reportIncompatibleMethodOverride]
         return PropertyLocker()
 
     def advance(self) -> bool:
@@ -301,6 +311,15 @@ class UpdaterAnimation(Animation):
         return True
 
 
+class AlphaAnimationKwargs(TypedDict, total=False):
+    """
+    TypedDict to represent keyword arguments for AlphaAnimation's __init__.
+    """
+
+    duration: float | ConfigurationDeference
+    easing_function: Callable[[float], float]
+
+
 class AlphaAnimation(Animation):
     def __init__(
         self,
@@ -345,13 +364,23 @@ class AlphaAnimation(Animation):
 
 
 class PathAnimation(AlphaAnimation):
-    def __init__(self, transform: Transform, path: Path, **kwargs):
+    def __init__(
+        self,
+        transform: Transform,
+        path: Path,
+        **kwargs: Unpack[AlphaAnimationKwargs],
+    ):
         super().__init__(**kwargs)
         self._transform = transform
         self._source_translation = self._transform.translation
         self._path = path
 
-    def __init_locker__(self, transform: Transform, path: Path, **kwargs):  # type: ignore[reportIncompatibleMethodOverride]
+    def __init_locker__(  # type: ignore[reportIncompatibleMethodOverride]
+        self,
+        transform: Transform,
+        path: Path,
+        **kwargs: Unpack[AlphaAnimationKwargs],
+    ):
         return PropertyLocker({transform: ["translation"]})
 
     def update(self, alpha: float):

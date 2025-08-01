@@ -16,7 +16,8 @@ from .drawing import Drawing
 class Rect(Drawing):
     """A Rectangle"""
 
-    def __init__(self, width, height):
+    def __init__(self, width: float, height: float | None = None):
+        height = height if height is not None else width
         super().__init__(Path().l(width, 0).l(0, height).l(-width, 0).Z())
         self.set_anchor(Anchor.CENTER)
 

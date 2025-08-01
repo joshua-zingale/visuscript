@@ -1,3 +1,4 @@
+# type: ignore
 from visuscript.primatives.mixins import HierarchicalDrawable, AnchorMixin
 from visuscript.primatives import Vec2
 from pygments import highlight
@@ -7,7 +8,7 @@ from pygments.styles import get_style_by_name as _get_style_by_name
 import re
 
 
-def get_all_code_blocks(filename) -> dict[int, str]:
+def get_all_code_blocks(filename: str) -> dict[int, str]:
     """Gets all marked codeblocks in a given file.
 
     A codeblock is any segment of a text file that begins with "##N",

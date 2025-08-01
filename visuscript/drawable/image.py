@@ -48,16 +48,16 @@ class Image(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin):
         self._width, self._height = img.size
         self.resolution = (self._width, self._height)
         if width is None:
-            self._resize_scale = 1
+            self._resize_scale: float = 1
         else:
-            self._resize_scale = width / self._width
+            self._resize_scale: float = width / self._width
 
         self._file_data = get_base64_from_pil_image(img)
 
         img.close()
 
     @property
-    def anchor_offset(self):
+    def anchor_offset(self) -> Vec2:
         return super().anchor_offset / self._resize_scale
 
     def calculate_top_left(self):
