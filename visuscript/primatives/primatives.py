@@ -138,6 +138,8 @@ class Vec(Sequence[float], Interpolable):
 
 
 class Vec2(Vec):
+    """A two dimensional vector, having an x value and a y value."""
+
     Vec2Like: TypeAlias = Union["Vec2", Sequence[float]]
 
     def __init__(self, x: float, y: float):
@@ -164,6 +166,8 @@ class Vec2(Vec):
 
 
 class Rgb(Interpolable):
+    """A Red Green Blue (RGB) color."""
+
     RgbLike: TypeAlias = Union["Rgb", str, tuple[int, int, int]]
 
     def __init__(self, r: int, g: int, b: int):
@@ -233,6 +237,8 @@ class Rgb(Interpolable):
 
 
 class Transform(Invalidator, Interpolable, Lazible):
+    """A two dimensional transformation with translation, scale, and rotation."""
+
     TransformLike: TypeAlias = Union["Transform", Vec2.Vec2Like]
 
     def __init__(
@@ -378,7 +384,6 @@ class Transform(Invalidator, Interpolable, Lazible):
         """Updates this :class:`Transform` with another.
 
         :param other: The other :class:`Transform` of which the members will update this :class:`Transform`
-        :type other: Self
         """
         self._translation = other.translation
         self._scale = other.scale
