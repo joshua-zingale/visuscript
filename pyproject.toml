@@ -61,13 +61,13 @@ source = ["visuscript"]
 
 [tool.pyright]
 include = [
-    "visuscript/**.py",
-    # "examples/**.py",
+    "visuscript/",
+    # "examples/",
 ]
 basic = [
-    "examples/**.py"
+    "examples/"
 ]
 strict = [
-    "visuscript/**.py",
+    "visuscript/",
 ]
 reportUnusedExpression = "none" # because visuscript overloads "<<" to be a push opperation, which is often "unused"
