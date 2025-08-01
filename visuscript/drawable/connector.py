@@ -27,7 +27,7 @@ import itertools
 
 
 class Connector(Drawable, ShapeMixin, FillMixin, StrokeMixin, OpacityMixin):
-    """A connector visually connects one Element to another or one location to another."""
+    """A connector visually connects one object to another or one location to another."""
 
     POSITIVE = 1
     NEGATIVE = -1
@@ -150,7 +150,7 @@ class Connector(Drawable, ShapeMixin, FillMixin, StrokeMixin, OpacityMixin):
 
 
 class Line(Connector):
-    """A Line is a straight-line Connector."""
+    """A Line is a straight-line :class:`Connector`."""
 
     def get_connector(
         self,
@@ -172,7 +172,7 @@ class Line(Connector):
 
 
 class Arrow(Connector):
-    """An Arrow is a straight-line Connector with an optional arrowhead on either side."""
+    """An Arrow is a straight-line :class:`Connector` with an optional arrowhead on either side."""
 
     def __init__(
         self,
@@ -249,28 +249,26 @@ class ElementsNotConnectedError(ValueError):
 
 
 class Edges(Drawable):
+    """A collection of :class:`Line` objects that are drawn to connect specified objects."""
+
     def __init__(self):
         super().__init__()
         self._edges: dict[Tuple[GlobalShapeMixin, GlobalShapeMixin], Line] = dict()
         self._fading_away: set[Line] = set()
-
-    @property
-    def top_left(self):
-        return Vec2(0, 0)
-
-    @property
-    def width(self):
-        return 0.0
-
-    @property
-    def height(self):
-        return 0.0
 
     def connect_by_rule(
         self,
         rule: Callable[[GlobalShapeMixin, GlobalShapeMixin], bool],
         elements: Iterable[GlobalShapeMixin],
     ) -> Animation:
+        """Connects every pair of input elements that satisfy a rule,
+        disconnecting those that break the rule.
+
+        :param rule: A function that takes two objects and returns True if they are to be
+            connected and False otherwise.
+        :param elements: The group of objects from which pairs will be taken.
+        :return: An Animation fading in/out all of the edges
+        """
         bundle = AnimationBundle()
 
         for e1, e2 in itertools.combinations(elements, 2):
@@ -282,7 +280,10 @@ class Edges(Drawable):
 
         return bundle
 
-    def get_edge(self, element1: GlobalShapeMixin, element2: GlobalShapeMixin):
+    def get_edge(
+        self, element1: GlobalShapeMixin, element2: GlobalShapeMixin
+    ) -> Connector:
+        """Gets the :class:`Connector` connecting two objects."""
         if not self.connected(element1, element2):
             raise ElementsNotConnectedError(
                 f"Elements {element1} and {element2} are not connected"
@@ -291,13 +292,17 @@ class Edges(Drawable):
             self._edges.get((element1, element2)) or self._edges[(element2, element1)]
         )
 
-    def connected(self, element1: GlobalShapeMixin, element2: GlobalShapeMixin):
+    def connected(self, element1: GlobalShapeMixin, element2: GlobalShapeMixin) -> bool:
+        """Returns whether two objects are connected."""
         return (element1, element2) in self._edges or (
             element2,
             element1,
         ) in self._edges
 
-    def connect(self, element1: GlobalShapeMixin, element2: GlobalShapeMixin):
+    def connect(
+        self, element1: GlobalShapeMixin, element2: GlobalShapeMixin
+    ) -> Animation:
+        """Connects two objects and returns an animation fading in the connecting edge."""
         if self.connected(element1, element2):
             raise ElementsAlreadyConnectedError(
                 f"Elements {element1} and {element2} are already connected"
@@ -310,7 +315,10 @@ class Edges(Drawable):
 
         return fade_in(edge)
 
-    def disconnect(self, element1: GlobalShapeMixin, element2: GlobalShapeMixin):
+    def disconnect(
+        self, element1: GlobalShapeMixin, element2: GlobalShapeMixin
+    ) -> Animation:
+        """Disconnects two objects and returns an animation fading out th eedge that had connected them."""
         if not self.connected(element1, element2):
             raise ElementsNotConnectedError(
                 f"Elements {element1} and {element2} are not connected"

@@ -28,6 +28,8 @@ def get_base64_from_pil_image(pil_image: PILImage.Image) -> str:
 
 
 class Image(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin):
+    """A pixel-based image."""
+
     def __init__(
         self,
         *,

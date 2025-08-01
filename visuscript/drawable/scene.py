@@ -23,12 +23,12 @@ from visuscript.updater import Updater
 
 
 class Scene(Drawable, AnchorMixin, TransformMixin):
-    """A Scene can display Drawable objects under various Animations and Updaters and provides functionality to output the composite image(s).
+    """Can display Drawable objects under various Animations and Updaters and provides functionality to output the composite image(s).
 
     A Scene can receive:
 
-    * :class:`~visuscript.drawable.Drawable` objects with :code:`scene << element`
-    * :class:`~visuscript.animation.Animation` objects with :code:`scene.animations << animation`
+    *  Objects that :class:`~visuscript.primatives.protocols.CanBeDrawn` with :code:`scene << drawable`
+    * :class:`~visuscript.animation.Animation` objects, when inside the :class:`Scene`'s context manager, with :code:`scene.animations << animation`
     * :class:`~visuscript.updater.Updater` objects with :code:`scene.updaters << updater`
 
     Additionally, a scene can run through a single :class:`~visuscript.animations.Animation` with :code:`scene.player << animation`
@@ -95,36 +95,35 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
         self._drawables = []
 
     def add_drawable(self, drawable: CanBeDrawn) -> Self:
-        """Adds a :class:`~visuscript.drawable.Drawable` to the display."""
+        """Adds an object that :class:`~visuscript.primatives.protocols.CanBeDrawn` to the display."""
         self._drawables.append(drawable)
         return self
 
     def add_drawables(self, drawables: Iterable[CanBeDrawn]) -> Self:
-        """Adds multiple :class:`~visuscript.drawable.Drawable` instances to the display."""
+        """Adds multiple objects that :class:`~visuscript.primatives.protocols.CanBeDrawn` to the display."""
         self._drawables.extend(drawables)
         return self
 
     def remove_drawable(self, drawable: CanBeDrawn) -> Self:
-        """Removes a :class:`~visuscript.drawable.Drawable` from the display."""
+        """Removes an object that :class:`~visuscript.primatives.protocols.CanBeDrawn` from the display."""
         self._drawables.remove(drawable)
         return self
 
     def remove_drawables(self, drawables: list[CanBeDrawn]) -> Self:
-        """Removes multiple :class:`~visuscript.drawable.Drawable` instnaces from the display."""
+        """Removes multiple objects that :class:`~visuscript.primatives.protocols.CanBeDrawn` from the display."""
         for drawable in drawables:
             self._drawables.remove(drawable)
         return self
 
-    @no_type_check
     def __lshift__(self, other: CanBeDrawn | Iterable[CanBeDrawn] | None):
         if other is None:
             return
 
         if isinstance(other, CanBeDrawn):
             self.add_drawable(other)
-        elif isinstance(other, Iterable):
+        elif isinstance(other, Iterable):  # type: ignore[reportUnnecessaryIsInstance]
             for drawable in other:
-                self << drawable
+                self << drawable  # type: ignore[reportUnusedExpression]
         else:
             raise TypeError(
                 f"'<<' is not implemented for {type(other)}, only for types Drawable and Iterable[Drawable]"
@@ -132,7 +131,7 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
 
     def a(self, percentage: float) -> float:
         """
-        Returns a percentage of the total logical scene area.
+        Returns a percentage of the total logical area of this :class:`Scene`.
         """
         return percentage * self._logical_width * self._logical_height
 
@@ -229,8 +228,7 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
 
     @property
     def player(self) -> "_Player":
-        """Any :class:`~visuscript.animation.Animation` pushed via `<<` into here will be run through instantly with the frames being printed
-        and without running any of the :class:`~visuscript.animation.Animation` instances stored in :attr:`Scene.animations`."""
+        """Any :class:`~visuscript.animation.Animation` pushed via :code:`<<` into here will be run through instantly with the frames being printed."""
         if self._embed_level > 0:
             raise ValueError(
                 "Cannot use Scene.player inside a context manager. Use Scene.animations instead."

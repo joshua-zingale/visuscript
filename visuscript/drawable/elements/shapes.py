@@ -14,7 +14,7 @@ from .drawing import Drawing
 
 
 class Rect(Drawing):
-    """A Rectangle"""
+    """A Rectangle."""
 
     def __init__(self, width: float, height: float | None = None):
         height = height if height is not None else width
@@ -30,7 +30,7 @@ class Circle(
     AnchorMixin,
     OpacityMixin,
 ):
-    """A Circle"""
+    """A Circle."""
 
     def __init__(self, radius: float):
         super().__init__()

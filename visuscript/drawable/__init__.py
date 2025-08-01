@@ -1,4 +1,4 @@
-"""Contains things that can be drawn"""
+"""Contains objects that can be drawn."""
 
 from .elements import Circle, Rect, Pivot, Drawing
 from .image import Image

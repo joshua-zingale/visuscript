@@ -6,9 +6,9 @@ from visuscript.primatives.mixins import (
 
 
 class Pivot(GlobalShapeMixin, HierarchicalDrawable):
-    """A Pivot is an Element with no display for itself.
+    """A Pivot is :class:`~visuscript.primatives.mixins.HierarchicalDrawable` with no display for itself.
 
-    A Pivot can be used to construct more complex object by adding children."""
+    A Pivot can be used to construct more complex visual object by adding children."""
 
     def calculate_top_left(self):
         return Vec2(0, 0)

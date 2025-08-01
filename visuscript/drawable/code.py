@@ -17,6 +17,8 @@ def get_all_code_blocks(filename: str) -> dict[int, str]:
 
     :param filename: The file in which code blocks are found.
     :return: A dictionary mapping the id of each codeblock to the text thereof.
+
+    .. Hint:: You can get code blocks from the current Python file by using __file__.
     """
     with open(filename, "r") as f:
         code = f.read()
@@ -32,6 +34,8 @@ def get_all_code_blocks(filename: str) -> dict[int, str]:
 
 
 class PythonText(HierarchicalDrawable, AnchorMixin):
+    """Syntax highlighted Python code."""
+
     def __init__(self, text: str, *, font_size: float, style="monokai"):
         super().__init__()
         self._text = text
