@@ -40,19 +40,20 @@ class OpacityMixin:
 class Color(RgbMixin, OpacityMixin, Lazible):
     _ColorLike: TypeAlias = Union[Rgb._RgbLike, "Color"]
 
-    def __init__(self, rgb: _ColorLike, opacity: float | None = None):
+    def __init__(self, rgb: Rgb._RgbLike, opacity: float | None = None):
         super().__init__()
 
-        if isinstance(rgb, Color):
-            self.rgb = rgb.rgb
-            self.opacity = rgb.opacity
-        else:
-            self.rgb = cast(
-                Rgb, rgb
-            )  # The setter in RgbMixin ensures this property is Rgb
+        self.rgb = cast(Rgb, rgb)  # The setter in RgbMixin ensures this property is Rgb
 
         if opacity is not None:
             self.opacity = opacity
+
+    @staticmethod
+    def construct(other: _ColorLike) -> "Color":
+        if isinstance(other, Color):
+            return Color(other.rgb, other.opacity)
+        else:
+            return Color(other, 1)
 
     def __str__(self) -> str:
         return f"Color(color={tuple(self.rgb)}, opacity={self.opacity}"

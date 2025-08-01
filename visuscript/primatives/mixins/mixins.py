@@ -54,7 +54,7 @@ class TransformMixin:
 class FillMixin:
     def __init__(self):
         super().__init__()
-        self._fill = Color(config.element_fill)
+        self._fill = Color.construct(config.element_fill)
 
     @property
     def fill(self) -> Color:
@@ -66,7 +66,7 @@ class FillMixin:
 
     def set_fill(self, color: Color._ColorLike) -> Self:
         """Sets the fill for this object."""
-        color = Color(color)
+        color = Color.construct(color)
         self._fill.rgb = color.rgb
         self._fill.opacity = color.opacity
         return self
@@ -75,7 +75,7 @@ class FillMixin:
 class StrokeMixin:
     def __init__(self):
         super().__init__()
-        self._stroke = Color(config.element_stroke)
+        self._stroke = Color.construct(config.element_stroke)
         self._stroke_width = config.element_stroke_width
 
     @property
@@ -88,7 +88,7 @@ class StrokeMixin:
 
     def set_stroke(self, color: Color._ColorLike) -> Self:
         """Sets the stroke for this object."""
-        color = Color(color)
+        color = Color.construct(color)
         self._stroke.rgb = color.rgb
         self._stroke.opacity = color.opacity
         return self
