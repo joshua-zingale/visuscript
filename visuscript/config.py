@@ -31,35 +31,35 @@ class _AnimationConfig:
 
     @property
     def scene_color(self):
-        return Color(self._scene_color)
+        return Color.construct(self._scene_color)
 
     @scene_color.setter
     def scene_color(self, value: Color):
-        self._scene_color = Color(value)
+        self._scene_color = Color.construct(value)
 
     @property
     def element_stroke(self):
-        return Color(self._element_stroke)
+        return Color.construct(self._element_stroke)
 
     @element_stroke.setter
     def element_stroke(self, value: Color):
-        self._element_stroke = Color(value)
+        self._element_stroke = Color.construct(value)
 
     @property
     def element_fill(self):
-        return Color(self._element_fill)
+        return Color.construct(self._element_fill)
 
     @element_fill.setter
     def element_fill(self, value: Color):
-        self._element_fill = Color(value)
+        self._element_fill = Color.construct(value)
 
     @property
     def text_fill(self):
-        return Color(self._text_fill)
+        return Color.construct(self._text_fill)
 
     @text_fill.setter
     def text_fill(self, value: Color):
-        self._text_fill = Color(value)
+        self._text_fill = Color.construct(value)
 
 
 config: _AnimationConfig = _AnimationConfig()
