@@ -46,7 +46,7 @@ class AnimationSequence(Animation):
         elif isinstance(animation, AnimationABC):
             self._locker.update(animation.locker, ignore_conflicts=True)
             self._animations.append(animation)
-        elif isinstance(animation, Iterable):
+        elif isinstance(animation, Iterable):  # type: ignore[reportUnnecessaryIsInstance]
             for animation_ in animation:
                 self.push(animation_)
         else:
@@ -99,7 +99,7 @@ class AnimationBundle(Animation):
             if _update_locker:
                 self._locker.update(animation.locker)
             self._animations.append(animation)
-        elif isinstance(animation, Iterable):
+        elif isinstance(animation, Iterable):  # type: ignore[reportUnnecessaryIsInstance]
             for animation_ in animation:
                 self.push(animation_)
         else:

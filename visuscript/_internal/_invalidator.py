@@ -31,17 +31,8 @@ def invalidates(
     @functools.wraps(method)
     def invalidating_foo(self: _Invalidator, *args: P.args, **kwargs: P.kwargs) -> T:
         output = method(self, *args, **kwargs)
-        for invalidatable in self._iter_invalidatables():
-            invalidatable._invalidate()
+        for invalidatable in self._iter_invalidatables():  # type: ignore[reportPrivateUsage]
+            invalidatable._invalidate()  # type: ignore[reportPrivateUsage]
         return output
 
     return invalidating_foo
-
-    # def _remove(self, invalidatable: Invalidatable):
-    #     """Adds an :class :`Invalidatable` to this Invalidator."""
-    #     ...
-
-
-# def invalidateable_property(self, invalidator: Invalidator):
-#     def invalidateable_property(property: Callable):
-#         pass

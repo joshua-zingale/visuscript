@@ -12,3 +12,18 @@ from .connector import (
     Arrow,
     Edges,
 )
+
+
+__all__ = [
+    "Circle",
+    "Rect",
+    "Pivot",
+    "Drawing",
+    "Image",
+    "Text",
+    "PythonText",
+    "Scene",
+    "Line",
+    "Arrow",
+    "Edges",
+]

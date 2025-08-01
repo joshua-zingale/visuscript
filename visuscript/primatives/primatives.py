@@ -19,8 +19,7 @@ from operator import add, mul, sub, truediv, neg, pow, eq
 from array import array
 
 
-_Number: TypeAlias = Union[int, float]
-_MatrixLike: TypeAlias = Sequence[Sequence[_Number]]
+MatrixLike: TypeAlias = Sequence[Sequence[float]]
 
 
 class SizeMismatch(ValueError):
@@ -30,19 +29,19 @@ class SizeMismatch(ValueError):
         )
 
 
-class Vec(Sequence[_Number], Interpolable):
-    _VecLike: TypeAlias = Union["Vec", Sequence[_Number]]
+class Vec(Sequence[float], Interpolable):
+    VecLike: TypeAlias = Union["Vec", Sequence[float]]
 
-    def __init__(self, *args: _Number):
+    def __init__(self, *args: float):
         self._arr = array("d", [*args])
 
-    def interpolate(self, other: _VecLike, alpha: _Number) -> Self:
+    def interpolate(self, other: VecLike, alpha: float) -> Self:  # type: ignore[reportIncompatibleMethodOverride]
         return self._element_wise(lambda a, b: a * (1 - alpha) + b * alpha, other)
 
     def _element_wise(
         self,
-        operation: Callable[[_Number, _Number], _Number],
-        other: _VecLike | _Number,
+        operation: Callable[[float, float], float],
+        other: VecLike | float,
     ):
         if not isinstance(other, Sequence):
             return self.__class__(*(operation(s, other) for s in self))
@@ -52,27 +51,27 @@ class Vec(Sequence[_Number], Interpolable):
 
         return self.__class__(*(operation(s, o) for s, o in zip(self, other)))
 
-    def add(self, other: _VecLike) -> Self:
+    def add(self, other: VecLike) -> Self:
         return self + other
 
-    def sub(self, other: _VecLike) -> Self:
+    def sub(self, other: VecLike) -> Self:
         return self - other
 
-    def mul(self, other: _VecLike) -> Self:
+    def mul(self, other: VecLike) -> Self:
         return self * other
 
-    def div(self, other: _VecLike) -> Self:
+    def div(self, other: VecLike) -> Self:
         return self / other
 
-    def dot(self, other: _VecLike) -> _Number:
+    def dot(self, other: VecLike) -> float:
         prods = self._element_wise(mul, other)
         return sum(prods)
 
     @overload
-    def __getitem__(self, index: int) -> _Number: ...
+    def __getitem__(self, index: int) -> float: ...
     @overload
     def __getitem__(self, index: slice) -> "Vec": ...
-    def __getitem__(self, index: int | slice) -> Union[_Number, "Vec"]:  # type: ignore
+    def __getitem__(self, index: int | slice) -> Union[float, "Vec"]:  # type: ignore
         if isinstance(index, slice):
             return Vec(*self._arr[index])
         return self._arr[index]
@@ -80,36 +79,36 @@ class Vec(Sequence[_Number], Interpolable):
     def __len__(self) -> int:
         return len(self._arr)
 
-    def __eq__(self, other: _VecLike) -> bool:  # type: ignore
+    def __eq__(self, other: VecLike) -> bool:  # type: ignore
         return sum(self._element_wise(eq, other)) == len(self)
 
-    def __add__(self, other: _VecLike | _Number) -> Self:
+    def __add__(self, other: VecLike | float) -> Self:
         return self._element_wise(add, other)
 
-    def __radd__(self, other: _VecLike | _Number) -> Self:
+    def __radd__(self, other: VecLike | float) -> Self:
         return self._element_wise(add, other)
 
-    def __sub__(self, other: _VecLike | _Number) -> Self:
+    def __sub__(self, other: VecLike | float) -> Self:
         return self._element_wise(sub, other)
 
-    def __rsub__(self, other: _VecLike | _Number) -> Self:
+    def __rsub__(self, other: VecLike | float) -> Self:
         vec = self.__class__(*map(lambda x: -x, self))
         return vec._element_wise(add, other)
 
-    def __mul__(self, other: _VecLike | _Number) -> Self:
+    def __mul__(self, other: VecLike | float) -> Self:
         return self._element_wise(mul, other)
 
-    def __rmul__(self, other: _VecLike | _Number) -> Self:
+    def __rmul__(self, other: VecLike | float) -> Self:
         return self._element_wise(mul, other)
 
-    def __truediv__(self, other: _VecLike | _Number) -> Self:
+    def __truediv__(self, other: VecLike | float) -> Self:
         return self._element_wise(truediv, other)
 
-    def __rtruediv__(self, other: _VecLike | _Number) -> Self:
+    def __rtruediv__(self, other: VecLike | float) -> Self:
         vec = self.__class__(*map(lambda x: 1 / x, self))
         return vec._element_wise(mul, other)
 
-    def __pow__(self, other: _VecLike | _Number) -> Self:
+    def __pow__(self, other: VecLike | float) -> Self:
         return self._element_wise(pow, other)
 
     # def __rpow__(self, other: "Vec") -> Self:
@@ -120,7 +119,7 @@ class Vec(Sequence[_Number], Interpolable):
         return self.__class__(*map(neg, self))
 
     @no_type_check
-    def __rmatmul__(self, other: _MatrixLike):
+    def __rmatmul__(self, other: MatrixLike):
         return self.__class__(
             *(
                 sum(map(lambda a: a[0] * a[1], zip(other[i], self, strict=True)))
@@ -139,9 +138,9 @@ class Vec(Sequence[_Number], Interpolable):
 
 
 class Vec2(Vec):
-    _Vec2Like: TypeAlias = Union["Vec2", Sequence[_Number]]
+    Vec2Like: TypeAlias = Union["Vec2", Sequence[float]]
 
-    def __init__(self, x: _Number, y: _Number):
+    def __init__(self, x: float, y: float):
         super().__init__(x, y)
 
     @property
@@ -153,7 +152,7 @@ class Vec2(Vec):
         return self[1]
 
     @staticmethod
-    def construct(other: _Vec2Like) -> "Vec2":
+    def construct(other: Vec2Like) -> "Vec2":
         """Constructs and returns a :class:`Vec2` from an integer sequence of length two."""
         if len(other) == 2:
             return Vec2(*other)
@@ -165,7 +164,7 @@ class Vec2(Vec):
 
 
 class Rgb(Interpolable):
-    _RgbLike: TypeAlias = Union["Rgb", str, tuple[int, int, int]]
+    RgbLike: TypeAlias = Union["Rgb", str, tuple[int, int, int]]
 
     def __init__(self, r: int, g: int, b: int):
         for v in [r, g, b]:
@@ -175,7 +174,7 @@ class Rgb(Interpolable):
                 )
         self._rgb: list[int] = [r, g, b]
 
-    def interpolate(self, other: "Rgb", alpha: float) -> "Rgb":
+    def interpolate(self, other: "Rgb", alpha: float) -> "Rgb":  # type: ignore[reportIncompatibleMethodOverride]
         return Rgb(
             *(
                 min(max(round(s * (1 - alpha) + o * alpha), 0), 255)
@@ -192,13 +191,13 @@ class Rgb(Interpolable):
     def __sub__(self, other: "Rgb") -> "Rgb":
         return Rgb(*[max(s - o, 0) for s, o in zip(self._rgb, other._rgb)])
 
-    def __mul__(self, other: _Number) -> "Rgb":
+    def __mul__(self, other: float) -> "Rgb":
         return Rgb(*[min(int(s * other), 255) for s in self._rgb])
 
-    def __rmul__(self, other: _Number) -> "Rgb":
+    def __rmul__(self, other: float) -> "Rgb":
         return self * other
 
-    def __truediv__(self, other: _Number) -> "Rgb":
+    def __truediv__(self, other: float) -> "Rgb":
         return self * (1 / other)
 
     def __eq__(self, other: "Rgb"):  # type: ignore
@@ -234,25 +233,25 @@ class Rgb(Interpolable):
 
 
 class Transform(Invalidator, Interpolable, Lazible):
-    _TransformLike: TypeAlias = Union["Transform", Vec2._Vec2Like]
+    TransformLike: TypeAlias = Union["Transform", Vec2.Vec2Like]
 
     def __init__(
         self,
-        translation: Vec2._Vec2Like = [0, 0],
-        scale: Vec2._Vec2Like | _Number = [1, 1],
-        rotation: _Number = 0.0,
+        translation: Vec2.Vec2Like = [0, 0],
+        scale: Vec2.Vec2Like | float = [1, 1],
+        rotation: float = 0.0,
     ):
-        if isinstance(scale, _Number):
+        if isinstance(scale, (int, float)):
             scale = [scale, scale]
 
         self._translation: Vec2 = Vec2.construct(translation)
         self._scale: Vec2 = Vec2.construct(scale)
-        self._rotation: _Number = rotation
+        self._rotation: float = rotation
 
         self._invalidatables: set[Invalidatable] = set()
 
     @staticmethod
-    def construct(other: _TransformLike):
+    def construct(other: TransformLike):
         if isinstance(other, Transform):
             return Transform(
                 translation=other.translation,
@@ -274,10 +273,10 @@ class Transform(Invalidator, Interpolable, Lazible):
 
     @rotation.setter
     @invalidates
-    def rotation(self, value: _Number):
+    def rotation(self, value: float):
         self._rotation = value
 
-    def rotate(self, vec2: Vec2._Vec2Like) -> Vec2:
+    def rotate(self, vec2: Vec2.Vec2Like) -> Vec2:
         t = self.rotation * math.pi / 180
         r_matrix = [[math.cos(t), -math.sin(t)], [math.sin(t), math.cos(t)]]
 
@@ -289,7 +288,7 @@ class Transform(Invalidator, Interpolable, Lazible):
 
     @translation.setter
     @invalidates
-    def translation(self, value: Vec2._Vec2Like):
+    def translation(self, value: Vec2.Vec2Like):
         value = Vec2.construct(value)
         self._translation = value
 
@@ -299,22 +298,22 @@ class Transform(Invalidator, Interpolable, Lazible):
 
     @scale.setter
     @invalidates
-    def scale(self, value: _Number | Vec2._Vec2Like):
-        if isinstance(value, _Number):
+    def scale(self, value: float | Vec2.Vec2Like):
+        if isinstance(value, (int, float)):
             self._scale = Vec2(value, value)
             return
 
         self._scale = Vec2.construct(value)
 
-    def set_translation(self, translation: Vec2._Vec2Like) -> Self:
+    def set_translation(self, translation: Vec2.Vec2Like) -> Self:
         self.translation = translation
         return self
 
-    def set_scale(self, scale: _Number | Vec2._Vec2Like) -> Self:
+    def set_scale(self, scale: float | Vec2.Vec2Like) -> Self:
         self.scale = scale
         return self
 
-    def set_rotation(self, rotation: _Number) -> Self:
+    def set_rotation(self, rotation: float) -> Self:
         self.rotation = rotation
         return self
 
@@ -356,10 +355,10 @@ class Transform(Invalidator, Interpolable, Lazible):
             rotation=self.rotation + other.rotation,
         )
 
-    def interpolate(self, other: Self, alpha: _Number) -> "Transform":
+    def interpolate(self, other: "Transform", alpha: float) -> "Transform":  # type: ignore[reportIncompatibleMethodOverride]
         """Initializes and returns a new :class:`Transform` by interpolating between this :class:`Transform` and another.
 
-        :param other: The other :class:`Transform` between which this :class:`Transform` is to be interpolated.
+        :param other: The other :class:`Transform` with which this :class:`Transform` is to be interpolated.
         :param alpha: The progress of the interpolation between this :class:`Transform` and another.
             If 0, returns an equivalent :class:`Transform` to self;
             if 1, returns an equivalent :class:`Transform` to other.

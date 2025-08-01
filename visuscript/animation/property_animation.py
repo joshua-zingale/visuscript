@@ -1,9 +1,9 @@
-from typing import TypeVar, Generic, Sequence
+from typing import TypeVar, Generic, Unpack
 from copy import deepcopy
 
 from visuscript._internal._interpolable import InterpolableLike, interpolate
 
-from .animation import AlphaAnimation
+from .animation import AlphaAnimation, AlphaAnimationKwargs
 from visuscript.property_locker import PropertyLocker
 
 from visuscript.primatives import Transform, Rgb, Vec2, Color
@@ -26,7 +26,7 @@ class PropertyAnimation(AlphaAnimation, Generic[T]):
         destinations: list[InterpolableLike],
         properties: list[str],
         initials: list[InterpolableLike | None],
-        **kwargs,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         super().__init__(**kwargs)
         self._obj = obj
@@ -49,7 +49,7 @@ class PropertyAnimation(AlphaAnimation, Generic[T]):
         destinations: list[InterpolableLike],
         properties: list[str],
         initials: list[InterpolableLike | None],
-        **kwargs,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         return PropertyLocker({obj: properties})
 
@@ -64,9 +64,9 @@ class TranslationAnimation(PropertyAnimation[Transform]):
     def __init__(
         self,
         transform: Transform,
-        target_translation: Vec2._Vec2Like,
-        initial_translation: Vec2._Vec2Like | None = None,
-        **kwargs,
+        target_translation: Vec2.Vec2Like,
+        initial_translation: Vec2.Vec2Like | None = None,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         super().__init__(
             obj=transform,
@@ -81,9 +81,9 @@ class TranslationAnimation(PropertyAnimation[Transform]):
     def __init_locker__(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         transform: Transform,
-        target_translation: Vec2._Vec2Like,
-        initial_translation: Vec2._Vec2Like | None = None,
-        **kwargs,
+        target_translation: Vec2.Vec2Like,
+        initial_translation: Vec2.Vec2Like | None = None,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         return PropertyLocker({transform: ["translation"]})
 
@@ -92,9 +92,9 @@ class ScaleAnimation(PropertyAnimation[Transform]):
     def __init__(
         self,
         transform: Transform,
-        target_scale: Vec2._Vec2Like | float,
-        initial_scale: Vec2._Vec2Like | float | None = None,
-        **kwargs,
+        target_scale: Vec2.Vec2Like | float,
+        initial_scale: Vec2.Vec2Like | float | None = None,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         super().__init__(
             obj=transform,
@@ -117,9 +117,9 @@ class ScaleAnimation(PropertyAnimation[Transform]):
     def __init_locker__(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         transform: Transform,
-        target_scale: Vec2._Vec2Like | float,
-        initial_scale: Vec2._Vec2Like | float | None = None,
-        **kwargs,
+        target_scale: Vec2.Vec2Like | float,
+        initial_scale: Vec2.Vec2Like | float | None = None,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         return PropertyLocker({transform: ["scale"]})
 
@@ -130,7 +130,7 @@ class RotationAnimation(PropertyAnimation[Transform]):
         transform: Transform,
         target_rotation: float,
         initial_rotation: int | float | None = None,
-        **kwargs,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         super().__init__(
             obj=transform,
@@ -145,7 +145,7 @@ class RotationAnimation(PropertyAnimation[Transform]):
         transform: Transform,
         target_rotation: float,
         initial_rotation: int | float | None = None,
-        **kwargs,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         return PropertyLocker({transform: ["rotation"]})
 
@@ -154,9 +154,9 @@ class TransformAnimation(PropertyAnimation[Transform]):
     def __init__(
         self,
         transform: Transform,
-        target_transform: Transform._TransformLike,
-        initial_transform: Transform._TransformLike | None = None,
-        **kwargs,
+        target_transform: Transform.TransformLike,
+        initial_transform: Transform.TransformLike | None = None,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         target_transform = Transform.construct(target_transform)
 
@@ -189,9 +189,9 @@ class TransformAnimation(PropertyAnimation[Transform]):
     def __init_locker__(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         transform: Transform,
-        target_transform: Transform._TransformLike,
-        initial_transform: Transform._TransformLike | None = None,
-        **kwargs,
+        target_transform: Transform.TransformLike,
+        initial_transform: Transform.TransformLike | None = None,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         return PropertyLocker({transform: ["translation", "scale", "rotation"]})
 
@@ -202,7 +202,7 @@ class OpacityAnimation(PropertyAnimation[HasOpacity]):
         color: HasOpacity,
         target_opacity: float,
         initial_opacity: float | None = None,
-        **kwargs,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         super().__init__(
             obj=color,
@@ -217,7 +217,7 @@ class OpacityAnimation(PropertyAnimation[HasOpacity]):
         color: HasOpacity,
         target_opacity: float,
         initial_opacity: float | None = None,
-        **kwargs,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         return PropertyLocker({color: ["opacity"]})
 
@@ -226,9 +226,9 @@ class RgbAnimation(PropertyAnimation[HasRgb]):
     def __init__(
         self,
         color: HasRgb,
-        target_rgb: Rgb._RgbLike,
-        initial_rgb: Rgb._RgbLike | None = None,
-        **kwargs,
+        target_rgb: Rgb.RgbLike,
+        initial_rgb: Rgb.RgbLike | None = None,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         target_rgb = Color(target_rgb).rgb
         if initial_rgb is not None:
@@ -245,8 +245,8 @@ class RgbAnimation(PropertyAnimation[HasRgb]):
     def __init_locker__(  # type: ignore[reportIncompatibleMethodOverride]
         self,
         color: HasRgb,
-        target_rgb: Rgb._RgbLike,
-        initial_rgb: Rgb._RgbLike | None = None,
-        **kwargs,
+        target_rgb: Rgb.RgbLike,
+        initial_rgb: Rgb.RgbLike | None = None,
+        **kwargs: Unpack[AlphaAnimationKwargs],
     ):
         return PropertyLocker({color: ["rgb"]})

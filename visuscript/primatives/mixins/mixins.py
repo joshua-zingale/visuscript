@@ -12,19 +12,20 @@ from .color import Color, OpacityMixin
 
 class TransformMixin:
     """Adds a :class:`~visuscript.Transform` to this object.
-    
+
     .. note::
 
        This mixin provides the *local* transform, which is not affected by any ancestor's transform.
        A global transform, which is dependent on its ancestors' transforms, is provided by :class:`HierarchicalDrawable`.
-    
+
     """
+
     def __init__(self):
         super().__init__()
         self._transform = Transform()
 
         if isinstance(self, Invalidatable):
-            self._transform._add_invalidatable(self)
+            self._transform._add_invalidatable(self)  # type: ignore
 
     @property
     def transform(self) -> Transform:
@@ -56,15 +57,15 @@ class TransformMixin:
         self.transform.rotation = degrees
         return self
 
-    def set_transform(self, transform: Transform._TransformLike) -> Self:
+    def set_transform(self, transform: Transform.TransformLike) -> Self:
         """Sets this object's :class:`~visuscript.Transform`."""
         self._transform.update(Transform.construct(transform))
         return self
 
 
 class FillMixin:
-    """Adds a fill :class:`~visuscript.Color` to this object.
-    """
+    """Adds a fill :class:`~visuscript.Color` to this object."""
+
     def __init__(self):
         super().__init__()
         self._fill = Color.construct(config.element_fill)
@@ -75,10 +76,10 @@ class FillMixin:
         return self._fill
 
     @fill.setter
-    def fill(self, other: Color._ColorLike):
+    def fill(self, other: Color.ColorLike):
         self.set_fill(other)
 
-    def set_fill(self, color: Color._ColorLike) -> Self:
+    def set_fill(self, color: Color.ColorLike) -> Self:
         """Sets this object's fill :class:`~visuscript.Color`."""
         color = Color.construct(color)
         self._fill.rgb = color.rgb
@@ -87,8 +88,8 @@ class FillMixin:
 
 
 class StrokeMixin:
-    """Adds a stroke :class:`~visuscript.Color` to this object.
-    """
+    """Adds a stroke :class:`~visuscript.Color` to this object."""
+
     def __init__(self):
         super().__init__()
         self._stroke = Color.construct(config.element_stroke)
@@ -100,10 +101,10 @@ class StrokeMixin:
         return self._stroke
 
     @stroke.setter
-    def stroke(self, other: Color._ColorLike):
+    def stroke(self, other: Color.ColorLike):
         self.set_stroke(other)
 
-    def set_stroke(self, color: Color._ColorLike) -> Self:
+    def set_stroke(self, color: Color.ColorLike) -> Self:
         """Sets this object's stroke :class:`~visuscript.Color`."""
         color = Color.construct(color)
         self._stroke.rgb = color.rgb
@@ -135,6 +136,7 @@ class ShapeMixin(ABC):
        that is transformed by the object's global transform, use :class:`GlobalShapeMixin`.
 
     """
+
     @abstractmethod
     def calculate_top_left(self) -> Vec2:
         """Returns the un-transformed top-left (x,y) coordinate for this object's :class:`Shape`."""
@@ -161,8 +163,8 @@ class ShapeMixin(ABC):
 
 
 class TransformableShapeMixin(ShapeMixin, TransformMixin):
-    """Adds a transformed :class:`Shape` to this object.
-    """
+    """Adds a transformed :class:`Shape` to this object."""
+
     @cached_property
     def transformed_shape(self):
         """The :class:`Shape` for this object when it has been transformed by its :class:`~visuscript.Transform`."""
@@ -177,6 +179,7 @@ class AnchorMixin(ShapeMixin):
     """Adds an anchor to this object.
     An anchor can be used to align an object to one of its sides or corners.
     """
+
     def __init__(self):
         super().__init__()
         self._anchor: Anchor = Anchor.CENTER
@@ -235,8 +238,8 @@ class AnchorMixin(ShapeMixin):
 
 class Drawable(ABC):
     """Designates an object as being Drawable."""
+
     _extrusion: float = 0
-    
 
     @abstractmethod
     def draw(self) -> str:
@@ -249,7 +252,7 @@ class Drawable(ABC):
         Lower extrusions are drawn before higher extrusions,
         so higher extrusions are drawn over lower extrusions."""
         return self._extrusion
-    
+
     @extrusion.setter
     def extrusion(self, other: float):
         self._extrusion = other
@@ -278,6 +281,7 @@ class HierarchicalDrawable(
         :meth:`HierarchicalDrawable.draw` should not be overwritten.
         Instead, implementers of :class:`HierarchicalDrawable` should implement :meth:`HierarchicalDrawable.draw_self`
     """
+
     def __init__(self):
         super().__init__()
         self._children: list[HierarchicalDrawable] = []
@@ -381,7 +385,7 @@ class HierarchicalDrawable(
         :return: self.
 
         .. seealso::
-        
+
             :meth:`HierarchicalDrawable.set_parent`
         """
 
@@ -391,12 +395,8 @@ class HierarchicalDrawable(
                 child.set_parent(
                     self, preserve_global_transform=preserve_global_transform
                 )
-            elif isinstance(child, Iterable):
+            else:
                 for actual_element in child:
-                    if not isinstance(actual_element, HierarchicalDrawable):
-                        raise TypeError(
-                            f"Cannot add child of type '{actual_element.__class__.__name__}': child must inherit from HierarcicalDrawable."
-                        )
                     actual_element.set_parent(
                         self, preserve_global_transform=preserve_global_transform
                     )
@@ -417,7 +417,7 @@ class HierarchicalDrawable(
         :return: self.
 
         .. seealso::
-        
+
             :meth:`HierarchicalDrawable.set_parent`
         """
         if child not in self._children:
@@ -441,7 +441,7 @@ class HierarchicalDrawable(
         This is a convenience method for adding multiple children to the object.
 
         .. seealso::
-        
+
             :meth:`HierarchicalDrawable.add_child`
         """
         for child in children:
@@ -506,6 +506,7 @@ class GlobalShapeMixin(HierarchicalDrawable, TransformableShapeMixin):
 
         :attr:`HierarchicalDrawable.global_transform`
     """
+
     def _invalidate(self):
         super()._invalidate()
         if hasattr(self, "global_shape"):
@@ -520,6 +521,7 @@ class Element(
     GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin, StrokeMixin
 ):
     """A convenience mixin that adds all mixins that a standard vector graphic would have."""
+
     pass
 
 

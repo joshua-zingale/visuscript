@@ -22,7 +22,7 @@ def main():
 
     with tempfile.TemporaryDirectory() as temp_dir:
         counter = 1
-        svg_file_paths = []
+        svg_file_paths: list[str] = []
 
         for svg_blob in sys.stdin:
             svg_file_path = os.path.join(temp_dir, f"temp_{counter:09d}.svg")

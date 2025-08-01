@@ -20,7 +20,7 @@ def fade_out(
 
 def flash(
     color: HasRgb,
-    rgb: Rgb._RgbLike,
+    rgb: Rgb.RgbLike,
     duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
 ):
     """Returns an Animation to flash a Color's rgb to another and then back to its original rgb.."""

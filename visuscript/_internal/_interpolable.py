@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Self, Union, TypeVar
+from typing import Union, TypeVar
+
+
+T = TypeVar("T", bound="Interpolable")
 
 
 class Interpolable(ABC):
     @abstractmethod
-    def interpolate(self, other: Self, alpha: float) -> Self: ...
+    def interpolate(self: T, other: T, alpha: float) -> T: ...
 
 
 InterpolableLike = Union[Interpolable, int, float]  # type: ignore

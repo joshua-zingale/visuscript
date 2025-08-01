@@ -276,9 +276,9 @@ class Edges(Drawable):
         for e1, e2 in itertools.combinations(elements, 2):
             should_be_connected = rule(e1, e2)
             if should_be_connected and not self.connected(e1, e2):
-                bundle << self.connect(e1, e2)
+                bundle.push(self.connect(e1, e2))
             elif self.connected(e1, e2) and not should_be_connected:
-                bundle << self.disconnect(e1, e2)
+                bundle.push(self.disconnect(e1, e2))
 
         return bundle
 
