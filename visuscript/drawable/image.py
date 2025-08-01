@@ -1,10 +1,11 @@
-from typing import no_type_check
+from typing import no_type_check, Sequence
 from io import BytesIO
 
 
 from PIL import Image as PILImage
 import base64
 import svg
+import numpy as np
 
 from visuscript.primatives import *
 from visuscript.primatives.mixins import (
@@ -27,23 +28,21 @@ def get_base64_from_pil_image(pil_image: PILImage.Image) -> str:
 
 
 class Image(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin):
-    @no_type_check
     def __init__(
         self,
         *,
         filename: str | Sequence[Sequence[int]],
         width: float | None = None,
-        **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__()
 
         if isinstance(filename, str):
             img = PILImage.open(filename)
         else:
-            filename = np.array(filename, dtype=np.uint8)
-            assert len(filename.shape) == 3
+            file = np.array(filename, dtype=np.uint8)
+            assert len(file.shape) == 3
 
-            img = PILImage.fromarray(filename, mode="RGB")
+            img = PILImage.fromarray(file, mode="RGB")
 
         self._width, self._height = img.size
         self.resolution = (self._width, self._height)
