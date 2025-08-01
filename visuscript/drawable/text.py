@@ -40,6 +40,8 @@ _Text = TypeVar("_Text", bound="Text")
 
 
 class Text(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin):
+    """A textual display."""
+
     @staticmethod
     def update_size(
         foo: Callable[Concatenate[_Text, _P], _T],
@@ -104,6 +106,7 @@ class Text(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin):
 
     @property
     def text(self) -> str:
+        """The text contained in this object."""
         return self._text
 
     @text.setter

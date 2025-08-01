@@ -1,4 +1,3 @@
-from visuscript.primatives.primatives import Transform, Vec2
 from visuscript.segment import Path
 from visuscript.primatives.mixins import (
     HierarchicalDrawable,
@@ -19,27 +18,12 @@ class Drawing(
     AnchorMixin,
     OpacityMixin,
 ):
-    """A Drawing is an Element for which the self-display is defined by a Path."""
+    """A :class:`~visuscript.primatives.mixins.HierarchicalDrawable` for which the self-display is defined by a :class:`~visuscript.Path`."""
 
     def __init__(self, path: Path):
         self._path: Path = path
         super().__init__()
         self.set_anchor(Anchor.DEFAULT)
-
-    def point(self, length: float) -> Vec2:
-        return self.transform(
-            Transform(self._path.set_offset(*self.anchor_offset).point(length))
-        ).translation
-
-    def point_percentage(self, p: float) -> Vec2:
-        return self.transform(
-            Transform(self._path.set_offset(*self.anchor_offset).point_percentage(p))
-        ).translation
-
-    def global_point(self, length: float) -> Vec2:
-        return self.global_transform(
-            Transform(self._path.set_offset(*self.anchor_offset).point(length))
-        ).translation
 
     def calculate_top_left(self):
         return self._path.top_left
