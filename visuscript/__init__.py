@@ -1,7 +1,7 @@
 """Visuscript is a vector-graphics-based Animation library for Python.
 
-The core class that drives Visuscript's functionality is :class:`~visuscript.scene.Scene`.
-Refer to the documentation for :class:`~visuscript.scene.Scene` to see how to create Python scripts from which Visuscript can generate a movie.
+The core class that drives Visuscript's functionality is :class:`~visuscript.Scene`.
+Refer to the documentation for :class:`~visuscript.Scene` to see how to create Python scripts from which Visuscript can generate a movie.
 
 To create an video with Visuscript, use the command-line utility, :mod:`~visuscript.cli.visuscript_cli`.
 If Visuscript was installed using pip,
@@ -16,13 +16,12 @@ If the utility is not added to your PATH, the following works as well:
 
 .. code-block:: bash
 
-    python3 /path/to/visuscript-root-directory/visuscript/cli/visuscript_cli.py path/to/script.py
+    python3 -m visuscript path/to/script.py
 
 """
 
 from .drawable import Circle, Rect, Image, Pivot, Drawing
-from .primatives import Color
-from .primatives import Transform, Vec2, Rgb
+from .primatives import Transform, Vec2, Rgb, Color
 from .drawable.scene import Scene
 from .organizer import GridOrganizer
 from .drawable.text import Text

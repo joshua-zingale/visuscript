@@ -11,10 +11,10 @@ copyright = "2025, Joshua Thomas Zingale"
 author = "Joshua Thomas Zingale"
 release = "0.1.0"
 
-import os
+from pathlib import Path
 import sys
 
-sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, str(Path("..", "visuscript").resolve()))
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -45,4 +45,4 @@ autodoc_default_options = {
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_static_path = ["_static"]
+# html_static_path = ["_static"]
