@@ -1,6 +1,7 @@
 """This module contains Scene, which allows display of Drawable and animation thereof."""
 
-from typing import no_type_check
+from typing import Iterable, Iterator, no_type_check, Self
+from copy import copy
 
 
 from visuscript.primatives.mixins import (
@@ -15,8 +16,7 @@ from visuscript.updater import UpdaterBundle
 from visuscript.primatives import *
 from visuscript.primatives.protocols import CanBeDrawn
 from visuscript.config import config
-from typing import Iterable, Iterator
-from copy import copy
+
 
 from visuscript.animation import AnimationBundle, Animation
 from visuscript.updater import Updater

@@ -1,3 +1,8 @@
+"""Contains mixins usable for creating :class:`~mixins.Drawable` mixins.
+
+Also contains :class:`~mixins.Color`.
+"""
+
 from .color import RgbMixin, OpacityMixin, Color
 from .mixins import (
     Drawable,

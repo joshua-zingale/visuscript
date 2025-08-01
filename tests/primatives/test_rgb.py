@@ -1,5 +1,4 @@
 from visuscript.primatives.primatives import Rgb
-import pytest
 
 
 def test_init():
