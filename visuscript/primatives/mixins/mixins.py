@@ -11,6 +11,14 @@ from .color import Color, OpacityMixin
 
 
 class TransformMixin:
+    """Adds a :class:`~visuscript.Transform` to this object.
+    
+    .. note::
+
+       This mixin provides the *local* transform, which is not affected by any ancestor's transform.
+       A global transform, which is dependent on its ancestors' transforms, is provided by :class:`HierarchicalDrawable`.
+    
+    """
     def __init__(self):
         super().__init__()
         self._transform = Transform()
@@ -20,12 +28,15 @@ class TransformMixin:
 
     @property
     def transform(self) -> Transform:
+        """The local :class:`~visuscript.Transform` for this object."""
         return self._transform
 
     def translate(self, x: float | None = None, y: float | None = None) -> Self:
-        """Sets the translation on this Drawable's Transform.
+        """Sets the translation on this object's :class:`~visuscript.Transform`.
 
-        Any of x,y, and z not set will be set in the new translation to match the current value on this Drawable's Transfom.translation.
+        :param x: The new x value for this object's translation. If None, defaults to the current translation's x value.
+        :param y: The new y value for this object's translation. If None, defaults to the current translation's y value.
+        :return: self
         """
         if x is None:
             x = self.transform.translation.x
@@ -36,17 +47,17 @@ class TransformMixin:
         return self
 
     def scale(self, scale: int | float | Sequence[float]) -> Self:
-        """Sets the scale on this Drawable's Transform."""
+        """Sets the scale on this object's :class:`~visuscript.Transform`."""
         self.transform.scale = scale
         return self
 
     def rotate(self, degrees: float) -> Self:
-        """Sets the rotation on this Drawable's Transform."""
+        """Sets the rotation on this object's :class:`~visuscript.Transform`."""
         self.transform.rotation = degrees
         return self
 
     def set_transform(self, transform: Transform._TransformLike) -> Self:
-        """Sets this Drawable's Transform."""
+        """Sets this object's :class:`~visuscript.Transform`."""
         self._transform.update(Transform.construct(transform))
         return self
 

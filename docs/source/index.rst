@@ -2,15 +2,14 @@ Visuscript Documentation
 ========================
 
 .. automodule:: visuscript
-   :members:
-   :special-members: __init__
-   :noindex:
+   :no-members:
+   :no-index:
 
 .. toctree::
    :maxdepth: 1
    :caption: See next:
 
-   visuscript.cli
+
 
    visuscript
 
