@@ -63,12 +63,15 @@ class TransformMixin:
 
 
 class FillMixin:
+    """Adds a fill :class:`~visuscript.Color` to this object.
+    """
     def __init__(self):
         super().__init__()
         self._fill = Color.construct(config.element_fill)
 
     @property
     def fill(self) -> Color:
+        """The :class:`~visuscript.Color` of this object's fill."""
         return self._fill
 
     @fill.setter
@@ -76,7 +79,7 @@ class FillMixin:
         self.set_fill(other)
 
     def set_fill(self, color: Color._ColorLike) -> Self:
-        """Sets the fill for this object."""
+        """Sets this object's fill :class:`~visuscript.Color`."""
         color = Color.construct(color)
         self._fill.rgb = color.rgb
         self._fill.opacity = color.opacity
@@ -84,6 +87,8 @@ class FillMixin:
 
 
 class StrokeMixin:
+    """Adds a stroke :class:`~visuscript.Color` to this object.
+    """
     def __init__(self):
         super().__init__()
         self._stroke = Color.construct(config.element_stroke)
@@ -91,6 +96,7 @@ class StrokeMixin:
 
     @property
     def stroke(self) -> Color:
+        """The :class:`~visuscript.Color` of this object's stroke."""
         return self._stroke
 
     @stroke.setter
@@ -98,7 +104,7 @@ class StrokeMixin:
         self.set_stroke(other)
 
     def set_stroke(self, color: Color._ColorLike) -> Self:
-        """Sets the stroke for this object."""
+        """Sets this object's stroke :class:`~visuscript.Color`."""
         color = Color.construct(color)
         self._stroke.rgb = color.rgb
         self._stroke.opacity = color.opacity
@@ -106,6 +112,7 @@ class StrokeMixin:
 
     @property
     def stroke_width(self) -> float:
+        """The width of this object's stroke."""
         return self._stroke_width
 
     @stroke_width.setter
@@ -113,15 +120,24 @@ class StrokeMixin:
         self.set_stroke_width(other)
 
     def set_stroke_width(self, width: float) -> Self:
-        """Sets the stroke width for this object."""
+        """Sets the width of this object's stroke."""
         self._stroke_width = width
         return self
 
 
 class ShapeMixin(ABC):
+    """Adds a :class:`Shape` to this object.
+
+    .. note::
+
+       This mixin provides a :class:`Shape` that is unaffected by any transforms, local or global, that are applied to this object.
+       For a :class:`Shape` that is transformed by the object's local transform, use :class:`TransformableShapeMixin`; and for one
+       that is transformed by the object's global transform, use :class:`GlobalShapeMixin`.
+
+    """
     @abstractmethod
     def calculate_top_left(self) -> Vec2:
-        """Returns the un-transformed top-left (x,y) coordinate for this object's `:class:Shape`."""
+        """Returns the un-transformed top-left (x,y) coordinate for this object's :class:`Shape`."""
         ...
 
     @abstractmethod
@@ -140,14 +156,16 @@ class ShapeMixin(ABC):
 
     @cached_property
     def shape(self):
-        """The un-transformed Shape for this object."""
+        """The un-transformed :class:`Shape` for this object."""
         return Shape(self)
 
 
 class TransformableShapeMixin(ShapeMixin, TransformMixin):
+    """Adds a transformed :class:`Shape` to this object.
+    """
     @cached_property
     def transformed_shape(self):
-        """The Shape for this Drawable when it has been transformed by its Transform."""
+        """The :class:`Shape` for this object when it has been transformed by its :class:`~visuscript.Transform`."""
         return Shape(self, self.transform)
 
     def _invalidate(self):
@@ -156,16 +174,18 @@ class TransformableShapeMixin(ShapeMixin, TransformMixin):
 
 
 class AnchorMixin(ShapeMixin):
+    """Adds an anchor to this object.
+    An anchor can be used to align an object to one of its sides or corners.
+    """
     def __init__(self):
         super().__init__()
         self._anchor: Anchor = Anchor.CENTER
 
-    def set_anchor(self, anchor: Anchor, keep_position=False) -> Self:
+    def set_anchor(self, anchor: Anchor, keep_position: bool = False) -> Self:
         """Sets thie anchor.
 
         :param anchor: The anchor to set for this object.
-        :param keep_position: If True, updates this object's translation such that the visual position of this Drawable will not change, defaults to False
-        :type keep_position: bool, optional
+        :param keep_position: If True, updates this object's translation such that the visual position of this object will not change.
         :return: self
         """
         old_anchor_offset = self.anchor_offset
@@ -214,14 +234,28 @@ class AnchorMixin(ShapeMixin):
 
 
 class Drawable(ABC):
-    extrusion: float = 0
+    """Designates an object as being Drawable."""
+    _extrusion: float = 0
+    
 
     @abstractmethod
     def draw(self) -> str:
         """Returns the SVG representation of this object."""
         ...
 
+    @property
+    def extrusion(self) -> float:
+        """The position of this object when determining drawing order.
+        Lower extrusions are drawn before higher extrusions,
+        so higher extrusions are drawn over lower extrusions."""
+        return self._extrusion
+    
+    @extrusion.setter
+    def extrusion(self, other: float):
+        self._extrusion = other
+
     def set_extrusion(self, extrusion: float) -> Self:
+        """Sets this object's extrusion."""
         self.extrusion = extrusion
         return self
 
@@ -233,6 +267,17 @@ class HierarchicalDrawable(
     Iterable["HierarchicalDrawable"],
     Invalidatable,
 ):
+    """Designates an object as being drawable and as being hierarchical in that
+    the object will
+    * be drawn whenever its parent is drawn,
+    * have a global opacity as the product of its own and its ancestor's opacity,
+    * and have a global :class:`Transform` that is the composition of its own and its ancestor's :class:`Transform`s.
+
+    .. note::
+
+        :meth:`HierarchicalDrawable.draw` should not be overwritten.
+        Instead, implementers of :class:`HierarchicalDrawable` should implement :meth:`HierarchicalDrawable.draw_self`
+    """
     def __init__(self):
         super().__init__()
         self._children: list[HierarchicalDrawable] = []
@@ -241,7 +286,7 @@ class HierarchicalDrawable(
     @abstractmethod
     def draw_self(self) -> str:
         """
-        Returns the SVG representation for this Element but not for its children.
+        Returns the SVG representation of this object but not of its children.
         """
         ...
 
@@ -257,6 +302,7 @@ class HierarchicalDrawable(
         return self._parent
 
     def iter_children(self) -> Iterable["HierarchicalDrawable"]:
+        """Returns an iterable over all this object's children."""
         yield from self._children
 
     def set_global_transform(self, transform: Transform) -> Self:
@@ -268,13 +314,13 @@ class HierarchicalDrawable(
         self.global_transform = transform
         return self
 
-    def has_ancestor(self, element: "HierarchicalDrawable") -> bool:
+    def has_ancestor(self, drawable: "HierarchicalDrawable") -> bool:
         """
-        Returns True if `element` is an ancestor of this object.
+        Returns True if a drawable is one of this object's ancestors.
         """
         ancestor = self
         while (ancestor := ancestor._parent) is not None:
-            if ancestor == element:
+            if ancestor == drawable:
                 return True
         return False
 
@@ -285,8 +331,13 @@ class HierarchicalDrawable(
     ) -> Self:
         """
         Sets this object's parent, replacing any that may have already existed.
-
         Also adds this object as a child of the new parent and removes it as a child of any previous parent.
+
+        :param parent: The parent to be set for this object.
+        :param preserve_global_transform: If True, the transform on this object will be modified such that its global position not change.
+        :raises ValueError: if `parent` is a descendant of this object.
+        :raises ValueError: if `parent` is this object itself.
+        :return: self.
         """
         if self.parent:
             self.parent._children.remove(self)
@@ -321,9 +372,17 @@ class HierarchicalDrawable(
         ],
         preserve_global_transform: bool = False,
     ) -> Self:
-        """
-        Adds `child` as a child to this object. If `preserve_global_transform` is True, then the
-        transform on `child` is set such that its global transform not change.
+        """Sets a child's parent to this object.
+
+        :param child_or_initializer: The child to be added. This may be a :class:`HierarchicalDrawable` or a function.
+            If a function, the function must take a single parameter, which will be the current object, and return a :class:`HierarchicalDrawable` to be drawn.
+            The functional case is useful when something about the initialization of the child depends on the parent-to-be.
+        :param preserve_global_transform: If True, the transform on the child will be modified such that its global position not change.
+        :return: self.
+
+        .. seealso::
+        
+            :meth:`HierarchicalDrawable.set_parent`
         """
 
         if isinstance(child_or_initializer, Callable):
@@ -351,8 +410,15 @@ class HierarchicalDrawable(
         self, child: "HierarchicalDrawable", preserve_global_transform: bool = True
     ) -> Self:
         """
-        Removes `child` as a child to this Element. If `preserve_global_transform` is True, then the
-        transform on `child` is set such that its global transform not change.
+        Removes a child from among this objects children by settings its parent to None.
+
+        :param child: The child to be removed.
+        :param preserve_global_transform: If True, the transform on the child will be modified such that its global position not change.
+        :return: self.
+
+        .. seealso::
+        
+            :meth:`HierarchicalDrawable.set_parent`
         """
         if child not in self._children:
             raise ValueError(
@@ -371,8 +437,12 @@ class HierarchicalDrawable(
         preserve_global_transform: bool = False,
     ) -> Self:
         """
-        Adds each input child as a child of this Element. If `preserve_global_transform` is True, then the
-        transform on each child is set such that its global transform not change.
+        Adds each positional argument as a child to this object.
+        This is a convenience method for adding multiple children to the object.
+
+        .. seealso::
+        
+            :meth:`HierarchicalDrawable.add_child`
         """
         for child in children:
             self.add_child(child, preserve_global_transform=preserve_global_transform)
@@ -383,7 +453,7 @@ class HierarchicalDrawable(
         """
         The global opacity of this Element.
 
-        Returns the product of all ancestor opacities and that of this Element.
+        Returns the product of all ancestors' opacities and that of this object.
         """
         curr = self
 
@@ -401,7 +471,6 @@ class HierarchicalDrawable(
         A copy of the global transform of this Element.
 
         Returns the composition of all ancestor transforms and this Element's transform.
-
         """
         curr = self
 
@@ -415,7 +484,7 @@ class HierarchicalDrawable(
 
     def __iter__(self) -> Iterator["HierarchicalDrawable"]:
         """
-        Iterate over this Element and its children in ascending z order, secondarily ordering parents before children.
+        Iterate over this object and its children in ascending order of extrusion, secondarily ordering parents before children.
         """
         elements: list[HierarchicalDrawable] = [self]
         for child in self._children:
@@ -424,10 +493,19 @@ class HierarchicalDrawable(
         yield from sorted(elements, key=lambda d: d.extrusion)
 
     def draw(self) -> str:
+        """Returns the SVG representation of this object and that of its descendants."""
         return "".join(map(lambda element: element.draw_self(), self))
 
 
 class GlobalShapeMixin(HierarchicalDrawable, TransformableShapeMixin):
+    """Adds a global :class:`Shape` to this object.
+    A global :class:`Shape` is its basic :class:`Shape` (accessed with `.shape`) with its
+    global :class:`~visuscript.Transform` applied to it.
+
+    .. seealso::
+
+        :attr:`HierarchicalDrawable.global_transform`
+    """
     def _invalidate(self):
         super()._invalidate()
         if hasattr(self, "global_shape"):
@@ -441,6 +519,7 @@ class GlobalShapeMixin(HierarchicalDrawable, TransformableShapeMixin):
 class Element(
     GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin, StrokeMixin
 ):
+    """A convenience mixin that adds all mixins that a standard vector graphic would have."""
     pass
 
 
@@ -450,7 +529,7 @@ class Shape:
     def __init__(self, obj: ShapeMixin, transform: Transform = Transform()):
         """
         :param obj: The object for which to initialize a :class:`Shape`.
-        :param transform: Applies this transform to the :class:`Shape` of obj, defaults to Transform()
+        :param transform: Applies this :class:`~visuscript.Transform` to the :class:`Shape` of obj.
         """
 
         top_left = obj.calculate_top_left() + (
