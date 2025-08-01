@@ -7,7 +7,8 @@ T = TypeVar("T", bound="Interpolable")
 
 class Interpolable(ABC):
     @abstractmethod
-    def interpolate(self: T, other: T, alpha: float) -> T: ...
+    def interpolate(self: T, other: T, alpha: float) -> T:
+        """Interpolates between this object and another and returns the result as a new object."""
 
 
 InterpolableLike = Union[Interpolable, int, float]  # type: ignore
