@@ -19,6 +19,8 @@ T = TypeVar("T")
 
 
 class PropertyAnimation(AlphaAnimation, Generic[T]):
+    """Animations interpolable properties of an object with specified endpoints."""
+
     def __init__(
         self,
         *,

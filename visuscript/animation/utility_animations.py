@@ -5,17 +5,17 @@ from . import AnimationSequence, OpacityAnimation, RgbAnimation, LazyAnimation
 
 
 def fade_in(
-    element: HasOpacity, duration: float | ConfigurationDeference = DEFER_TO_CONFIG
+    obj: HasOpacity, duration: float | ConfigurationDeference = DEFER_TO_CONFIG
 ) -> OpacityAnimation:
-    """Returns an Animation to fade an Element in."""
-    return OpacityAnimation(element, 1.0, duration=duration)
+    """Returns an Animation to fade an object in."""
+    return OpacityAnimation(obj, 1.0, duration=duration)
 
 
 def fade_out(
-    element: HasOpacity, duration: float | ConfigurationDeference = DEFER_TO_CONFIG
+    obj: HasOpacity, duration: float | ConfigurationDeference = DEFER_TO_CONFIG
 ) -> OpacityAnimation:
-    """Returns an Animation to fade an Element out."""
-    return OpacityAnimation(element, 0.0, duration=duration)
+    """Returns an Animation to fade an object out."""
+    return OpacityAnimation(obj, 0.0, duration=duration)
 
 
 def flash(
