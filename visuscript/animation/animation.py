@@ -26,6 +26,11 @@ from copy import deepcopy
 
 
 class AnimationMetaClass(ABCMeta):
+    """Defines the lazy initialization of Animations,
+    such that the __init__ not be called until the first advance.
+    This metaclass also evaluate lazy objects at the time __init__ is called.
+    """
+
     @no_type_check
     def __new__(meta, name, bases, attrs):
         # Set all parent classes' initializers to their default.
@@ -96,11 +101,10 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
         """initializes and returns a property locker for self."""
         ...
 
-    def next_frame(self):
+    def next_frame(self) -> bool:
         """Makes the changes for one frame of the animation, accounting for the set animation speed.
 
-        :return: True if this `Animation` had any frames left before it was called.
-        :rtype: bool
+        :return: True if this Animation had any frames left before it was called.
         """
         self._num_advances += 1
         num_to_advance = int(
@@ -122,15 +126,14 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
     def advance(self) -> bool:
         """Makes the changes for one frame of the animation when at animation speed 1.
 
-        :return: True if this `Animation` had any frames left before it was called.
-        :rtype: bool
+        :return: True if this Animation had any frames left before it was called.
         """
         ...
 
     @property
     def locker(self) -> PropertyLocker:
         """
-        The :class:`PropertyLocker` identifying all objects/properties updated by this Animation.
+        The :class:`~visuscript.property_locker.PropertyLocker` identifying all objects/properties updated by this Animation.
         """
         return self._locker
 
@@ -144,7 +147,7 @@ class AnimationABC(ABC, metaclass=AnimationMetaClass):
     def set_speed(self, speed: int) -> Self:
         """Sets the playback speed for this Animation.
 
-        :param speed: The new duration of this :class:`Animation` will be duration*speed.
+        :param speed: The new duration of this :class:`Animation` will be duration/speed.
         :type speed: int
         :return: self
         :rtype: Self
@@ -220,7 +223,7 @@ class LazyAnimation(Animation):
 
 
 class NoAnimation(Animation):
-    """A NoAnimation makes no changes to any object's state.
+    """Makes no changes to any object's state.
 
     A NoAnimation can be used to rest at the current state for a specified duration.
     """

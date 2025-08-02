@@ -7,7 +7,7 @@ from typing import Iterable
 class AnimationSequence(Animation):
     """An AnimationSequence runs through Animations in sequence.
 
-    An AnimationSequence can be used to play multiple animation, one before another.
+    An AnimationSequence can be used to play multiple animation, one after another.
     """
 
     def __init__(self, *animations: AnimationABC | None):
@@ -41,6 +41,7 @@ class AnimationSequence(Animation):
         animation: AnimationABC | Iterable[AnimationABC | None] | None,
         _call_method: str = "push",
     ):
+        """Adds an Animation to the end sequence."""
         if animation is None:
             pass
         elif isinstance(animation, AnimationABC):
@@ -55,6 +56,7 @@ class AnimationSequence(Animation):
             )
 
     def __lshift__(self, other: AnimationABC | Iterable[AnimationABC | None] | None):
+        """See :meth:AnimationSequence.push"""
         self.push(other, _call_method="<<")
 
 
@@ -87,12 +89,7 @@ class AnimationBundle(Animation):
         _call_method: str = "push",
         _update_locker: bool = True,
     ):
-        """Adds an animation to this AnimationBundle.
-
-        :param animation: The animation to be added to this AnimationBundle
-        :type animation: AnimationABC | Iterable[AnimationABC]
-        :raises TypeError: The animation must inherit from AnimationABC or be an Iterable containing AnimationABC-inheriting instances.
-        """
+        """Adds an animation to this bundle."""
         if animation is None:
             pass
         elif isinstance(animation, AnimationABC):
@@ -108,5 +105,5 @@ class AnimationBundle(Animation):
             )
 
     def __lshift__(self, other: AnimationABC | Iterable[AnimationABC] | None):
-        """See :func:AnimationBundle.push"""
+        """See :meth:AnimationBundle.push"""
         self.push(other, _call_method="<<")
