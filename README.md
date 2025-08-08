@@ -25,7 +25,7 @@ I will try my best to keep a small set of working examples through these changes
 
 I shall now walk you through setup/installation and the creation of a very basic animation.
 
-I have tested this package with `Python 3.13.3`.
+I have tested this package with `Python 3.13.3` on Windows and Mac.
 
 ### External Dependencies
 
@@ -93,7 +93,8 @@ Pending the stability of the API and thus the documentation, please refer to the
 I plan on seeing this project through to something useful for creating didactic animations.
 I want to have a library with comparable expressiveness to [manim](https://www.manim.community)
 for two-dimensional use-cases. Specifically, Visuscript is planned to have, as time may permit,
-- Robust error checking.
-- Clear and complete documentation.
 - Base classes for common datastructures to facilitate the animation thereof.
 - Abstractions for mathematical objects like cartesian planes.
+- Support for the creation of slideshows with embedded animations.
+- Clear and complete documentation.
+
