@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Sequence, Self, Union, Iterable, Callable, Iterator
+from typing import Sequence, Self, Union, Iterable, Callable, Iterator, overload
 from copy import deepcopy
 
 from visuscript.constants import Anchor
@@ -31,14 +31,23 @@ class TransformMixin:
     def transform(self) -> Transform:
         """The local :class:`~visuscript.Transform` for this object."""
         return self._transform
-
-    def translate(self, x: float | None = None, y: float | None = None) -> Self:
-        """Sets the translation on this object's :class:`~visuscript.Transform`.
+    
+    @overload
+    def translate(self, x: Vec2) -> Self:
+        """Sets the translation on this object's :class:`~visuscript.Transform`."""
+    @overload
+    def translate(self, x:float | None = None, y: float | None = None) -> Self:
+         """Sets the translation on this object's :class:`~visuscript.Transform`.
 
         :param x: The new x value for this object's translation. If None, defaults to the current translation's x value.
         :param y: The new y value for this object's translation. If None, defaults to the current translation's y value.
         :return: self
         """
+    def translate(self, x: Vec2 | float | None = None, y: float | None = None) -> Self:
+        if isinstance(x, Vec2):
+            self.transform.translation = x
+            return self
+
         if x is None:
             x = self.transform.translation.x
         if y is None:
