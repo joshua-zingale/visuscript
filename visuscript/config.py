@@ -29,6 +29,10 @@ class _AnimationConfig:
         self.text_font_family = "arial"
         self._text_fill = Color("off_white", 1)
 
+
+        # Slideshow
+        self.slideshow_metadata_output_stream = sys.stderr
+
     @property
     def scene_color(self):
         return Color.construct(self._scene_color)
