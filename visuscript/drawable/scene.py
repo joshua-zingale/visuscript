@@ -1,14 +1,14 @@
 """This module contains Scene, which allows display of Drawable and animation thereof."""
 
-from typing import Iterable, Iterator, no_type_check, Self
+from typing import Iterable, Iterator, no_type_check, Self, Any
 from copy import copy
 
 
 from visuscript.primatives.mixins import (
-    Color,
     Drawable,
     AnchorMixin,
     TransformMixin,
+    FillMixin,
 )
 from visuscript.constants import Anchor, OutputFormat
 from visuscript.drawable import Rect
@@ -22,7 +22,7 @@ from visuscript.animation import AnimationBundle, Animation
 from visuscript.updater import Updater
 
 
-class Scene(Drawable, AnchorMixin, TransformMixin):
+class Scene(Drawable, AnchorMixin, TransformMixin, FillMixin):
     """Can display Drawable objects under various Animations and Updaters and provides functionality to output the composite image(s).
 
     A Scene can receive:
@@ -76,7 +76,7 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
         )
 
         self._drawables: list[CanBeDrawn] = []
-        self.color: Color = config.scene_color
+        self.set_fill(config.scene_color)
 
         self._output_format = config.scene_output_format
         self._output_stream = config.scene_output_stream
@@ -99,7 +99,7 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
         self._drawables.append(drawable)
         return self
 
-    def add_drawables(self, drawables: Iterable[CanBeDrawn]) -> Self:
+    def add_drawables(self, *drawables: CanBeDrawn) -> Self:
         """Adds multiple objects that :class:`~visuscript.primatives.protocols.CanBeDrawn` to the display."""
         self._drawables.extend(drawables)
         return self
@@ -178,8 +178,8 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
                 width=self.shape.width * self.logical_scaling,
                 height=self.shape.height * self.logical_scaling,
             )
-            .set_fill(self.color)
-            .set_stroke(self.color)
+            .set_fill(self.fill)
+            .set_stroke(self.fill)
             .set_anchor(Anchor.TOP_LEFT)
         )
         view_width = self.shape.width * self.logical_scaling
@@ -253,7 +253,7 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
         if animation is None:
             self._animation_bundle = AnimationBundle()
 
-    def _print_frames(self, animation: Animation | None = None):
+    def print_frames(self, animation: Animation | None = None):
         """Runs through all :class:`~visuscript.animation.Animation` instances herein and prints the frames to the output stream."""
         if self._print_initial:
             self.print()
@@ -266,8 +266,8 @@ class Scene(Drawable, AnchorMixin, TransformMixin):
         self._original_updater_bundles.append(copy(self._updater_bundle._updaters))  # type: ignore[reportPrivateUsage]
         return self
 
-    def __exit__(self, *_):
-        self._print_frames()
+    def __exit__(self, *_: Any):
+        self.print_frames()
         self._drawables = self._original_drawables.pop()
         if self._original_updater_bundles:
             original_updaters = self._original_updater_bundles.pop()
@@ -296,7 +296,7 @@ class _Player:
 
     def __lshift__(self, animation: Animation):
         _check_conflicts(animation, self._scene._updater_bundle)  # type: ignore[reportPrivateUsage]
-        self._scene._print_frames(animation)  # type: ignore[reportPrivateUsage]
+        self._scene.print_frames(animation)  # type: ignore[reportPrivateUsage]
 
 
 class _AnimationManager:
