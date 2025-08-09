@@ -23,9 +23,14 @@ dependencies = [
     "pytest>=8.4.1",
 ]
 
+[project.optional-dependencies]
+slideshow = [
+    "opencv-python"
+]
 
 [dependency-groups]
 dev = [
+    "opencv-python>=4.11.0.86",
     "pyright>=1.1.403",
     "ruff>=0.12.1",
     "sphinx>=8.2.3",
@@ -40,6 +45,7 @@ Homepage = "https://github.com/joshua-zingale/visuscript"
 
 [project.scripts]
 visuscript = "visuscript.cli.visuscript_cli:main"
+vs_slideshow = "visuscript.slideshow.cli:main"
 
 [tool.setuptools.packages.find]
 exclude = ["tests*", "docs*"]

@@ -6,7 +6,11 @@ from dataclasses import dataclass
 import json
 import time
 
-import cv2
+try:
+    import cv2
+except ModuleNotFoundError:
+    print("'opencv-python' is a dependency for this utility but is not installed. You can install it with `pip install opencv-python`.")
+    exit(1)
 
 
 
@@ -25,7 +29,7 @@ def main():
     with open(SLIDESHOW_DATA_FILE) as f:
         metadata = json.load(f)
     slide_start_frames: list[int] = list(map(int, metadata['slide_start_frames']))
-    
+
     FPS: int = metadata['fps']
     FRAME_DELAY = int(1/FPS * 1000) - 1
 
