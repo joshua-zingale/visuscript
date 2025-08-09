@@ -8,6 +8,7 @@ dist/*
 *.png
 *.pdf
 *.jpg
+*.slideshow-metadata.json
 
 .DS_Store
 *.profile
@@ -17,3 +18,4 @@ visuscript.egg-info
 
 old/*
 docs/build
+goofing/

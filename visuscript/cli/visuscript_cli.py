@@ -12,11 +12,11 @@ import subprocess
 import importlib.util
 import sys
 import os
+from pathlib import Path
 
 from visuscript.config import config
 from visuscript import Color
 
-MODES = ["video", "slideshow"]
 THEME = ["dark", "light"]
 
 
@@ -25,13 +25,13 @@ def main():
 
     parser.add_argument(
         "input_script",
-        type=str,
+        type=Path,
         help="Python script that prints a stream of SVG elements to standard output.",
     )
     parser.add_argument(
         "--output",
         default="output.mp4",
-        type=str,
+        type=Path,
         help="Filename at which the output video will be stored.",
     )
     parser.add_argument(
@@ -64,13 +64,18 @@ def main():
         type=int,
         help="Frames Per Second of the output video file.",
     )
-    parser.add_argument("--mode", default="video", choices=MODES)
+    parser.add_argument(
+        "--slideshow",
+        action='store_true',
+        help="If set, outputs a slideshow metadata file in the same directory as the video file, with the same name but suffixed with .json"
+    )
+
     parser.add_argument("--theme", default="dark", choices=THEME)
 
     args = parser.parse_args()
 
-    input_filename: str = args.input_script
-    output_filename: str = args.output
+    input_filename: Path = args.input_script
+    output_filename: Path = args.output
 
     width: int = int(args.width / args.downscale)
     height: int = int(args.height / args.downscale)
@@ -79,8 +84,9 @@ def main():
 
     fps: int = args.fps
 
-    mode: str = args.mode
     theme: str = args.theme
+
+    slideshow: bool = args.slideshow
 
     if not os.path.exists(input_filename):
         print(
@@ -89,32 +95,19 @@ def main():
         )
         exit()
 
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    if mode == "video":
-        animate_proc = subprocess.Popen(
-            [
-                sys.executable,
-                f"{dir_path}{os.sep}visuscript_animate.py",
-                f"{fps}",
-                f"{output_filename}",
-            ],
-            stdin=subprocess.PIPE,
-            text=True,
-            encoding="utf-8",
-        )
-    elif mode == "slideshow":
-        animate_proc = subprocess.Popen(
-            [
-                sys.executable,
-                f"{dir_path}{os.sep}visuscript_slideshow.py",
-                f"{output_filename}",
-            ],
-            stdin=subprocess.PIPE,
-            text=True,
-            encoding="utf-8",
-        )
-    else:
-        raise ValueError(f"Invalid output mode: '{mode}'")
+    dir_path = Path(__file__).parent.resolve()
+
+    animate_proc = subprocess.Popen(
+        [
+            sys.executable,
+            f"{dir_path / 'visuscript_animate.py'}",
+            f"{fps}",
+            f"{output_filename}",
+        ],
+        stdin=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+    )
 
     if theme == "dark":
         config.scene_color = Color("dark_slate", 1.0)
@@ -136,40 +129,49 @@ def main():
 
     config.scene_output_stream = animate_proc.stdin
 
-    spec = importlib.util.spec_from_file_location("script", input_filename)
+    slideshow_file = None
+    if slideshow:
+        slideshow_file = open(output_filename.with_suffix(".slideshow-metadata.json"), 'w')
+        config.slideshow_metadata_output_stream = slideshow_file
 
-    could_not_load_message = "Could not load '{input_filename}' as a Python script."
-    if spec is None:
-        print(could_not_load_message, file=sys.stderr)
-        exit()
+    try:
+        spec = importlib.util.spec_from_file_location("script", input_filename)
 
-    mod = importlib.util.module_from_spec(spec)
+        could_not_load_message = "Could not load '{input_filename}' as a Python script."
+        if spec is None:
+            print(could_not_load_message, file=sys.stderr)
+            exit()
 
-    if spec.loader is None:
-        print(could_not_load_message, file=sys.stderr)
-        exit()
-    spec.loader.exec_module(mod)
+        mod = importlib.util.module_from_spec(spec)
 
-    if hasattr(mod, "main"):
-        mod.main()
+        if spec.loader is None:
+            print(could_not_load_message, file=sys.stderr)
+            exit()
+        spec.loader.exec_module(mod)
 
-    if animate_proc.stdin is None:
-        print(
-            "There was an internal problem communicating with the animation subprocess."
-        )
-        exit()
+        if hasattr(mod, "main"):
+            mod.main()
 
-    animate_proc.stdin.flush()
-    animate_proc.stdin.close()
-    animate_proc.wait()
+        if animate_proc.stdin is None:
+            print(
+                "There was an internal problem communicating with the animation subprocess."
+            )
+            exit()
 
-    if animate_proc.returncode == 0:
-        print(f'Successfully created "{output_filename}"')
-    else:
-        print(
-            f'visuscript error: There was at least one problem with attempting to create "{output_filename}"',
-            file=sys.stderr,
-        )
+        animate_proc.stdin.flush()
+        animate_proc.stdin.close()
+        animate_proc.wait()
+
+        if animate_proc.returncode == 0:
+            print(f'Successfully created "{output_filename}"')
+        else:
+            print(
+                f'visuscript error: There was at least one problem with attempting to create "{output_filename}"',
+                file=sys.stderr,
+            )
+    finally:
+        if slideshow_file:
+            slideshow_file.close()
 
 
 if __name__ == "__main__":
