@@ -31,18 +31,20 @@ class TransformMixin:
     def transform(self) -> Transform:
         """The local :class:`~visuscript.Transform` for this object."""
         return self._transform
-    
+
     @overload
     def translate(self, x: Vec2) -> Self:
         """Sets the translation on this object's :class:`~visuscript.Transform`."""
+
     @overload
-    def translate(self, x:float | None = None, y: float | None = None) -> Self:
-         """Sets the translation on this object's :class:`~visuscript.Transform`.
+    def translate(self, x: float | None = None, y: float | None = None) -> Self:
+        """Sets the translation on this object's :class:`~visuscript.Transform`.
 
         :param x: The new x value for this object's translation. If None, defaults to the current translation's x value.
         :param y: The new y value for this object's translation. If None, defaults to the current translation's y value.
         :return: self
         """
+
     def translate(self, x: Vec2 | float | None = None, y: float | None = None) -> Self:
         if isinstance(x, Vec2):
             self.transform.translation = x
@@ -304,6 +306,7 @@ class HierarchicalDrawable(
         ...
 
     def _invalidate(self):
+        super()._invalidate()  # type: ignore
         if hasattr(self, "global_transform"):
             del self.global_transform
         for child in self.iter_children():
