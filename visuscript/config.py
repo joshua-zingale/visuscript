@@ -8,7 +8,7 @@ class _AnimationConfig:
     def __init__(self):
         # Animation
         self.fps = 30
-        self.animation_duration = 1
+        self.animation_duration = 1.0
 
         # Scene
         self.scene_width = 480
@@ -28,7 +28,6 @@ class _AnimationConfig:
         self.text_font_size = 16
         self.text_font_family = "arial"
         self._text_fill = Color("off_white", 1)
-
 
         # Slideshow
         self.slideshow_metadata_output_stream = sys.stderr
