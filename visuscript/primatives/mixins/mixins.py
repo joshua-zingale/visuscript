@@ -8,6 +8,7 @@ from visuscript.primatives.primatives import Transform, Vec2
 from visuscript._internal._invalidator import Invalidatable
 from visuscript.config import config
 from .color import Color, OpacityMixin
+from visuscript.lazy_object import Lazible
 
 
 class TransformMixin:
@@ -247,7 +248,7 @@ class AnchorMixin(ShapeMixin):
             raise NotImplementedError()
 
 
-class Drawable(ABC):
+class Drawable(ABC, Lazible):
     """Designates an object as being Drawable."""
 
     _extrusion: float = 0

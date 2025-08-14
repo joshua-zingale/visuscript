@@ -66,8 +66,8 @@ def main():
     )
     parser.add_argument(
         "--slideshow",
-        action='store_true',
-        help="If set, outputs a slideshow metadata file in the same directory as the video file, with the same name but suffixed with .json"
+        action="store_true",
+        help="If set, outputs a slideshow metadata file in the same directory as the video file, with the same name but suffixed with .json",
     )
 
     parser.add_argument("--theme", default="dark", choices=THEME)
@@ -131,7 +131,9 @@ def main():
 
     slideshow_file = None
     if slideshow:
-        slideshow_file = open(output_filename.with_suffix(".slideshow-metadata.json"), 'w')
+        slideshow_file = open(
+            output_filename.with_suffix(".slideshow-metadata.json"), "w"
+        )
         config.slideshow_metadata_output_stream = slideshow_file
 
     try:
