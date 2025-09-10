@@ -5,7 +5,7 @@ from visuscript.primatives import Transform
 from visuscript.property_locker import PropertyLocker
 from visuscript.math_utility import magnitude
 from visuscript.config import config
-from typing import Iterable, Self, Callable, cast
+from typing import Iterable, Self, Callable, cast, Any
 import numpy as np
 
 
@@ -126,7 +126,7 @@ class UpdaterBundle(Updater):
 
 
 class FunctionUpdater(Updater):
-    def __init__(self, function: Callable[[float, float], None]):
+    def __init__(self, function: Callable[[float, float], Any]):
         self._function = function
         self._locker = PropertyLocker()
 

@@ -11,7 +11,7 @@ SPACING = 60
 def main():
     with Scene() as s:
         random.seed(3163)
-        data = [random.randrange(1, 200) for _ in range(N)]
+        data = [Var(random.randrange(1, 200)) for _ in range(N)]
 
         methods = [bubble_sort, insertion_sort, quick_sort]
         for i, method in enumerate(methods):
@@ -34,7 +34,7 @@ def main():
             s.animations << method(abl).set_speed(12)
 
 
-class AnimatedBarList(AnimatedList):
+class AnimatedBarList(AnimatedList[Rect]):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.num_comparisons = 0
@@ -52,6 +52,8 @@ class AnimatedBarList(AnimatedList):
         return GridOrganizer((1, len(self)), (1, WIDTH))
 
     def swap(self, a, b):
+        assert isinstance(a, int)
+        assert isinstance(b, int)
         return AnimationBundle(
             super().swap(a, b).compress(),
             RunFunction(self.add_swap),
@@ -98,10 +100,11 @@ def insertion_sort(abl: AnimatedBarList) -> AnimationSequence:
     return sequence
 
 
-def quick_sort(abl: AnimatedBarList, low=None, high=None):
+def quick_sort(abl: AnimatedBarList, low: int | None=None, high: int | None =None):
     sequence = AnimationSequence()
-    if low is None and high is None:
+    if low is None:
         low = 0
+    if high is None:
         high = len(abl) - 1
     if low < high:
         pi, seq = partition(abl, low, high)
@@ -125,22 +128,6 @@ def partition(abl: AnimatedBarList, low, high):
     sequence << abl.swap(i + 1, high)
     return i + 1, sequence
 
-
-# def merge_sort(abl: AnimatedBarList, low = None, high = None):
-#     if low is None and high is None:
-#         low = 0
-#         high = len(abl)
-
-#     if low >= high:
-#         return
-
-#     mid = (low + high) // 2
-
-#     merge_sort(abl, low, mid)
-#     merge_sort(abl, mid, high)
-
-# def merge(abl: AnimatedBarList, low, mid, high):
-#     pass
 
 if __name__ == "__main__":
     main()
