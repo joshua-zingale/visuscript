@@ -54,6 +54,9 @@ class Slide:
 
 
 class Slideshow:
+    """Manages the creation of a slide presentation.
+    Wraps around :class:`~visuscript.Scene`.
+    """
     SlideTemplateName: TypeAlias = str
 
     def __init__(self):

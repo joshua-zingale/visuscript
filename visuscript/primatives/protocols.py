@@ -2,6 +2,7 @@ from typing import Protocol, runtime_checkable
 from functools import cached_property
 from .mixins import Shape
 from visuscript.primatives import Transform, Rgb
+from visuscript.primatives import Color
 
 
 @runtime_checkable
@@ -39,3 +40,11 @@ class HasRgb(Protocol):
 
     @rgb.setter
     def rgb(self, other: Rgb): ...
+
+class HasFill(Protocol):
+    @property
+    def fill(self) -> Color: ...
+
+    @fill.setter
+    def fill(self, other: Color): ...
+
