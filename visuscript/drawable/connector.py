@@ -1,16 +1,16 @@
 from visuscript.primatives.mixins import (
     Drawable,
     ShapeMixin,
-    GlobalShapeMixin,
     FillMixin,
     StrokeMixin,
     OpacityMixin,
 )
+from visuscript.primatives.protocols import HasShape
 from visuscript.segment import Path
 from visuscript.drawable import Drawing, Pivot
-from visuscript.primatives import Vec2
+from visuscript.primatives import Vec2, Color
 from visuscript.constants import LineTarget
-from visuscript.config import *
+from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG, config
 from visuscript.math_utility import magnitude
 from visuscript.animation import (
     fade_in,
@@ -42,56 +42,54 @@ class Connector(Drawable, ShapeMixin, FillMixin, StrokeMixin, OpacityMixin):
     def __init__(
         self,
         *,
-        source: Vec2 | GlobalShapeMixin,
-        destination: Vec2 | GlobalShapeMixin,
+        source: Vec2 | HasShape,
+        destination: Vec2 | HasShape,
         source_target: LineTarget = LineTarget.RADIAL,
         destination_target: LineTarget = LineTarget.RADIAL,
     ):
         super().__init__()
         if isinstance(source, Vec2):
-            source = Pivot().translate(*source)
+            source = Pivot().translate(source)
         if isinstance(destination, Vec2):
-            destination = Pivot().translate(*destination)
-        self._source: GlobalShapeMixin = source
-        self._destination: GlobalShapeMixin = destination
+            destination = Pivot().translate(destination)
+        self._source: HasShape = source
+        self._destination: HasShape = destination
 
         self._source_target = source_target
         self._destination_target = destination_target
 
     def calculate_height(self) -> float:
-        return abs(self._destination.gshape.center[1] - self._source.gshape.center[1])
+        return abs(self._destination.shape.center[1] - self._source.shape.center[1])
 
     def calculate_width(self) -> float:
-        return abs(self._destination.gshape.center[0] - self._source.gshape.center[0])
+        return abs(self._destination.shape.center[0] - self._source.shape.center[0])
 
     def calculate_top_left(self) -> Vec2:
         return Vec2(
             min(
-                self._destination.gshape.center[0],
-                self._source.gshape.center[0],
+                self._destination.shape.center[0],
+                self._source.shape.center[0],
             ),
             min(
-                self._destination.gshape.center[1],
-                self._source.gshape.center[1],
+                self._destination.shape.center[1],
+                self._source.shape.center[1],
             ),
         )
 
     @property
     def _unit_between(self) -> Vec2:
-        diff = self._destination.gshape.center - self._source.gshape.center
+        diff = self._destination.shape.center - self._source.shape.center
         eps = 1e-16
         return diff / max(magnitude(diff), eps)
 
-    def _get_vec2(
-        self, element: GlobalShapeMixin, target: LineTarget, offset_sign: int
-    ):
+    def _get_vec2(self, element: HasShape, target: LineTarget, offset_sign: int):
         if target == LineTarget.CENTER:
-            return element.gshape.center
+            return element.shape.center
         elif target == LineTarget.RADIAL:
-            center = element.gshape.center
+            center = element.shape.center
             return (
                 center
-                + offset_sign * element.gshape.circumscribed_radius * self._unit_between
+                + offset_sign * element.shape.circumscribed_radius * self._unit_between
             )
 
     @property
@@ -111,12 +109,12 @@ class Connector(Drawable, ShapeMixin, FillMixin, StrokeMixin, OpacityMixin):
         """True if and only if the source and destination are overlapped."""
         distance = 0
         if self._source_target == LineTarget.RADIAL:
-            distance += self._source.gshape.circumscribed_radius
+            distance += self._source.shape.circumscribed_radius
         if self._destination_target == LineTarget.RADIAL:
-            distance += self._destination.gshape.circumscribed_radius
+            distance += self._destination.shape.circumscribed_radius
 
         return (
-            magnitude(self._destination.gshape.center - self._source.gshape.center)
+            magnitude(self._destination.shape.center - self._source.shape.center)
             < distance
         )
 
@@ -176,8 +174,8 @@ class Arrow(Connector):
         *,
         start_size: float = 0,
         end_size: float | ConfigurationDeference = DEFER_TO_CONFIG,
-        source: Vec2 | GlobalShapeMixin,
-        destination: Vec2 | GlobalShapeMixin,
+        source: Vec2 | HasShape,
+        destination: Vec2 | HasShape,
         source_target: LineTarget = LineTarget.RADIAL,
         destination_target: LineTarget = LineTarget.RADIAL,
     ):
@@ -250,13 +248,13 @@ class Edges(Drawable):
 
     def __init__(self):
         super().__init__()
-        self._edges: dict[Tuple[GlobalShapeMixin, GlobalShapeMixin], Line] = dict()
+        self._edges: dict[Tuple[HasShape, HasShape], Line] = dict()
         self._fading_away: set[Line] = set()
 
     def connect_by_rule(
         self,
-        rule: Callable[[GlobalShapeMixin, GlobalShapeMixin], bool],
-        elements: Iterable[GlobalShapeMixin],
+        rule: Callable[[HasShape, HasShape], bool],
+        elements: Iterable[HasShape],
     ) -> Animation:
         """Connects every pair of input elements that satisfy a rule,
         disconnecting those that break the rule.
@@ -277,9 +275,7 @@ class Edges(Drawable):
 
         return bundle
 
-    def get_edge(
-        self, element1: GlobalShapeMixin, element2: GlobalShapeMixin
-    ) -> Connector:
+    def get_edge(self, element1: HasShape, element2: HasShape) -> Connector:
         """Gets the :class:`Connector` connecting two objects."""
         if not self.connected(element1, element2):
             raise ElementsNotConnectedError(
@@ -289,16 +285,14 @@ class Edges(Drawable):
             self._edges.get((element1, element2)) or self._edges[(element2, element1)]
         )
 
-    def connected(self, element1: GlobalShapeMixin, element2: GlobalShapeMixin) -> bool:
+    def connected(self, element1: HasShape, element2: HasShape) -> bool:
         """Returns whether two objects are connected."""
         return (element1, element2) in self._edges or (
             element2,
             element1,
         ) in self._edges
 
-    def connect(
-        self, element1: GlobalShapeMixin, element2: GlobalShapeMixin
-    ) -> Animation:
+    def connect(self, element1: HasShape, element2: HasShape) -> Animation:
         """Connects two objects and returns an animation fading in the connecting edge."""
         if self.connected(element1, element2):
             raise ElementsAlreadyConnectedError(
@@ -312,9 +306,7 @@ class Edges(Drawable):
 
         return fade_in(edge)
 
-    def disconnect(
-        self, element1: GlobalShapeMixin, element2: GlobalShapeMixin
-    ) -> Animation:
+    def disconnect(self, element1: HasShape, element2: HasShape) -> Animation:
         """Disconnects two objects and returns an animation fading out th eedge that had connected them."""
         if not self.connected(element1, element2):
             raise ElementsNotConnectedError(
