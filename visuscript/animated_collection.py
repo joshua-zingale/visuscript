@@ -228,7 +228,7 @@ class AnimatedCollection(ABC, Generic[_T, _CollectionDrawable]):
     """
 
     @abstractmethod
-    def drawable_for(self, var: _T) -> _CollectionDrawable:
+    def drawable_for(self, var: _T, /) -> _CollectionDrawable:
         """Returns the :class:`CollectionDrawable` for a `_T` stored in this collection.
 
         :param var: The `_T` for which the corresponding :class:`CollectionDrawable` is to be returned.
@@ -237,12 +237,12 @@ class AnimatedCollection(ABC, Generic[_T, _CollectionDrawable]):
         ...
 
     @abstractmethod
-    def set_drawable_for(self, var: _T, drawable: _CollectionDrawable) -> None:
+    def set_drawable_for(self, var: _T, drawable: _CollectionDrawable, /) -> None:
         """Sets the :class:`CollectionDrawable` for a `_T` stored in this collection."""
         ...
 
     @abstractmethod
-    def target_for(self, var: _T) -> Transform:
+    def target_for(self, var: _T, /) -> Transform:
         """Returns the :class:`~visuscript.primatives.Transform` that the input `_T`'s :class:`CollectionDrawable`
         should have to be positioned according to this :class:`AnimatedCollection`'s rules.
 
@@ -252,19 +252,17 @@ class AnimatedCollection(ABC, Generic[_T, _CollectionDrawable]):
         ...
 
     @abstractmethod
-    def __contains__(self, var: _T) -> bool:
-        """Returns True if a `_T` with an equivalent value is stored in this :class:`AnimatedCollection`."""
-        ...
-
-    @abstractmethod
     def __iter__(self) -> Iterator[_T]:
         """Returns an iterable over the `_T` instances stored in this :class:`AnimatedCollection`."""
         ...
 
-    @abstractmethod
+    def __contains__(self, var: _T, /) -> bool:
+        """Returns True if a `_T` with an equivalent value is stored in this :class:`AnimatedCollection`."""
+        return var in list(self)
+
     def __len__(self) -> int:
         """Returns the number of `_T` instances stored in this :class:`AnimatedCollection`."""
-        ...
+        return len(list(self))
 
     def organize(
         self, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG
@@ -311,17 +309,17 @@ class AnimatedCollection(ABC, Generic[_T, _CollectionDrawable]):
             self._auxiliary_drawables: list[CanBeDrawn] = []
         return self._auxiliary_drawables
 
-    def add_auxiliary_drawable(self, drawable: CanBeDrawn) -> Self:
+    def add_auxiliary_drawable(self, drawable: CanBeDrawn, /) -> Self:
         """Adds an drawable object to de displayed along with this :class:`AnimatedCollection`."""
         self.auxiliary_drawables.append(drawable)
         return self
 
-    def remove_auxiliary_drawable(self, drawable: CanBeDrawn) -> Self:
+    def remove_auxiliary_drawable(self, drawable: CanBeDrawn, /) -> Self:
         """Removes an auxiliar drawable from this :class:`AnimatedCollection`."""
         self.auxiliary_drawables.remove(drawable)
         return self
 
-    def is_contains(self, var: _T) -> bool:
+    def is_contains(self, var: _T, /) -> bool:
         """Returns True if a specific `_T`, not just a `_T` with an equivalent value, is stored in this :class:`AnimatedCollection`."""
         for v in self:
             if v is var:
@@ -334,25 +332,25 @@ class AnimatedSequence(AnimatedCollection[_T, _CollectionDrawable]):
 
     @overload
     @abstractmethod
-    def __getitem__(self, index: int) -> _T: ...
+    def __getitem__(self, index: int, /) -> _T: ...
     @overload
     @abstractmethod
-    def __getitem__(self, index: slice) -> Sequence[_T]: ...
+    def __getitem__(self, index: slice, /) -> Sequence[_T]: ...
     @abstractmethod
-    def __getitem__(self, index: int | slice) -> _T | Sequence[_T]: ...
+    def __getitem__(self, index: int | slice, /) -> _T | Sequence[_T]: ...
 
-    def index(self, var: _T) -> int:
+    def index(self, var: _T, /) -> int:
         """Returns the index of a `_T` with an equivalent value stored in this :class:`AnimatedCollection`."""
         for idx, v in enumerate(self):
             if v == var:
                 return idx
         raise ValueError(f"{var} not found in this {self.__class__.__name__}.")
 
-    def count(self, var: _T) -> int:
+    def count(self, var: _T, /) -> int:
         """Returns the number of occurrences of a `_T` with an equivalent value stored in this :class:`AnimatedCollection`."""
         return sum(1 for v in self if v == var)
 
-    def is_index(self, var: _T) -> int:
+    def is_index(self, var: _T, /) -> int:
         """Returns the index of a specific `_T`, not just a `_T` with an equivalent value, stored in this :class:`AnimatedCollection`.
 
         :raises ValueError: If the input `_T` is not stored in this :class:`AnimatedCollection`.
@@ -362,7 +360,7 @@ class AnimatedSequence(AnimatedCollection[_T, _CollectionDrawable]):
                 return idx
         raise ValueError(f"{var} not found in this {self.__class__.__name__}.")
 
-    def __contains__(self, var: _T) -> bool:
+    def __contains__(self, var: _T, /) -> bool:
         return self.count(var) > 0
 
     def __iter__(self) -> Iterator[_T]:
@@ -382,6 +380,7 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
         self,
         index: int,
         value: _T,
+        /,
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ) -> Animation:
@@ -397,12 +396,12 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
 
     @overload
     @abstractmethod
-    def __setitem__(self, index: int, value: _T) -> None: ...
+    def __setitem__(self, index: int, value: _T, /) -> None: ...
     @overload
     @abstractmethod
-    def __setitem__(self, index: slice, value: Iterable[_T]) -> None: ...
+    def __setitem__(self, index: slice, value: Iterable[_T], /) -> None: ...
     @abstractmethod
-    def __setitem__(self, index: int | slice, value: _T | Iterable[_T]) -> None:
+    def __setitem__(self, index: int | slice, value: _T | Iterable[_T], /) -> None:
         """Sets the `_T` or `_T` instances at the specified index or slice.
 
         :param index: The index or slice at which to set the input `_T` or `_T` instances.
@@ -412,12 +411,12 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
 
     @overload
     @abstractmethod
-    def __delitem__(self, index: int) -> None: ...
+    def __delitem__(self, index: int, /) -> None: ...
     @overload
     @abstractmethod
-    def __delitem__(self, index: slice) -> None: ...
+    def __delitem__(self, index: slice, /) -> None: ...
     @abstractmethod
-    def __delitem__(self, index: int | slice) -> None:
+    def __delitem__(self, index: int | slice, /) -> None:
         """Deletes the `_T` or `_T` instances at the specified index or slice
         along with their corresponding visual representations.
 
@@ -426,7 +425,11 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
         ...
 
     def append(
-        self, value: _T, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG
+        self,
+        value: _T,
+        /,
+        *,
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ) -> Animation:
         """Appends a `_T` to the end of this :class:`AnimatedCollection`.
 
@@ -451,6 +454,7 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
     def extend(
         self,
         values: Iterable[_T],
+        /,
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ) -> Animation:
@@ -484,6 +488,7 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
     def pop(
         self,
         index: int = -1,
+        /,
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ) -> Animation:
@@ -502,7 +507,11 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
         )
 
     def remove(
-        self, value: _T, *, duration: float | ConfigurationDeference = DEFER_TO_CONFIG
+        self,
+        value: _T,
+        /,
+        *,
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ) -> Animation:
         """Removes the first occurrence of a `_T` with an equivalent value along with its corresponding visual representation.
 
@@ -554,6 +563,7 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
         self,
         a: int | _T,
         b: int | _T,
+        /,
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ) -> Animation:
@@ -579,6 +589,7 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
         self,
         a: int | _T,
         b: int | _T,
+        /,
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
         height_multiplier: float = 1,
@@ -654,7 +665,7 @@ class AnimatedList(AnimatedMutableSequence[_T, _CollectionDrawable], TransformMi
         ...
 
     @abstractmethod
-    def new_drawable_for(self, var: _T) -> _CollectionDrawable:
+    def new_drawable_for(self, var: _T, /) -> _CollectionDrawable:
         """Initializes and returns an :class:`CollectionDrawable` for a `_T` newly inserted into this :class:`AnimatedList`."""
         ...
 
@@ -666,7 +677,7 @@ class AnimatedList(AnimatedMutableSequence[_T, _CollectionDrawable], TransformMi
     def organizer(self) -> Organizer:
         return self.get_organizer().set_transform(self.transform)
 
-    def target_for(self, var: _T) -> Transform:
+    def target_for(self, var: _T, /) -> Transform:
         index = self.is_index(var)
         return self.organizer[index]
 
@@ -674,6 +685,7 @@ class AnimatedList(AnimatedMutableSequence[_T, _CollectionDrawable], TransformMi
         self,
         index: int,
         value: _T,
+        /,
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ) -> Animation:
@@ -688,26 +700,26 @@ class AnimatedList(AnimatedMutableSequence[_T, _CollectionDrawable], TransformMi
         self._drawable_map[value] = new_drawable
         return OpacityAnimation(new_drawable, 1.0, duration=duration)
 
-    def drawable_for(self, var: _T) -> _CollectionDrawable:
+    def drawable_for(self, var: _T, /) -> _CollectionDrawable:
         if var not in self._drawable_map:
             raise ValueError(f"{var} is not present in this {self.__class__.__name__}")
         return self._drawable_map[var]
 
-    def set_drawable_for(self, var: _T, drawable: _CollectionDrawable) -> None:
+    def set_drawable_for(self, var: _T, drawable: _CollectionDrawable, /) -> None:
         self._drawable_map[var] = drawable
 
     @overload
-    def __getitem__(self, index: int) -> _T: ...
+    def __getitem__(self, index: int, /) -> _T: ...
     @overload
-    def __getitem__(self, index: slice) -> list[_T]: ...
-    def __getitem__(self, index: int | slice) -> _T | list[_T]:
+    def __getitem__(self, index: slice, /) -> list[_T]: ...
+    def __getitem__(self, index: int | slice, /) -> _T | list[_T]:
         return self._vars[index]
 
     @overload
-    def __setitem__(self, index: int, value: _T) -> None: ...
+    def __setitem__(self, index: int, value: _T, /) -> None: ...
     @overload
-    def __setitem__(self, index: slice, value: Iterable[_T]) -> None: ...
-    def __setitem__(self, index: int | slice, value: _T | Iterable[_T]) -> None:
+    def __setitem__(self, index: slice, value: Iterable[_T], /) -> None: ...
+    def __setitem__(self, index: int | slice, value: _T | Iterable[_T], /) -> None:
         if not isinstance(index, slice):
             index = slice(index, index + 1, 1)
             value = [value]  # type: ignore
@@ -724,7 +736,7 @@ class AnimatedList(AnimatedMutableSequence[_T, _CollectionDrawable], TransformMi
             self._vars[idx] = var
             self._drawable_map[var] = self.new_drawable_for(var)
 
-    def __delitem__(self, index: int | slice):
+    def __delitem__(self, index: int | slice, /):
         if isinstance(index, int):
             index = slice(index, index + 1, 1)
         for var in self[index]:
