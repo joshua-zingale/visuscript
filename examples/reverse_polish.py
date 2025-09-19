@@ -61,20 +61,19 @@ def read_operator(operator: Text):
     scene << result
     return AnimationSequence(
         AnimationBundle(
-            TranslationAnimation(operator.transform, operand1.transformed_shape.center),
+            TranslationAnimation(operator.transform, operand1.tshape.center),
             TranslationAnimation(
                 operand1.transform,
-                operand1.transformed_shape.center + LEFT * operand1.shape.width,
+                operand1.tshape.center + LEFT * operand1.shape.width,
             ),
             TranslationAnimation(
                 operand2.transform,
-                operand1.transformed_shape.center + RIGHT * operand2.shape.width,
+                operand1.tshape.center + RIGHT * operand2.shape.width,
             ),
         ),
         RunFunction(
             lambda: result.translate(
-                operand2.transformed_shape.right
-                + RIGHT * result.transformed_shape.width
+                operand2.tshape.right + RIGHT * result.tshape.width
             )
         ),
         AnimationBundle(
@@ -85,9 +84,7 @@ def read_operator(operator: Text):
         ),
         NoAnimation(duration=2),
         AnimationBundle(
-            TranslationAnimation(
-                result.transform, operator.lazy.transformed_shape.center
-            ),
+            TranslationAnimation(result.transform, operator.lazy.tshape.center),
             OpacityAnimation(operator.fill, 0.0, duration=0.5),
             OpacityAnimation(operand1.fill, 0.0, duration=0.5),
             OpacityAnimation(operand2.fill, 0.0, duration=0.5),

@@ -182,13 +182,13 @@ class TransformableShapeMixin(ShapeMixin, TransformMixin):
     """Adds a transformed :class:`Shape` to this object."""
 
     @cached_property
-    def transformed_shape(self):
+    def tshape(self):
         """The :class:`Shape` for this object when it has been transformed by its :class:`~visuscript.Transform`."""
         return Shape(self, self.transform)
 
     def _invalidate(self):
-        if hasattr(self, "transformed_shape"):
-            del self.transformed_shape
+        if hasattr(self, "tshape"):
+            del self.tshape
 
 
 class AnchorMixin(ShapeMixin):
@@ -216,10 +216,8 @@ class AnchorMixin(ShapeMixin):
             # Invalidate shapes
             if hasattr(self, "shape"):
                 del self.shape
-            if isinstance(self, TransformableShapeMixin) and hasattr(
-                self, "transformed_shape"
-            ):
-                del self.transformed_shape
+            if isinstance(self, TransformableShapeMixin) and hasattr(self, "tshape"):
+                del self.tshape
         return self
 
     @property
@@ -531,6 +529,7 @@ class GlobalShapeMixin(HierarchicalDrawable, TransformableShapeMixin):
 
     @cached_property
     def gshape(self):
+        """The :class:`Shape` for this object when it has been transformed by its global :class:`~visuscript.Transform`."""
         return Shape(self, self.global_transform)
 
 

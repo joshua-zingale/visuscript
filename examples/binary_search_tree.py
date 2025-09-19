@@ -167,7 +167,7 @@ def compare(
     # sequence << AnimationBundle(
     #     TranslationAnimation(
     #         drawable2.transform,
-    #         drawable1.transformed_shape.right
+    #         drawable1.tshape.right
     #         + (drawable2.shape.right - drawable2.shape.left) / 1.25,
     #     ),
     #     ScaleAnimation(drawable2.transform, 0.5),
@@ -185,7 +185,7 @@ def compare(
         AnimationBundle(
             TranslationAnimation(
                 drawable2.transform,
-                drawable1.transformed_shape.right
+                drawable1.tshape.right
                 + (drawable2.shape.right - drawable2.shape.left) / 1.25,
             ),
             ScaleAnimation(drawable2.transform, 0.5),

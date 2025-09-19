@@ -82,13 +82,13 @@ def main():
                 "A Vector-Graphics-Based Animation Library for Python", font_size=NORMAL
             )
             .set_anchor(Anchor.TOP)
-            .translate(*title.transformed_shape.bottom + DOWN * 10)
+            .translate(*title.tshape.bottom + DOWN * 10)
         )
         attribution = (
             Text("by Joshua Zingale", font_size=NORMAL)
             .set_anchor(Anchor.TOP)
             .set_anchor(Anchor.TOP)
-            .translate(*subtitle.transformed_shape.bottom + DOWN * 10)
+            .translate(*subtitle.tshape.bottom + DOWN * 10)
         )
         s << (title, subtitle, attribution)
 
@@ -157,7 +157,7 @@ def main():
             scale_factor = obj.transform.scale[0] / 1.75
             for i, component in enumerate(components):
                 component.scale(scale_factor).translate(
-                    *obj.transformed_shape.center
+                    *obj.tshape.center
                     + Vec2((-130 + 130 * i) * scale_factor, 110 * scale_factor**0.25)
                     * scale_factor
                 )
@@ -267,7 +267,7 @@ def main():
             PathAnimation(
                 drawing.transform,
                 Path()
-                .M(*drawing.transformed_shape.center)
+                .M(*drawing.tshape.center)
                 .L(0, 0)
                 .Q(100, 100, *s.shape.right)
                 .Q(0, -100, *s.shape.left)
@@ -387,7 +387,7 @@ def bullet(text: str, font_size=BULLET):
     circle = Circle(2).set_anchor(Anchor.LEFT)
     circle.add_child(
         Text(text=text, font_size=font_size)
-        .translate(*circle.transformed_shape.right + [6, -1])
+        .translate(*circle.tshape.right + [6, -1])
         .set_anchor(Anchor.LEFT)
     )
     return circle

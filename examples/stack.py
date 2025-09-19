@@ -39,7 +39,7 @@ tos_ptr = (
         .set_anchor(Anchor.BOTTOM_RIGHT)
         .translate(p.shape.top)
     )
-    .translate(cells[-1].transformed_shape.left)
+    .translate(cells[-1].tshape.left)
 )
 
 scene.add_drawables(*cells, tos_ptr)
@@ -78,7 +78,7 @@ def push(value: str):
     return flash_text(
         f"Push({value})",
         AnimationSequence(
-            TranslationAnimation(tos_ptr.transform, cells[tos].transformed_shape.left),
+            TranslationAnimation(tos_ptr.transform, cells[tos].tshape.left),
             AnimationBundle(
                 OpacityAnimation(old_text, 0.0), OpacityAnimation(text, 1.0)
             ),
@@ -94,7 +94,7 @@ def pop():
     return flash_text(
         "Pop()",
         AnimationBundle(
-            TranslationAnimation(tos_ptr.transform, cells[tos].transformed_shape.left),
+            TranslationAnimation(tos_ptr.transform, cells[tos].tshape.left),
             OpacityAnimation(text, 0.5),
         ),
     )

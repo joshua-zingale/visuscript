@@ -146,20 +146,20 @@ def evaluate_step(tokens: list[Union["Operator", "Value"]]):
             *map(lambda v: ScaleAnimation(v.transform, 0.5), tokens[i - 2 : i + 1]),
             TranslationAnimation(
                 lvalue.transform,
-                lvalue.transformed_shape.center
+                lvalue.tshape.center
                 + DOWN * FONT_SIZE
-                + LEFT * lvalue.transformed_shape.width / 3
-                + LEFT * operator.transformed_shape.width / 4,
+                + LEFT * lvalue.tshape.width / 3
+                + LEFT * operator.tshape.width / 4,
             ),
             TranslationAnimation(
-                operator.transform, lvalue.transformed_shape.center + DOWN * FONT_SIZE
+                operator.transform, lvalue.tshape.center + DOWN * FONT_SIZE
             ),
             TranslationAnimation(
                 rvalue.transform,
-                lvalue.transformed_shape.center
+                lvalue.tshape.center
                 + DOWN * FONT_SIZE
-                + RIGHT * rvalue.transformed_shape.width / 3
-                + RIGHT * operator.transformed_shape.width / 4,
+                + RIGHT * rvalue.tshape.width / 3
+                + RIGHT * operator.tshape.width / 4,
             ),
         ),
         RunFunction(lambda: scene.add_drawable(value)),
