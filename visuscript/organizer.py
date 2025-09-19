@@ -1,18 +1,12 @@
 from visuscript.primatives.mixins import TransformMixin
 from visuscript.primatives.primatives import Transform, Vec2
-from typing import Self, Iterable, Iterator
+from typing import Iterable, Iterator
 from abc import ABC, abstractmethod
 import numpy as np
 
 
-class Organizer(ABC):
+class Organizer(ABC, TransformMixin):
     """An Organizer maps integer indices to Transforms."""
-
-    _transform = Transform()
-
-    def set_transform(self, transform: Transform) -> Self:
-        self._transform = transform
-        return self
 
     @abstractmethod
     def __len__(self) -> int:
@@ -51,6 +45,7 @@ class GridOrganizer(Organizer):
     """GridOrganizer arranges its output Transform objects into a two dimensional grid."""
 
     def __init__(self, ushape: tuple[int, int], sizes: tuple[float, float]):
+        super().__init__()
         self._ushape = ushape
         self._sizes = sizes
 
@@ -87,6 +82,7 @@ class BinaryTreeOrganizer(Organizer):
         level_heights: float | Iterable[float],
         node_width: float,
     ):
+        super().__init__()
         assert num_levels >= 1
         self._len = int(2 ** (num_levels) - 1)
         self._num_levels = num_levels
