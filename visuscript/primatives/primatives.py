@@ -256,6 +256,13 @@ class Transform(Invalidator, Interpolable, Lazible):
 
         self._invalidatables: set[Invalidatable] = set()
 
+    def copy(self) -> "Transform":
+        return Transform(
+            translation=self.translation,
+            scale=self.scale,
+            rotation=self.rotation,
+        )
+
     @staticmethod
     def construct(other: TransformLike):
         if isinstance(other, Transform):

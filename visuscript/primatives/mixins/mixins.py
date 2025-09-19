@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Sequence, Self, Union, Iterable, Callable, Iterator, overload
-from copy import deepcopy
+
 
 from visuscript.constants import Anchor
 from visuscript.primatives.primatives import Transform, Vec2
@@ -399,7 +399,7 @@ class HierarchicalDrawable(
         self,
         child_or_initializer: "HierarchicalDrawable"
         | Callable[
-            ["HierarchicalDrawable"],
+            [Self],
             "HierarchicalDrawable" | Iterable["HierarchicalDrawable"],
         ],
         preserve_global_transform: bool = False,
@@ -508,7 +508,7 @@ class HierarchicalDrawable(
             transform = self._parent.global_transform @ transform
             curr = curr._parent
 
-        return deepcopy(transform)
+        return transform.copy()
 
     def __iter__(self) -> Iterator["HierarchicalDrawable"]:
         """
