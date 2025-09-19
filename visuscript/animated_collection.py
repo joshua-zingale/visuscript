@@ -321,7 +321,7 @@ class AnimatedCollection(ABC, Generic[_T, _CollectionDrawable]):
         self.auxiliary_drawables.remove(drawable)
         return self
 
-    def contains_var(self, var: _T) -> bool:
+    def is_contains(self, var: _T) -> bool:
         """Returns True if a specific `_T`, not just a `_T` with an equivalent value, is stored in this :class:`AnimatedCollection`."""
         for v in self:
             if v is var:
@@ -352,7 +352,7 @@ class AnimatedSequence(AnimatedCollection[_T, _CollectionDrawable]):
         """Returns the number of occurrences of a `_T` with an equivalent value stored in this :class:`AnimatedCollection`."""
         return sum(1 for v in self if v == var)
 
-    def var_index(self, var: _T) -> int:
+    def is_index(self, var: _T) -> int:
         """Returns the index of a specific `_T`, not just a `_T` with an equivalent value, stored in this :class:`AnimatedCollection`.
 
         :raises ValueError: If the input `_T` is not stored in this :class:`AnimatedCollection`.
@@ -519,11 +519,11 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
         if isinstance(a, int):
             ai, av = a, self[a]
         else:
-            ai, av = self.var_index(a), a
+            ai, av = self.is_index(a), a
         if isinstance(b, int):
             bi, bv = b, self[b]
         else:
-            bi, bv = self.var_index(b), b
+            bi, bv = self.is_index(b), b
 
         if ai < 0:
             ai += len(self)
@@ -667,7 +667,7 @@ class AnimatedList(AnimatedMutableSequence[_T, _CollectionDrawable], TransformMi
         return self.get_organizer().set_transform(self.transform)
 
     def target_for(self, var: _T) -> Transform:
-        index = self.var_index(var)
+        index = self.is_index(var)
         return self.organizer[index]
 
     def insert(
@@ -677,7 +677,7 @@ class AnimatedList(AnimatedMutableSequence[_T, _CollectionDrawable], TransformMi
         *,
         duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ) -> Animation:
-        if self.contains_var(value):
+        if self.is_contains(value):
             raise ValueError(
                 f"Cannot have the same '{value.__class__.__name__}' in this AnimatedList twice."
             )
@@ -715,7 +715,7 @@ class AnimatedList(AnimatedMutableSequence[_T, _CollectionDrawable], TransformMi
         for idx, var in zip(
             range(index.start or 0, index.stop or len(self), index.step or 1), value
         ):
-            if self.contains_var(var):
+            if self.is_contains(var):
                 raise ValueError(
                     f"Cannot have the same '{var.__class__.__name__}' in this AnimatedList twice."
                 )
