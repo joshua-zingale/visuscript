@@ -255,6 +255,7 @@ class Edges(Drawable):
         self,
         rule: Callable[[HasShape, HasShape], bool],
         elements: Iterable[HasShape],
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
     ) -> Animation:
         """Connects every pair of input elements that satisfy a rule,
         disconnecting those that break the rule.
@@ -269,9 +270,9 @@ class Edges(Drawable):
         for e1, e2 in itertools.combinations(elements, 2):
             should_be_connected = rule(e1, e2)
             if should_be_connected and not self.connected(e1, e2):
-                bundle.push(self.connect(e1, e2))
+                bundle.push(self.connect(e1, e2, duration=duration))
             elif self.connected(e1, e2) and not should_be_connected:
-                bundle.push(self.disconnect(e1, e2))
+                bundle.push(self.disconnect(e1, e2, duration=duration))
 
         return bundle
 
@@ -292,7 +293,13 @@ class Edges(Drawable):
             element1,
         ) in self._edges
 
-    def connect(self, element1: HasShape, element2: HasShape) -> Animation:
+    def connect(
+        self,
+        element1: HasShape,
+        element2: HasShape,
+        *,
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
+    ) -> Animation:
         """Connects two objects and returns an animation fading in the connecting edge."""
         if self.connected(element1, element2):
             raise ElementsAlreadyConnectedError(
@@ -304,9 +311,15 @@ class Edges(Drawable):
         edge = Line(source=element1, destination=element2).set_opacity(0.0)
         self._edges[(element1, element2)] = edge
 
-        return fade_in(edge)
+        return fade_in(edge, duration=duration)
 
-    def disconnect(self, element1: HasShape, element2: HasShape) -> Animation:
+    def disconnect(
+        self,
+        element1: HasShape,
+        element2: HasShape,
+        *,
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
+    ) -> Animation:
         """Disconnects two objects and returns an animation fading out th eedge that had connected them."""
         if not self.connected(element1, element2):
             raise ElementsNotConnectedError(
@@ -320,7 +333,8 @@ class Edges(Drawable):
         self._fading_away.add(edge)
 
         return AnimationSequence(
-            fade_out(edge), RunFunction(lambda: self._fading_away.remove(edge))
+            fade_out(edge, duration=duration),
+            RunFunction(lambda: self._fading_away.remove(edge)),
         )
 
     def draw(self):
