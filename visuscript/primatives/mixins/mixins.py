@@ -197,8 +197,7 @@ class TransformableShapeMixin(ShapeMixin, TransformMixin):
         return Shape(self, self.transform)
 
     def _invalidate(self):
-        if hasattr(self, "tshape"):
-            del self.tshape
+        invalidate_property(self, "tshape")
 
     @property
     def shape(self):
@@ -227,11 +226,12 @@ class AnchorMixin(ShapeMixin):
 
         if isinstance(self, TransformMixin) and keep_position:
             self.translate(*old_anchor_offset - self.anchor_offset)
-            # Invalidate ushapes
-            if hasattr(self, "ushape"):
-                del self.ushape
-            if isinstance(self, TransformableShapeMixin) and hasattr(self, "tshape"):
-                del self.tshape
+            # Invalidate shapes
+            invalidate_property(self, "ushape")
+            if isinstance(self, TransformableShapeMixin):
+                invalidate_property(self, "tshape")
+            if isinstance(self, GlobalShapeMixin):
+                invalidate_property(self, "gshape")
         return self
 
     @property
@@ -324,8 +324,7 @@ class HierarchicalDrawable(
 
     def _invalidate(self):
         super()._invalidate()  # type: ignore
-        if hasattr(self, "global_transform"):
-            del self.global_transform
+        invalidate_property(self, "global_transform")
         for child in self.iter_children():
             child._invalidate()
 
@@ -538,8 +537,7 @@ class GlobalShapeMixin(HierarchicalDrawable, TransformableShapeMixin):
 
     def _invalidate(self):
         super()._invalidate()
-        if hasattr(self, "gshape"):
-            del self.gshape
+        invalidate_property(self, "gshape")
 
     @cached_property
     def gshape(self):
@@ -610,3 +608,10 @@ class Shape:
 
         self.center: Vec2 = transform @ (top_left + [width / 2, height / 2])
         """The center coordinate of the object's rectangular circumscription."""
+
+
+def invalidate_property(obj: object, prop: str):
+    try:
+        delattr(obj, prop)
+    except AttributeError:
+        pass
