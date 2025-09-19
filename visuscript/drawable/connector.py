@@ -25,6 +25,13 @@ from abc import abstractmethod
 from typing import Tuple, Callable, Iterable
 import itertools
 
+__all__ = [
+    "Connector",
+    "Line",
+    "Arrow",
+    "Edges",
+]
+
 
 class Connector(Drawable, ShapeMixin, FillMixin, StrokeMixin, OpacityMixin):
     """A connector visually connects one object to another or one location to another."""

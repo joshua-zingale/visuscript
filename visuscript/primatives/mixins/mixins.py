@@ -33,6 +33,10 @@ class TransformMixin:
         """The local :class:`~visuscript.Transform` for this object."""
         return self._transform
 
+    @transform.setter
+    def transform(self, other: Transform.TransformLike):
+        self.set_transform(other)
+
     @overload
     def translate(self, x: Vec2) -> Self:
         """Sets the translation on this object's :class:`~visuscript.Transform`."""

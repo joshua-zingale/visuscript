@@ -22,7 +22,7 @@ def main():
             )
             position = mid + LEFT * N * WIDTH / 2
             abl = AnimatedBarList(data, transform=Transform(position))
-            s << abl.collection_element
+            s << abl.collection_drawable
             s << Text(method.__name__, font_size=10).translate(*mid + DOWN * 7)
             s << (counts := Text("", font_size=5).translate(*mid + DOWN * 18))
             s.updaters << FunctionUpdater(
@@ -34,13 +34,13 @@ def main():
             s.animations << method(abl).set_speed(12)
 
 
-class AnimatedBarList(AnimatedList[Rect]):
+class AnimatedBarList(AnimatedList[Var, Rect]):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.num_comparisons = 0
         self.num_swaps = 0
 
-    def new_element_for(self, var: Var):
+    def new_drawable_for(self, var: Var):
         return (
             Rect(WIDTH, var.value)
             .set_fill("blue")
@@ -51,21 +51,21 @@ class AnimatedBarList(AnimatedList[Rect]):
     def get_organizer(self):
         return GridOrganizer((1, len(self)), (1, WIDTH))
 
-    def swap(self, a, b):
+    def swap(self, a, b, *args, **kwargs):
         assert isinstance(a, int)
         assert isinstance(b, int)
         return AnimationBundle(
             super().swap(a, b).compress(),
             RunFunction(self.add_swap),
-            flash(self.elements[a].fill, "green"),
-            flash(self.elements[b].fill, "green") if a != b else None,
+            flash(self.drawables[a].fill, "green"),
+            flash(self.drawables[b].fill, "green") if a != b else None,
         )
 
     def compare(self, a: int, b: int):
         return AnimationBundle(
             RunFunction(self.add_compare),
-            flash(self.elements[a].fill, "light_gray"),
-            flash(self.elements[b].fill, "light_gray") if a != b else None,
+            flash(self.drawables[a].fill, "light_gray"),
+            flash(self.drawables[b].fill, "light_gray") if a != b else None,
         )
 
     def add_compare(self):
@@ -100,7 +100,7 @@ def insertion_sort(abl: AnimatedBarList) -> AnimationSequence:
     return sequence
 
 
-def quick_sort(abl: AnimatedBarList, low: int | None=None, high: int | None =None):
+def quick_sort(abl: AnimatedBarList, low: int | None = None, high: int | None = None):
     sequence = AnimationSequence()
     if low is None:
         low = 0

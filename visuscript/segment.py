@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Self
+from typing import Self, overload
 from abc import ABC, abstractmethod
 from visuscript.primatives.primatives import Vec2
 from visuscript.math_utility import magnitude
@@ -319,7 +319,14 @@ class Path(Segment):
     def height(self) -> float:
         return self.max_y - self.min_y
 
-    def M(self, x: float, y: float) -> Self:
+    @overload
+    def M(self, x: float, y: float) -> Self: ...
+    @overload
+    def M(self, x: Vec2, y: None) -> Self: ...
+    def M(self, x: float | Vec2, y: float | None) -> Self:
+        if isinstance(x, Vec2) or y is None:
+            assert isinstance(x, Vec2)
+            x, y = x
         self.min_x = min(self.min_x, x)
         self.max_x = max(self.max_x, x)
         self.min_y = min(self.min_y, y)
@@ -330,7 +337,14 @@ class Path(Segment):
         self._segments.append(segment)
         return self
 
-    def m(self, dx: float, dy: float) -> Self:
+    @overload
+    def m(self, dx: float, dy: float) -> Self: ...
+    @overload
+    def m(self, dx: Vec2, dy: None) -> Self: ...
+    def m(self, dx: float | Vec2, dy: float | None) -> Self:
+        if isinstance(dx, Vec2) or dy is None:
+            assert isinstance(dx, Vec2)
+            dx, dy = dx
         x, y = [dx, dy] + self._cursor
         return self.M(x, y)
 

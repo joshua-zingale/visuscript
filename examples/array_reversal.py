@@ -8,7 +8,7 @@ def main():
     vars = list(map(Var, [1, 2, 3, 4, 5, 6, 7, 8]))
     arr = CellArray(vars, len(vars), transform=[-WIDTH * (len(vars) - 1) / 2, 0])
     scene = Scene()
-    scene << arr.collection_element
+    scene << arr.collection_drawable
     scene.player << reverse_array(arr)
 
 
@@ -19,14 +19,12 @@ class CellArray(AnimatedList):
         self.max_length = max_length
         super().__init__(variables, *args, **kwargs)
         for transform in self.organizer:
-            self.add_auxiliary_element(
-                Rect(WIDTH, WIDTH).translate(*self.transform(transform.translation))
-            )
+            self.add_auxiliary_drawable(Rect(WIDTH, WIDTH).set_transform(transform))
 
     def get_organizer(self):
         return GridOrganizer((1, self.max_length), (WIDTH, WIDTH))
 
-    def new_element_for(self, var):
+    def new_drawable_for(self, var):
         return Text(f"{var.value}", font_size=WIDTH)
 
 
@@ -36,7 +34,7 @@ def reverse_array(arr: CellArray):
     for i, j in zip(
         range(0, len(arr) // 2), range(len(arr) - 1, len(arr) // 2 - 1, -1)
     ):
-        sequence << arr.quadratic_swap(i, j)
+        sequence << arr.qswap(i, j, height_multiplier=2)
     return sequence
 
 

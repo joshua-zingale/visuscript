@@ -1,7 +1,6 @@
 from .base_class import VisuscriptTestCase
 from visuscript.primatives.mixins import Element
 from visuscript.primatives import Vec2
-from visuscript.config import config
 
 
 class TestElement(VisuscriptTestCase):

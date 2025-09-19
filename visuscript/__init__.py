@@ -20,7 +20,7 @@ If the utility is not added to your PATH, the following works as well:
 
 """
 
-from .drawable import Circle, Rect, Image, Pivot, Drawing
+from .drawable import Circle, Rect, Image, Pivot, Drawing, connector
 from .primatives import Transform, Vec2, Rgb, Color
 from .drawable.scene import Scene
 from .organizer import GridOrganizer
@@ -94,4 +94,5 @@ __all__ = [
     "RIGHT",
     "DOWN",
     "LEFT",
+    "connector",
 ]

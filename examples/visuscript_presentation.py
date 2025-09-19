@@ -92,7 +92,7 @@ def main():
         )
         s << (title, subtitle, attribution)
 
-        organizer = GridOrganizer((2, 2), (s.height / 2, s.width / 2))
+        organizer = GridOrganizer((2, 2), (s.shape.height / 2, s.shape.width / 2))
         get_rect = (
             lambda: Rect(20, 20)
             .set_opacity(0.0)
@@ -108,7 +108,7 @@ def main():
         for transform in organizer:
             rects.append(get_rect())
             rects[-1].set_transform(
-                Transform([-s.width / 4, -s.height / 4]) @ transform
+                Transform([-s.shape.width / 4, -s.shape.height / 4]) @ transform
             )
 
         s << rects
@@ -128,7 +128,7 @@ def main():
             + DOWN * 2
             + RIGHT * MARGIN
         )
-        .l(scene.width / 3, 0)
+        .l(scene.shape.width / 3, 0)
     )
     scene << bar
 
@@ -179,37 +179,37 @@ def main():
             drawable_node,
             Circle(NORMAL)
             .add_child(Text("Circle", font_size=NORMAL).rotate(-15))
-            .set_stroke(Color(opacity=0)),
+            .set_stroke(Color("off_white", opacity=0)),
             Circle(NORMAL)
             .add_child(Text("Rect", font_size=NORMAL).rotate(-15))
-            .set_stroke(Color(opacity=0)),
+            .set_stroke(Color("off_white", opacity=0)),
             Circle(NORMAL)
             .add_child(Text("Arrow", font_size=NORMAL).rotate(-15))
-            .set_stroke(Color(opacity=0)),
+            .set_stroke(Color("off_white", opacity=0)),
         )
         s << components(
             animation_node,
             Circle(NORMAL)
             .add_child(Text("TransformAnimation", font_size=NORMAL).rotate(-15))
-            .set_stroke(Color(opacity=0)),
+            .set_stroke(Color("off_white", opacity=0)),
             Circle(NORMAL)
             .add_child(Text("RgbAnimation", font_size=NORMAL).rotate(-15))
-            .set_stroke(Color(opacity=0)),
+            .set_stroke(Color("off_white", opacity=0)),
             Circle(NORMAL)
             .add_child(Text("AnimationSequence", font_size=NORMAL).rotate(-15))
-            .set_stroke(Color(opacity=0)),
+            .set_stroke(Color("off_white", opacity=0)),
         )
         s << components(
             updater_node,
             Circle(NORMAL)
             .add_child(Text("TranslationUpdater", font_size=NORMAL).rotate(-15))
-            .set_stroke(Color(opacity=0)),
+            .set_stroke(Color("off_white", opacity=0)),
             Circle(NORMAL)
             .add_child(Text("FunctionUpdater", font_size=NORMAL).rotate(-15))
-            .set_stroke(Color(opacity=0)),
+            .set_stroke(Color("off_white", opacity=0)),
             Circle(NORMAL)
             .add_child(Text("UpdaterBundle", font_size=NORMAL).rotate(-15))
-            .set_stroke(Color(opacity=0)),
+            .set_stroke(Color("off_white", opacity=0)),
         )
 
     with scene as s:
@@ -218,7 +218,7 @@ def main():
         steps = [Text("Python"), Text("SVG"), Text("PNG"), Text("MP4")]
         converters = [Text("Visuscript"), Text("librsvg"), Text("ffmpeg")]
 
-        separation = steps[0].width * 1.5
+        separation = steps[0].shape.width * 1.5
 
         GridOrganizer((1, 4), (1, separation)).set_transform(
             Transform([-separation * (len(steps) - 1) / 2, 0])
@@ -384,11 +384,11 @@ def heading(text, font_size=HEADING):
 
 
 def bullet(text: str, font_size=BULLET):
-    circle = Circle(2, anchor=Anchor.LEFT)
+    circle = Circle(2).set_anchor(Anchor.LEFT)
     circle.add_child(
-        Text(text=text, font_size=font_size, anchor=Anchor.LEFT).translate(
-            *circle.transformed_shape.right + [6, -1]
-        )
+        Text(text=text, font_size=font_size)
+        .translate(*circle.transformed_shape.right + [6, -1])
+        .set_anchor(Anchor.LEFT)
     )
     return circle
 
@@ -414,14 +414,20 @@ def get_all_code_blocks():
 
 
 def _unused():
+    from visuscript.animated_collection import AnimatedList, Var
+
+    WIDTH = 8
+    STROKE_WIDTH = 1
     ##316
-    class AnimatedBarList(AnimatedList):
+    #
+
+    class AnimatedBarList(AnimatedList[Var, Rect]):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.num_comparisons = 0
             self.num_swaps = 0
 
-        def new_element_for(self, var: Var):
+        def new_drawable_for(self, var: Var):
             return (
                 Rect(WIDTH, var.value)
                 .set_fill("blue")
@@ -434,19 +440,21 @@ def _unused():
 
         ##
         ##317
-        def swap(self, a, b):
+        def swap(self, a, b, *args, **kwargs):
+            assert isinstance(a, int)
+            assert isinstance(b, int)
             return AnimationBundle(
                 super().swap(a, b).compress(),
                 RunFunction(self.add_swap),
-                flash(self.elements[a].fill, "green"),
-                flash(self.elements[b].fill, "green") if a != b else None,
+                flash(self.drawables[a].fill, "green"),
+                flash(self.drawables[b].fill, "green") if a != b else None,
             )
 
         def compare(self, a: int, b: int):
             return AnimationBundle(
                 RunFunction(self.add_compare),
-                flash(self.elements[a].fill, "light_gray"),
-                flash(self.elements[b].fill, "light_gray") if a != b else None,
+                flash(self.drawables[a].fill, "light_gray"),
+                flash(self.drawables[b].fill, "light_gray") if a != b else None,
             )
 
         def add_compare(self):

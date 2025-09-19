@@ -1,7 +1,7 @@
 from visuscript import *
 
 with Scene() as s:
-    rect = Rect(20, 20).add_child(Rect(5, 5).translate(y=20, z=-1))
+    rect = Rect(20, 20).add_child(Rect(5, 5).translate(y=20))
     s << rect
     s.animations << AnimationSequence(
         AnimationBundle(

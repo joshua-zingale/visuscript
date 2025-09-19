@@ -3,6 +3,7 @@ from functools import cached_property
 from .mixins import Shape
 from visuscript.primatives import Transform, Rgb
 from visuscript.primatives import Color
+from typing import Self
 
 
 @runtime_checkable
@@ -16,6 +17,15 @@ class CanBeDrawn(Protocol):
     def draw(self) -> str: ...
 
 
+class CanBeLazed(Protocol):
+    @property
+    def lazy(self) -> Self: ...
+
+    """This should actually return a Lazy version of the class.
+    
+    The "Self" type hint is to make the type checker happy."""
+
+
 class HasShape(Protocol):
     @cached_property
     def shape(self) -> Shape: ...
@@ -24,6 +34,9 @@ class HasShape(Protocol):
 class HasTransform(Protocol):
     @property
     def transform(self) -> Transform: ...
+
+    @transform.setter
+    def transform(self, other: Transform) -> None: ...
 
 
 class HasOpacity(Protocol):
@@ -41,10 +54,10 @@ class HasRgb(Protocol):
     @rgb.setter
     def rgb(self, other: Rgb): ...
 
+
 class HasFill(Protocol):
     @property
     def fill(self) -> Color: ...
 
     @fill.setter
     def fill(self, other: Color): ...
-

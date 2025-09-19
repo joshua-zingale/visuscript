@@ -19,7 +19,7 @@ scene = Scene()
 text = (
     Text("Without LazyAnimation: Incorrect Sequencing")
     .set_anchor(Anchor.TOP_LEFT)
-    .translate(*scene.xy(0.02, 0.02))
+    .translate(scene.xy(0.02, 0.02))
 )
 scene << text
 ##1
@@ -27,12 +27,8 @@ with scene as s:
     circle = Circle(20)
     s << circle
     s.animations << AnimationSequence(
-        TranslationAnimation(
-            circle.transform, circle.transform.translation + [0, 75, 0]
-        ),
-        TranslationAnimation(
-            circle.transform, circle.transform.translation + [100, 0, 0]
-        ),
+        TranslationAnimation(circle.transform, circle.transform.translation + [0, 75]),
+        TranslationAnimation(circle.transform, circle.transform.translation + [100, 0]),
         NoAnimation(),
     )
     s << PythonText(code_blocks[1], font_size=6).set_anchor(Anchor.TOP_LEFT).translate(
@@ -47,11 +43,9 @@ with scene as s:
     circle = Circle(20)
     s << circle
     s.animations << AnimationSequence(
+        TranslationAnimation(circle.transform, circle.transform.translation + [0, 75]),
         TranslationAnimation(
-            circle.transform, circle.transform.translation + [0, 75, 0]
-        ),
-        TranslationAnimation(
-            circle.transform, circle.transform.lazy.translation.add([100, 0, 0])
+            circle.transform, circle.transform.lazy.translation.add([100, 0])
         ),
         NoAnimation(),
     )
@@ -66,12 +60,10 @@ with scene as s:
     circle = Circle(20)
     s << circle
     s.animations << AnimationSequence(
-        TranslationAnimation(
-            circle.transform, circle.transform.translation + [0, 75, 0]
-        ),
+        TranslationAnimation(circle.transform, circle.transform.translation + [0, 75]),
         LazyAnimation(
             lambda: TranslationAnimation(
-                circle.transform, circle.transform.translation + [100, 0, 0]
+                circle.transform, circle.transform.translation + [100, 0]
             )
         ),
         NoAnimation(),
