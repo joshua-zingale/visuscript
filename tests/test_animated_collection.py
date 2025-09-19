@@ -48,8 +48,8 @@ class TestAnimatedList(VisuscriptTestCase):
             array.drawables[-1].transform.translation.x, (loc1.x + loc2.x) / 2
         )
         self.assertLessEqual(
-            array.drawables[-1].global_shape.bottom.y,
-            array.drawables[0].global_shape.top.y,
+            array.drawables[-1].gshape.bottom.y,
+            array.drawables[0].gshape.top.y,
         )
 
         run_for(animation, 1)
@@ -88,8 +88,8 @@ class TestAnimatedList(VisuscriptTestCase):
             array.drawables[1].transform.translation.x, (loc1.x + loc2.x) / 2
         )
         self.assertLessEqual(
-            array.drawables[1].global_shape.bottom.y,
-            array.drawables[0].global_shape.top.y,
+            array.drawables[1].gshape.bottom.y,
+            array.drawables[0].gshape.top.y,
         )
 
         run_for(animation, 1)
@@ -149,8 +149,8 @@ class TestAnimatedArray(VisuscriptTestCase):
 #         for var1, var2 in zip(data, array):
 #             self.assertEqual(var1, var2)
 
-#         y = lambda i: array.drawables[i].global_shape.center.y
-#         x = lambda i: array.drawables[i].global_shape.center.x
+#         y = lambda i: array.drawables[i].gshape.center.y
+#         x = lambda i: array.drawables[i].gshape.center.x
 
 #         self.assertGreater(y(1), y(0))
 

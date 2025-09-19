@@ -65,8 +65,8 @@ class Text(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin):
 
             if hasattr(self, "shape"):
                 del self.shape
-            if hasattr(self, "global_shape"):
-                del self.global_shape
+            if hasattr(self, "gshape"):
+                del self.gshape
 
             return r
 

@@ -526,11 +526,11 @@ class GlobalShapeMixin(HierarchicalDrawable, TransformableShapeMixin):
 
     def _invalidate(self):
         super()._invalidate()
-        if hasattr(self, "global_shape"):
-            del self.global_shape
+        if hasattr(self, "gshape"):
+            del self.gshape
 
     @cached_property
-    def global_shape(self):
+    def gshape(self):
         return Shape(self, self.global_transform)
 
 

@@ -59,32 +59,26 @@ class Connector(Drawable, ShapeMixin, FillMixin, StrokeMixin, OpacityMixin):
         self._destination_target = destination_target
 
     def calculate_height(self) -> float:
-        return abs(
-            self._destination.global_shape.center[1]
-            - self._source.global_shape.center[1]
-        )
+        return abs(self._destination.gshape.center[1] - self._source.gshape.center[1])
 
     def calculate_width(self) -> float:
-        return abs(
-            self._destination.global_shape.center[0]
-            - self._source.global_shape.center[0]
-        )
+        return abs(self._destination.gshape.center[0] - self._source.gshape.center[0])
 
     def calculate_top_left(self) -> Vec2:
         return Vec2(
             min(
-                self._destination.global_shape.center[0],
-                self._source.global_shape.center[0],
+                self._destination.gshape.center[0],
+                self._source.gshape.center[0],
             ),
             min(
-                self._destination.global_shape.center[1],
-                self._source.global_shape.center[1],
+                self._destination.gshape.center[1],
+                self._source.gshape.center[1],
             ),
         )
 
     @property
     def _unit_between(self) -> Vec2:
-        diff = self._destination.global_shape.center - self._source.global_shape.center
+        diff = self._destination.gshape.center - self._source.gshape.center
         eps = 1e-16
         return diff / max(magnitude(diff), eps)
 
@@ -92,14 +86,12 @@ class Connector(Drawable, ShapeMixin, FillMixin, StrokeMixin, OpacityMixin):
         self, element: GlobalShapeMixin, target: LineTarget, offset_sign: int
     ):
         if target == LineTarget.CENTER:
-            return element.global_shape.center
+            return element.gshape.center
         elif target == LineTarget.RADIAL:
-            center = element.global_shape.center
+            center = element.gshape.center
             return (
                 center
-                + offset_sign
-                * element.global_shape.circumscribed_radius
-                * self._unit_between
+                + offset_sign * element.gshape.circumscribed_radius * self._unit_between
             )
 
     @property
@@ -119,14 +111,12 @@ class Connector(Drawable, ShapeMixin, FillMixin, StrokeMixin, OpacityMixin):
         """True if and only if the source and destination are overlapped."""
         distance = 0
         if self._source_target == LineTarget.RADIAL:
-            distance += self._source.global_shape.circumscribed_radius
+            distance += self._source.gshape.circumscribed_radius
         if self._destination_target == LineTarget.RADIAL:
-            distance += self._destination.global_shape.circumscribed_radius
+            distance += self._destination.gshape.circumscribed_radius
 
         return (
-            magnitude(
-                self._destination.global_shape.center - self._source.global_shape.center
-            )
+            magnitude(self._destination.gshape.center - self._source.gshape.center)
             < distance
         )
 

@@ -30,12 +30,12 @@ def main():
     scene << tokens
     scene << Text("Infix Notation", FONT_SIZE * 2 / 3).set_anchor(
         Anchor.BOTTOM_LEFT
-    ).translate(tokens[0].global_shape.top_left + UP * FONT_SIZE / 2)
+    ).translate(tokens[0].gshape.top_left + UP * FONT_SIZE / 2)
 
     shunting_arrow = Arrow(
-        source=(tokens[0].global_shape.center + tokens[-1].global_shape.center) / 2
+        source=(tokens[0].gshape.center + tokens[-1].gshape.center) / 2
         + DOWN * FONT_SIZE,
-        destination=(tokens[0].global_shape.center + tokens[-1].global_shape.center) / 2
+        destination=(tokens[0].gshape.center + tokens[-1].gshape.center) / 2
         + DOWN * FONT_SIZE * 2,
     ).set_opacity(0.0)
     shunting_text = (
@@ -48,7 +48,7 @@ def main():
         Text("Reverse Polish Notation", FONT_SIZE * 2 / 3)
         .set_anchor(Anchor.BOTTOM_LEFT)
         .translate(
-            tokens[0].global_shape.top_left + DOWN * FONT_SIZE * 3 + UP * FONT_SIZE / 2
+            tokens[0].gshape.top_left + DOWN * FONT_SIZE * 3 + UP * FONT_SIZE / 2
         )
         .set_opacity(0.0)
     )
@@ -84,7 +84,7 @@ def main():
         Text("Expression Evaluation", FONT_SIZE * 2 / 3)
         .set_anchor(Anchor.BOTTOM_LEFT)
         .translate(
-            tokens[0].global_shape.top_left + DOWN * FONT_SIZE * 6 + UP * FONT_SIZE / 2
+            tokens[0].gshape.top_left + DOWN * FONT_SIZE * 6 + UP * FONT_SIZE / 2
         )
         .set_opacity(0.0)
     )
