@@ -17,7 +17,7 @@ cells = [
     Rect(FONT_SIZE * 2, FONT_SIZE).add_child(
         lambda p: Text(f"x{i + 0xFE00 - N + 1:X}", FONT_SIZE / 2)
         .set_anchor(Anchor.LEFT)
-        .translate(p.shape.right + RIGHT * FONT_SIZE / 4)
+        .translate(p.ushape.right + RIGHT * FONT_SIZE / 4)
     )
     for i in range(N)
 ]
@@ -37,7 +37,7 @@ tos_ptr = (
     .add_child(
         lambda p: Text("TOS", FONT_SIZE / 4)
         .set_anchor(Anchor.BOTTOM_RIGHT)
-        .translate(p.shape.top)
+        .translate(p.ushape.top)
     )
     .translate(cells[-1].tshape.left)
 )

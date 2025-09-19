@@ -64,11 +64,11 @@ def read_operator(operator: Text):
             TranslationAnimation(operator.transform, operand1.tshape.center),
             TranslationAnimation(
                 operand1.transform,
-                operand1.tshape.center + LEFT * operand1.shape.width,
+                operand1.tshape.center + LEFT * operand1.ushape.width,
             ),
             TranslationAnimation(
                 operand2.transform,
-                operand1.tshape.center + RIGHT * operand2.shape.width,
+                operand1.tshape.center + RIGHT * operand2.ushape.width,
             ),
         ),
         RunFunction(

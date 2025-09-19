@@ -11,7 +11,7 @@ with Scene() as s:
     )
     rectangle = (
         Rect(40, 40)
-        .translate(*s.shape.bottom_left + [20, -40])
+        .translate(*s.ushape.bottom_left + [20, -40])
         .set_stroke("red")
         .add_child(Text("E"))
     )
@@ -40,16 +40,16 @@ with Scene() as s:
         PathAnimation(
             circle.transform,
             Path()
-            .M(*circle.shape.center)
-            .Q(*(s.shape.center + s.shape.right) / 2 + UP * 80, *s.shape.right)
-            .Q(*s.shape.center + DOWN * 80, *s.shape.left)
-            .L(*s.shape.top_left)
+            .M(*circle.ushape.center)
+            .Q(*(s.ushape.center + s.ushape.right) / 2 + UP * 80, *s.ushape.right)
+            .Q(*s.ushape.center + DOWN * 80, *s.ushape.left)
+            .L(*s.ushape.top_left)
             .l(120, 0)
             .l(150, 80)
-            .L(*s.shape.bottom_right)
+            .L(*s.ushape.bottom_right)
             .Q(
-                *(s.shape.bottom_right + s.shape.center) / 2 + UP * 50 + RIGHT * 50,
-                *s.shape.center,
+                *(s.ushape.bottom_right + s.ushape.center) / 2 + UP * 50 + RIGHT * 50,
+                *s.ushape.center,
             ),
             duration=7,
             easing_function=linear_easing,

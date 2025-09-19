@@ -41,7 +41,7 @@ def main():
     shunting_text = (
         Text("Shunting Yard Algorithm", font_size=FONT_SIZE // 2)
         .set_anchor(Anchor.LEFT)
-        .translate(shunting_arrow.shape.right + RIGHT * FONT_SIZE / 2)
+        .translate(shunting_arrow.ushape.right + RIGHT * FONT_SIZE / 2)
         .set_opacity(0.0)
     )
     polish_text = (

@@ -175,15 +175,15 @@ class Scene(Drawable, AnchorMixin, TransformMixin, FillMixin):
 
         background = (
             Rect(
-                width=self.shape.width * self.logical_scaling,
-                height=self.shape.height * self.logical_scaling,
+                width=self.ushape.width * self.logical_scaling,
+                height=self.ushape.height * self.logical_scaling,
             )
             .set_fill(self.fill)
             .set_stroke(self.fill)
             .set_anchor(Anchor.TOP_LEFT)
         )
-        view_width = self.shape.width * self.logical_scaling
-        view_height = self.shape.height * self.logical_scaling
+        view_width = self.ushape.width * self.logical_scaling
+        view_height = self.ushape.height * self.logical_scaling
         return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {view_width} {view_height}">\
 {background.draw()}\
 <g transform="{transform.svg_transform}">\

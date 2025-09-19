@@ -780,20 +780,20 @@ class AnimatedArray2D(AnimatedArray):
         self,
         variables: Iterable[Var],
         font_size: float,
-        shape: Tuple[int, int],
+        ushape: Tuple[int, int],
         transform: Transform | None = None,
     ):
-        self._shape = shape
+        self._ushape = ushape
         super().__init__(variables, font_size, transform=transform)
 
     def _tuple_to_index(self, index: Tuple[int, int]):
-        for axis, (idx, size) in enumerate(zip(index, self._shape)):
+        for axis, (idx, size) in enumerate(zip(index, self._ushape)):
             if idx >= size:
                 raise IndexError(
                     f"Index {idx} is too large for axis {axis} of size {size}."
                 )
 
-        return index[0] * self._shape[1] + index[1]
+        return index[0] * self._ushape[1] + index[1]
 
     @overload
     def __getitem__(self, index: int) -> Var: ...
@@ -836,4 +836,4 @@ class AnimatedArray2D(AnimatedArray):
         return super().insert(index, value, duration=duration)
 
     def get_organizer(self):
-        return GridOrganizer(self._shape, (self._font_size, self._font_size))
+        return GridOrganizer(self._ushape, (self._font_size, self._font_size))

@@ -63,8 +63,8 @@ class Text(GlobalShapeMixin, HierarchicalDrawable, AnchorMixin, FillMixin):
             self._width = width
             self._height = ascent - offset_y
 
-            if hasattr(self, "shape"):
-                del self.shape
+            if hasattr(self, "ushape"):
+                del self.ushape
             if hasattr(self, "gshape"):
                 del self.gshape
 

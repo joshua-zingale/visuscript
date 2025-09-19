@@ -52,7 +52,7 @@ class Slideshow(Scene):
         self._slide_count += 1
         count = (
             Text(str(self._slide_count), font_size=PAGINATION)
-            .translate(*self.shape.bottom_right - [MARGIN, MARGIN])
+            .translate(*self.ushape.bottom_right - [MARGIN, MARGIN])
             .set_anchor(Anchor.BOTTOM_RIGHT)
         )
         self.add_drawable(count)
@@ -92,7 +92,7 @@ def main():
         )
         s << (title, subtitle, attribution)
 
-        organizer = GridOrganizer((2, 2), (s.shape.height / 2, s.shape.width / 2))
+        organizer = GridOrganizer((2, 2), (s.ushape.height / 2, s.ushape.width / 2))
         get_rect = (
             lambda: Rect(20, 20)
             .set_opacity(0.0)
@@ -108,7 +108,7 @@ def main():
         for transform in organizer:
             rects.append(get_rect())
             rects[-1].set_transform(
-                Transform([-s.shape.width / 4, -s.shape.height / 4]) @ transform
+                Transform([-s.ushape.width / 4, -s.ushape.height / 4]) @ transform
             )
 
         s << rects
@@ -122,13 +122,13 @@ def main():
     bar = Drawing(
         Path()
         .M(
-            *scene.shape.top_left
+            *scene.ushape.top_left
             + DOWN * HEADING
             + DOWN * MARGIN
             + DOWN * 2
             + RIGHT * MARGIN
         )
-        .l(scene.shape.width / 3, 0)
+        .l(scene.ushape.width / 3, 0)
     )
     scene << bar
 
@@ -145,7 +145,7 @@ def main():
         s << (
             PythonText(code_blocks[1], font_size=9)
             .set_anchor(Anchor.BOTTOM_LEFT)
-            .translate(*scene.shape.bottom_left + [MARGIN, -MARGIN])
+            .translate(*scene.ushape.bottom_left + [MARGIN, -MARGIN])
         )
     ##
 
@@ -218,7 +218,7 @@ def main():
         steps = [Text("Python"), Text("SVG"), Text("PNG"), Text("MP4")]
         converters = [Text("Visuscript"), Text("librsvg"), Text("ffmpeg")]
 
-        separation = steps[0].shape.width * 1.5
+        separation = steps[0].ushape.width * 1.5
 
         GridOrganizer((1, 4), (1, separation)).set_transform(
             Transform([-separation * (len(steps) - 1) / 2, 0])
@@ -227,7 +227,7 @@ def main():
         for prev, curr, converter in zip(steps, steps[1:], converters):
             arrow = Arrow(source=prev, destination=curr)
             s << arrow
-            s << converter.translate(*arrow.shape.top + 10 * UP).set_anchor(
+            s << converter.translate(*arrow.ushape.top + 10 * UP).set_anchor(
                 Anchor.BOTTOM
             ).scale(0.5)
         s << steps
@@ -237,7 +237,7 @@ def main():
         ).translate(0, 25).scale(0.40)
 
     ##2
-    # You can define an arbitrary shape using an SVG Path
+    # You can define an arbitrary ushape using an SVG Path
     drawing = (
         Drawing(Path().M(0, 10).L(20, 10).L(20, 20).Q(100, 10, 20, 0).L(20, 20))
         .set_anchor(Anchor.CENTER)
@@ -252,7 +252,7 @@ def main():
         s << (
             PythonText(code_blocks[2], font_size=8)
             .set_anchor(Anchor.BOTTOM_LEFT)
-            .translate(*scene.shape.bottom_left + [MARGIN, -MARGIN])
+            .translate(*scene.ushape.bottom_left + [MARGIN, -MARGIN])
         )
     ##
 
@@ -269,9 +269,9 @@ def main():
                 Path()
                 .M(*drawing.tshape.center)
                 .L(0, 0)
-                .Q(100, 100, *s.shape.right)
-                .Q(0, -100, *s.shape.left)
-                .L(*drawing.shape.center),
+                .Q(100, 100, *s.ushape.right)
+                .Q(0, -100, *s.ushape.left)
+                .L(*drawing.ushape.center),
                 duration=2,
             ),
             ScaleAnimation(drawing.transform, 3),
@@ -280,7 +280,7 @@ def main():
         s << (
             PythonText(code_blocks[3], font_size=7.5)
             .set_anchor(Anchor.BOTTOM_LEFT)
-            .translate(*scene.shape.bottom_left + [MARGIN, -MARGIN])
+            .translate(*scene.ushape.bottom_left + [MARGIN, -MARGIN])
         )
     ##
 
@@ -296,7 +296,7 @@ def main():
         )
         rectangle = (
             Rect(40, 40)
-            .translate(*s.shape.bottom_left + [20, -40])
+            .translate(*s.ushape.bottom_left + [20, -40])
             .set_stroke("red")
             .add_child(Text("E"))
         )
@@ -323,16 +323,18 @@ def main():
             PathAnimation(
                 circle.transform,
                 Path()
-                .M(*circle.shape.center)
-                .Q(*(s.shape.center + s.shape.right) / 2 + UP * 80, *s.shape.right)
-                .Q(*s.shape.center + DOWN * 80, *s.shape.left)
-                .L(*s.shape.top_left)
+                .M(*circle.ushape.center)
+                .Q(*(s.ushape.center + s.ushape.right) / 2 + UP * 80, *s.ushape.right)
+                .Q(*s.ushape.center + DOWN * 80, *s.ushape.left)
+                .L(*s.ushape.top_left)
                 .l(120, 0)
                 .l(150, 80)
-                .L(*s.shape.bottom_right)
+                .L(*s.ushape.bottom_right)
                 .Q(
-                    *(s.shape.bottom_right + s.shape.center) / 2 + UP * 50 + RIGHT * 50,
-                    *s.shape.center + [25, 0],
+                    *(s.ushape.bottom_right + s.ushape.center) / 2
+                    + UP * 50
+                    + RIGHT * 50,
+                    *s.ushape.center + [25, 0],
                 ),
                 duration=7,
                 easing_function=linear_easing,
@@ -342,7 +344,7 @@ def main():
         s << (
             PythonText(code_blocks[4], font_size=4)
             .set_anchor(Anchor.BOTTOM_LEFT)
-            .translate(*scene.shape.bottom_left + [MARGIN, -MARGIN])
+            .translate(*scene.ushape.bottom_left + [MARGIN, -MARGIN])
         )
     ##
 
@@ -367,7 +369,7 @@ def main():
         s << (
             PythonText(code_blocks[318], font_size=10)
             .set_anchor(Anchor.BOTTOM)
-            .translate(*s.shape.bottom + LEFT * 12 * 2)
+            .translate(*s.ushape.bottom + LEFT * 12 * 2)
         )
 
     scene.remove_drawable(bar)
@@ -379,7 +381,7 @@ def heading(text, font_size=HEADING):
     return (
         Text(text, font_size=HEADING)
         .set_anchor(Anchor.TOP_LEFT)
-        .translate(*scene.shape.top_left + [MARGIN, MARGIN])
+        .translate(*scene.ushape.top_left + [MARGIN, MARGIN])
     )
 
 
@@ -396,7 +398,7 @@ def bullet(text: str, font_size=BULLET):
 def bullets(*args, font_size=BULLET):
     points = [bullet(arg, font_size=font_size) for i, arg in enumerate(args)]
     GridOrganizer((len(args), 1), (font_size * 1.3, 1)).set_transform(
-        Transform(scene.shape.top_left + [MARGIN, HEADING * 2])
+        Transform(scene.ushape.top_left + [MARGIN, HEADING * 2])
     ).organize(points)
     return points
 

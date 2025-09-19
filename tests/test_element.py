@@ -38,16 +38,16 @@ class TestElement(VisuscriptTestCase):
     def test_functional_add_children(self):
         parent = self.MockElement(10, 10)
         child = self.MockElement(10, 10)
-        parent.add_child(lambda p: child.translate(*p.shape.bottom_right))
+        parent.add_child(lambda p: child.translate(*p.ushape.bottom_right))
         self.assertVecAlmostEqual(
-            child.transform.translation, parent.shape.bottom_right
+            child.transform.translation, parent.ushape.bottom_right
         )
         self.assertTrue(child in parent)
 
         children = [self.MockElement(10, 10) for _ in range(5)]
         parent.add_child(
             lambda p: (
-                child.translate(*p.shape.right + Vec2(10 * i, 0))
+                child.translate(*p.ushape.right + Vec2(10 * i, 0))
                 for i, child in enumerate(children)
             )
         )
@@ -55,7 +55,7 @@ class TestElement(VisuscriptTestCase):
         for i, child in enumerate(children):
             self.assertVecAlmostEqual(
                 child.transform.translation,
-                parent.shape.right + Vec2(10 * i, 0),
+                parent.ushape.right + Vec2(10 * i, 0),
             )
 
     def test_children_have_parent(self):

@@ -32,7 +32,7 @@ with scene as s:
         NoAnimation(),
     )
     s << PythonText(code_blocks[1], font_size=6).set_anchor(Anchor.TOP_LEFT).translate(
-        *s.shape.top_left + [10, 22.5]
+        *s.ushape.top_left + [10, 22.5]
     )
 ##
 
@@ -50,7 +50,7 @@ with scene as s:
         NoAnimation(),
     )
     s << PythonText(code_blocks[2], font_size=6).set_anchor(Anchor.TOP_LEFT).translate(
-        *s.shape.top_left + [10, 22.5]
+        *s.ushape.top_left + [10, 22.5]
     )
 ##
 
@@ -69,6 +69,6 @@ with scene as s:
         NoAnimation(),
     )
     s << PythonText(code_blocks[3], font_size=6).set_anchor(Anchor.TOP_LEFT).translate(
-        *s.shape.top_left + [10, 22.5]
+        *s.ushape.top_left + [10, 22.5]
     )
 ##

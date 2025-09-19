@@ -26,7 +26,7 @@ def main():
     s.player << AnimationBundle(
         RunFunction(lambda: text.set_anchor(Anchor.TOP_LEFT, keep_position=True)),
         TransformAnimation(
-            text.transform, Transform(s.shape.top_left + [10, 10], scale=0.5)
+            text.transform, Transform(s.ushape.top_left + [10, 10], scale=0.5)
         ),
     )
 
@@ -39,7 +39,7 @@ def main():
     s << tree.collection_drawable
 
     operation_text = (
-        Text("").set_anchor(Anchor.TOP_RIGHT).translate(*s.shape.top_right + [-10, 10])
+        Text("").set_anchor(Anchor.TOP_RIGHT).translate(*s.ushape.top_right + [-10, 10])
     )
     s << operation_text
 
@@ -148,17 +148,17 @@ def compare(
         text = "X"
 
     cmp_text = (
-        Text(f"{operator}", font_size=drawable2.shape.height)
+        Text(f"{operator}", font_size=drawable2.ushape.height)
         .set_anchor(Anchor.RIGHT)
         .set_fill(color)
-        .translate(*(drawable2.shape.left * 1.5))
+        .translate(*(drawable2.ushape.left * 1.5))
         .add_child(
-            question_mark := Text(text, font_size=drawable2.shape.height / 2)
+            question_mark := Text(text, font_size=drawable2.ushape.height / 2)
             .set_anchor(Anchor.BOTTOM)
             .set_fill(color)
         )
     ).set_opacity(0.0)
-    question_mark.translate(cmp_text.shape.top * 1.25)
+    question_mark.translate(cmp_text.ushape.top * 1.25)
 
     drawable2.add_child(cmp_text)
 
@@ -168,7 +168,7 @@ def compare(
     #     TranslationAnimation(
     #         drawable2.transform,
     #         drawable1.tshape.right
-    #         + (drawable2.shape.right - drawable2.shape.left) / 1.25,
+    #         + (drawable2.ushape.right - drawable2.ushape.left) / 1.25,
     #     ),
     #     ScaleAnimation(drawable2.transform, 0.5),
     # )
@@ -186,7 +186,7 @@ def compare(
             TranslationAnimation(
                 drawable2.transform,
                 drawable1.tshape.right
-                + (drawable2.shape.right - drawable2.shape.left) / 1.25,
+                + (drawable2.ushape.right - drawable2.ushape.left) / 1.25,
             ),
             ScaleAnimation(drawable2.transform, 0.5),
         ),
@@ -269,18 +269,20 @@ def animate_find(var: Var, tree: "AnimatedBinaryTreeArray", font_size=16):
         check := Text(not_found_text)
         .set_fill(Color("red", 0.0))
         .set_anchor(Anchor.RIGHT)
-        .translate(*glass.shape.left + font_size * LEFT / 2),
+        .translate(*glass.ushape.left + font_size * LEFT / 2),
         comparison := Pivot()
         .set_opacity(0.0)
         .add_children(
             less_than := Text("", font_size=font_size)
             .set_anchor(Anchor.LEFT)
-            .translate(*glass.shape.right + font_size * RIGHT / 2),
+            .translate(*glass.ushape.right + font_size * RIGHT / 2),
             less_than_check := Text("", font_size=font_size / 2)
             .set_anchor(Anchor.LEFT)
-            .translate(*glass.shape.right + UP * font_size / 2 + font_size * RIGHT / 2),
+            .translate(
+                *glass.ushape.right + UP * font_size / 2 + font_size * RIGHT / 2
+            ),
         ),
-        center_cross := Text("X", font_size=glass.shape.height)
+        center_cross := Text("X", font_size=glass.ushape.height)
         .set_opacity(0.0)
         .set_fill("red"),
     )

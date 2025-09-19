@@ -50,21 +50,21 @@ class Organizer(ABC):
 class GridOrganizer(Organizer):
     """GridOrganizer arranges its output Transform objects into a two dimensional grid."""
 
-    def __init__(self, shape: tuple[int, int], sizes: tuple[float, float]):
-        self._shape = shape
+    def __init__(self, ushape: tuple[int, int], sizes: tuple[float, float]):
+        self._ushape = ushape
         self._sizes = sizes
 
     def __len__(self):
-        return self._shape[0] * self._shape[1]
+        return self._ushape[0] * self._ushape[1]
 
     def transform_for(self, index: int | tuple[int, int]) -> Transform:
         indices = index
         if isinstance(indices, int):
-            y = (indices // self._shape[1]) % self._shape[0]
-            x = indices % self._shape[1]
+            y = (indices // self._ushape[1]) % self._ushape[0]
+            x = indices % self._ushape[1]
             indices = (y, x)
 
-        for i, (index, size) in enumerate(zip(indices, self._shape)):
+        for i, (index, size) in enumerate(zip(indices, self._ushape)):
             if index >= size:
                 raise IndexError(
                     f"index {index} is out of bounds for axis {i} with size {size}"

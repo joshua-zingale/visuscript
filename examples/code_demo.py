@@ -8,6 +8,6 @@ with Scene() as s:
     s << (
         PythonText(code_blocks[1], font_size=16)
         .set_anchor(Anchor.TOP_LEFT)
-        .translate(*s.shape.top_left)
+        .translate(*s.ushape.top_left)
     )
 ##

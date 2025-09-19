@@ -1,5 +1,4 @@
 from typing import Protocol, runtime_checkable
-from functools import cached_property
 from .mixins import Shape
 from visuscript.primatives import Transform, Rgb
 from visuscript.primatives import Color
@@ -27,7 +26,7 @@ class CanBeLazed(Protocol):
 
 
 class HasShape(Protocol):
-    @cached_property
+    @property
     def shape(self) -> Shape: ...
 
 

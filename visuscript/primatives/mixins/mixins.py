@@ -143,13 +143,18 @@ class StrokeMixin:
 
 
 class ShapeMixin(ABC):
-    """Adds a :class:`Shape` to this object.
+    """Adds two :class:`Shape` to this object:
+    A global shape :py:meth:`shape` and an un-transformed shape :py:meth:`ushape`.
 
     .. note::
 
        This mixin provides a :class:`Shape` that is unaffected by any transforms, local or global, that are applied to this object.
        For a :class:`Shape` that is transformed by the object's local transform, use :class:`TransformableShapeMixin`; and for one
        that is transformed by the object's global transform, use :class:`GlobalShapeMixin`.
+
+       :py:meth:`ushape` will always be untransformed;
+       however, :py:meth:`shape` will be upgraded to :py:meth:`tshape` or :py:meth:`gshape` if the respective mixin is added.
+       This means that :py:meth:`shape` should always contain the global shape for the object.
 
     """
 
@@ -173,9 +178,14 @@ class ShapeMixin(ABC):
         return (self.calculate_width() ** 2 + self.calculate_height() ** 2) ** 0.5 / 2
 
     @cached_property
-    def shape(self):
+    def ushape(self):
         """The un-transformed :class:`Shape` for this object."""
         return Shape(self)
+
+    @property
+    def shape(self):
+        """The global :class:`Shape` for this object."""
+        return self.ushape
 
 
 class TransformableShapeMixin(ShapeMixin, TransformMixin):
@@ -189,6 +199,10 @@ class TransformableShapeMixin(ShapeMixin, TransformMixin):
     def _invalidate(self):
         if hasattr(self, "tshape"):
             del self.tshape
+
+    @property
+    def shape(self):
+        return self.tshape
 
 
 class AnchorMixin(ShapeMixin):
@@ -213,9 +227,9 @@ class AnchorMixin(ShapeMixin):
 
         if isinstance(self, TransformMixin) and keep_position:
             self.translate(*old_anchor_offset - self.anchor_offset)
-            # Invalidate shapes
-            if hasattr(self, "shape"):
-                del self.shape
+            # Invalidate ushapes
+            if hasattr(self, "ushape"):
+                del self.ushape
             if isinstance(self, TransformableShapeMixin) and hasattr(self, "tshape"):
                 del self.tshape
         return self
@@ -514,7 +528,7 @@ class HierarchicalDrawable(
 
 class GlobalShapeMixin(HierarchicalDrawable, TransformableShapeMixin):
     """Adds a global :class:`Shape` to this object.
-    A global :class:`Shape` is its basic :class:`Shape` (accessed with `.shape`) with its
+    A global :class:`Shape` is its basic :class:`Shape` (accessed with `.ushape`) with its
     global :class:`~visuscript.Transform` applied to it.
 
     .. seealso::
@@ -531,6 +545,10 @@ class GlobalShapeMixin(HierarchicalDrawable, TransformableShapeMixin):
     def gshape(self):
         """The :class:`Shape` for this object when it has been transformed by its global :class:`~visuscript.Transform`."""
         return Shape(self, self.global_transform)
+
+    @property
+    def shape(self):
+        return self.gshape
 
 
 class Element(
