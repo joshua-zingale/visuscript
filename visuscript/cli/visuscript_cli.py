@@ -139,7 +139,9 @@ def main():
     try:
         spec = importlib.util.spec_from_file_location("script", input_filename)
 
-        could_not_load_message = "Could not load '{input_filename}' as a Python script."
+        could_not_load_message = (
+            f"Could not load '{input_filename}' as a Python script."
+        )
         if spec is None:
             print(could_not_load_message, file=sys.stderr)
             exit()
