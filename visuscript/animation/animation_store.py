@@ -1,7 +1,7 @@
 from .animation import Animation, AnimationABC
 from visuscript.property_locker import PropertyLocker
 
-from typing import Iterable
+from typing import Iterable, Self
 
 
 class AnimationSequence(Animation):
@@ -40,7 +40,7 @@ class AnimationSequence(Animation):
         self,
         animation: AnimationABC | Iterable[AnimationABC | None] | None,
         _call_method: str = "push",
-    ):
+    ) -> Self:
         """Adds an Animation to the end sequence."""
         if animation is None:
             pass
@@ -54,6 +54,7 @@ class AnimationSequence(Animation):
             raise TypeError(
                 f"'{_call_method}' is only implemented for types Animation and Iterable[Animation], not for '{type(animation)}'"
             )
+        return self
 
     def __lshift__(self, other: AnimationABC | Iterable[AnimationABC | None] | None):
         """See :meth:AnimationSequence.push"""
@@ -88,7 +89,7 @@ class AnimationBundle(Animation):
         animation: AnimationABC | Iterable[AnimationABC | None] | None,
         _call_method: str = "push",
         _update_locker: bool = True,
-    ):
+    ) -> Self:
         """Adds an animation to this bundle."""
         if animation is None:
             pass
@@ -103,6 +104,7 @@ class AnimationBundle(Animation):
             raise TypeError(
                 f"'{_call_method}' is only implemented for types AnimationABC, Iterable[AnimationABC], and None, not for '{type(animation)}'"
             )
+        return self
 
     def __lshift__(self, other: AnimationABC | Iterable[AnimationABC] | None):
         """See :meth:AnimationBundle.push"""

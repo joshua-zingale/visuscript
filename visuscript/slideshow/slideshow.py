@@ -41,8 +41,9 @@ class Slide:
     def __lshift__(self, other: CanBeDrawn):
         self.push(other)
 
-    def push(self, slide_item: CanBeDrawn):
+    def push(self, slide_item: CanBeDrawn) -> Self:
         self._drawables.append(slide_item)
+        return self
 
     @property
     def animations(self):

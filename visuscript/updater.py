@@ -102,9 +102,9 @@ class UpdaterBundle(Updater):
 
     def push(
         self, updater: Updater | Iterable[Updater] | None, _call_method: str = ".push"
-    ):
+    ) -> Self:
         if updater is None:
-            return
+            return self
 
         if isinstance(updater, Updater):
             self._locker.update(updater.locker)
@@ -116,6 +116,7 @@ class UpdaterBundle(Updater):
             raise TypeError(
                 f"'{_call_method}' is only implemented for types Updater and Iterable[Updater], not for '{type(updater)}'"
             )
+        return self
 
     def __lshift__(self, other: Updater | Iterable[Updater]):
         self.push(other, _call_method="<<")
