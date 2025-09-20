@@ -1,16 +1,17 @@
 from visuscript import *
+from visuscript.animation import Animation, quadratic_swap, LazyAnimation
 from visuscript.drawable.connector import *
-import numpy as np
+import math
 from visuscript.config import *
 from visuscript.animated_collection import (
-    AnimatedList,
-    Var,
-    NullDrawable,
+    AnimatedCollection,
 )
+from visuscript.primatives import TransformMixin
 from visuscript.organizer import BinaryTreeOrganizer
 from visuscript import connector
-from typing import Sequence, Optional, Iterable
+from typing import Sequence, Optional, Generic, TypeVar, Self, Literal
 import random
+import operator as op
 
 
 RADIUS = 8
@@ -30,17 +31,17 @@ def main():
         ),
     )
 
-    tree = AnimatedBinaryTreeArray(
-        [Var(None) for _ in range(NUM_NODES)],
+    tree = AnimatedBinarySearchTree(
+        num_levels=int(math.log2(NUM_NODES + 1)),
         radius=RADIUS,
-        transform=Transform([0, -75]),
-    )
+    ).set_transform(UP * 75)
 
     s << tree.collection_drawable
 
     operation_text = (
-        Text("").set_anchor(Anchor.TOP_RIGHT).translate(*s.ushape.top_right + [-10, 10])
+        Text("").set_anchor(Anchor.TOP_RIGHT).translate(s.ushape.top_right + [-10, 10])
     )
+
     s << operation_text
 
     flash_text = lambda text, other_animation: AnimationSequence(
@@ -51,38 +52,34 @@ def main():
     )
 
     random.seed(316)
-    vars = list(map(Var, range(1, 65)))
-    random.shuffle(vars)
-    vars = vars[:31]
-    vars = insertion_order(vars)
+    nums = list(range(1, 65))
+    random.shuffle(nums)
+    nums = nums[:NUM_NODES]
+    nums = insertion_order(nums)
 
-    for speed, var in zip([1, 1, 1, 1, 2, 3, 6] + [20] * len(vars), vars):
-        s.player << flash_text(
-            f"insert({var.value})", animate_insert(var, tree)
-        ).set_speed(speed)
+    for speed, num in zip([1, 1, 1, 1, 2, 3, 6] + [20] * len(nums), nums):
+        s.player << flash_text(f"insert({num})", tree.insert(num)).set_speed(speed)
 
-    find_vars = map(Var, [23, 41])
-    for var in find_vars:
-        s.player << flash_text(f"find({var.value})", animate_find(var, tree))
+    for num in [23, 41]:
+        s.player << flash_text(f"find({num})", tree.find(num))
 
-    remove_vars = list(map(Var, [12, 11, 43, 46, 40]))
     FIND = False
     NO_FIND = True
-    for find, var in zip(
-        [FIND, FIND, FIND, FIND, FIND] + [NO_FIND] * len(remove_vars), remove_vars
+    for find, num in zip(
+        [FIND, FIND] + [NO_FIND] * NUM_NODES, [12, 11, 43, 46, 40, 39]
     ):
         s.player << flash_text(
-            f"remove({var.value})",
+            f"remove({num})",
             AnimationSequence(
-                animate_find(var, tree) if find == FIND else None,
-                animate_remove(var, tree),
+                tree.find(num).set_speed(2) if find == FIND else None,
+                tree.remove(num),
             ),
         )
 
 
-def to_balanced_tree(sequence: Sequence):
+def to_balanced_tree(sequence: Sequence[int]) -> Sequence[int]:
     sequence = sorted(sequence)
-    new_sequence = [None] * len(sequence)
+    new_sequence: list[None | int] = [None] * len(sequence)
 
     worklist = [(0, len(sequence), 0)]
     while worklist:
@@ -96,10 +93,13 @@ def to_balanced_tree(sequence: Sequence):
 
         worklist.extend([(low, mid, (idx + 1) * 2 - 1), (mid + 1, high, (idx + 1) * 2)])
 
-    return new_sequence
+    for s in new_sequence:
+        if s is None:
+            raise RuntimeError("Should not happen")
+    return new_sequence  # type: ignore
 
 
-def insertion_order(sequence: Sequence):
+def insertion_order(sequence: Sequence[int]) -> Sequence[int]:
     sequence = to_balanced_tree(sequence)
     new_sequence = []
 
@@ -118,489 +118,635 @@ def insertion_order(sequence: Sequence):
     return new_sequence
 
 
-def insert(var: Var, tree: "AnimatedBinaryTreeArray") -> Var:
-    node = tree.root
-    while node and not node.is_none:
-        if var <= node:
-            node = tree.get_left(node)
+_T = TypeVar("_T")
+
+
+class BTNode(Generic[_T]):
+    def __init__(self, tree: "AnimatedBinaryTree", value: _T):
+        self.value = value
+        self._children: list[Optional["BTNode[_T]"]] = [None, None]
+        self._parent: Optional["BTNode[_T]"] = None
+        self._tree = tree
+
+    def __getitem__(self, index: int) -> Optional["BTNode[_T]"]:
+        return self._children[index] if index in range(len(self._children)) else None
+
+    def __setitem__(self, index: int, value: Optional["BTNode[_T]"]):
+        if index not in range(len(self._children)):
+            raise IndexError("Index out of range")
+        if value is not None and self._tree is not value._tree:
+            raise ValueError("Cannot set a node from a different tree as a child")
+        if value and self.has_ancestor(value):
+            raise ValueError("Cannot set a node as a child of one of its descendants")
+
+        old_child = self._children[index]
+        if old_child is not None:
+            old_child._parent = None
+
+        self._children[index] = value
+        if value is not None:
+            if value._parent is not None:
+                value[value.index(self)] = None
+            value._parent = self
+
+    def swap(self, other: "BTNode[_T]"):
+        if self._tree != other._tree:
+            raise ValueError("Cannot swap nodes from different trees")
+        if not self.connected_to_root or not other.connected_to_root:
+            raise ValueError("Both nodes must be connected to the root")
+        if self is other:
+            raise ValueError("Cannot swap a node with itself")
+
+        if self._tree.root is self:
+            self._tree.root = other
+        elif self._tree.root is other:
+            self._tree.root = self
+
+        self._parent, other._parent
+        if self._parent:
+            self._parent._children[self._parent.index(self)] = other
+        if other._parent:
+            other._parent._children[other._parent.index(other)] = self
+        self._parent, other._parent = other._parent, self._parent
+
+        for child in filter(None, self._children):
+            child._parent = other
+        for child in filter(None, other._children):
+            child._parent = self
+
+        self._children, other._children = other._children, self._children
+
+    def index(self, child: "BTNode[_T]") -> int:
+        """The index of a child node"""
+        if self.left is child:
+            return 0
+        elif self.right is child:
+            return 1
         else:
-            node = tree.get_right(node)
-
-    if node is None:
-        assert False, "Tree not big enough"
-
-    tree[tree.var_index(node)] = var
-
-    return var
-
-
-def compare(
-    operator: str,
-    drawable1: Pivot | Circle,
-    drawable2: Pivot | Circle,
-    is_true: bool,
-):
-    if is_true:
-        color = "green"
-        text = "✓"
-    else:
-        color = "red"
-        text = "X"
-
-    cmp_text = (
-        Text(f"{operator}", font_size=drawable2.ushape.height)
-        .set_anchor(Anchor.RIGHT)
-        .set_fill(color)
-        .translate(*(drawable2.ushape.left * 1.5))
-        .add_child(
-            question_mark := Text(text, font_size=drawable2.ushape.height / 2)
-            .set_anchor(Anchor.BOTTOM)
-            .set_fill(color)
-        )
-    ).set_opacity(0.0)
-    question_mark.translate(cmp_text.ushape.top * 1.25)
-
-    drawable2.add_child(cmp_text)
-
-    # sequence = AnimationSequence()
-
-    # sequence << AnimationBundle(
-    #     TranslationAnimation(
-    #         drawable2.transform,
-    #         drawable1.tshape.right
-    #         + (drawable2.ushape.right - drawable2.ushape.left) / 1.25,
-    #     ),
-    #     ScaleAnimation(drawable2.transform, 0.5),
-    # )
-
-    # sequence << AnimationBundle(
-    #     fade_in(cmp_text),
-    # )
-
-    # sequence << NoAnimation()
-
-    # sequence << RunFunction(lambda: drawable2.remove_child(cmp_text))
-
-    return AnimationSequence(
-        AnimationBundle(
-            TranslationAnimation(
-                drawable2.transform,
-                drawable1.tshape.right
-                + (drawable2.ushape.right - drawable2.ushape.left) / 1.25,
-            ),
-            ScaleAnimation(drawable2.transform, 0.5),
-        ),
-        fade_in(cmp_text),
-        NoAnimation(),
-        RunFunction(lambda: drawable2.remove_child(cmp_text)),
-    )
-
-
-def animate_insert(var: Var, tree: "AnimatedBinaryTreeArray"):
-    insert(var, tree)
-
-    sequence = AnimationSequence()
-
-    drawable = tree.drawable_for(var)
-
-    drawable.set_transform(Transform([0, -150], scale=0))
-
-    parent = None
-    node = tree.root
-    while node is not var:
-        parent = node
-        sequence << compare("<", tree.drawable_for(node), drawable, node < var)
-
-        if node < var:
-            node = tree.get_right(node)
-        else:
-            node = tree.get_left(node)
-        assert node is not None
-
-    if parent is not None:
-        sequence << tree.edges.connect(
-            tree.drawable_for(parent), tree.drawable_for(var)
-        )
-
-    sequence << tree.organize()
-    return sequence
-
-
-def magnifying_glass(radius=2 * RADIUS, length=2 * RADIUS):
-    unit = Vec2(np.cos(np.pi * 3 / 8), np.sin(np.pi * 3 / 8))
-
-    start = radius * unit
-    end = (radius + length) * unit
-
-    return (
-        Circle(radius=radius)
-        .add_child(Drawing(path=Path().M(*start).L(*end)))
-        .set_fill(Color("white", opacity=0.0125))
-    )
-
-
-def find(var: Var, tree: "AnimatedBinaryTreeArray"):
-    node = tree.root
-    while node != var and node is not None and not node.is_none:
-        if var <= node:
-            node = tree.get_left(node)
-        else:
-            node = tree.get_right(node)
-    return node
-
-
-def animate_find(var: Var, tree: "AnimatedBinaryTreeArray", font_size=16):
-    sequence = AnimationSequence()
-
-    parent = None
-    node = tree.root
-
-    glass = (
-        magnifying_glass()
-        .set_transform(tree.drawable_for(node).transform)
-        .set_opacity(0.0)
-    )
-
-    found_text = f"{var.value} ="
-    not_found_text = f"{var.value} ≠"
-    go_right_text = f"< {var.value} →"
-    go_left_text = f"< {var.value} ←"
-    glass.add_children(
-        check := Text(not_found_text)
-        .set_fill(Color("red", 0.0))
-        .set_anchor(Anchor.RIGHT)
-        .translate(*glass.ushape.left + font_size * LEFT / 2),
-        comparison := Pivot()
-        .set_opacity(0.0)
-        .add_children(
-            less_than := Text("", font_size=font_size)
-            .set_anchor(Anchor.LEFT)
-            .translate(*glass.ushape.right + font_size * RIGHT / 2),
-            less_than_check := Text("", font_size=font_size / 2)
-            .set_anchor(Anchor.LEFT)
-            .translate(
-                *glass.ushape.right + UP * font_size / 2 + font_size * RIGHT / 2
-            ),
-        ),
-        center_cross := Text("X", font_size=glass.ushape.height)
-        .set_opacity(0.0)
-        .set_fill("red"),
-    )
-
-    tree.add_auxiliary_drawable(glass)
-    sequence << fade_in(glass)
-
-    while True:
-        if node == var:
-            sequence << RunFunction(lambda: check.set_text(found_text))
-            sequence << RunFunction(lambda: check.set_fill(Color("green", 0.0)))
-            sequence << OpacityAnimation(check.fill, 1.0)
-            break
-        else:
-            sequence << OpacityAnimation(check.fill, 1.0)
-
-        parent = node
-        if node < var:
-            node = tree.get_right(node)
-            sequence << AnimationBundle(
-                RunFunction(lambda: less_than_check.set_fill("green")),
-                RunFunction(lambda: less_than_check.set_text("✓")),
-                RunFunction(lambda: less_than.set_fill("green")),
-                RunFunction(lambda: less_than.set_text(go_right_text)),
-                OpacityAnimation(comparison, 1.0),
-            )
-        else:
-            node = tree.get_left(node)
-            sequence << AnimationBundle(
-                RunFunction(lambda: less_than_check.set_fill("red")),
-                RunFunction(lambda: less_than_check.set_text("X")),
-                RunFunction(lambda: less_than.set_fill("red")),
-                RunFunction(lambda: less_than.set_text(go_left_text)),
-                OpacityAnimation(comparison, 1.0),
-            )
-
-        if node is None and parent:
-            sequence << AnimationBundle(
-                TranslationAnimation(
-                    glass.transform,
-                    tree.target_for(parent).translation + DOWN * 3 * RADIUS,
-                ),
-                OpacityAnimation(check.fill, 0.0),
-                OpacityAnimation(comparison, 0.0),
-            )
-        elif node is not None:
-            sequence << AnimationBundle(
-                TransformAnimation(glass.transform, tree.drawable_for(node).transform),
-                OpacityAnimation(check.fill, 0.0),
-                OpacityAnimation(comparison, 0.0),
-            )
-
-        if node is None or node.is_none:
-            break
-
-    if node is None or node.is_none:
-        sequence << OpacityAnimation(center_cross, 1.0)
-
-    sequence << fade_out(glass)
-    sequence << RunFunction(lambda: tree.remove_auxiliary_drawable(glass))
-    return sequence
-
-
-def animate_remove(
-    var: Var, tree: "AnimatedBinaryTreeArray", sequence: AnimationSequence | None = None
-):
-    assert var in tree
-
-    sequence = sequence or AnimationSequence()
-
-    removal_node = tree.root
-    while removal_node != var:
-        if removal_node < var:
-            removal_node = tree.get_right(removal_node)
-        else:
-            removal_node = tree.get_left(removal_node)
-        assert removal_node is not None
-
-    removal_drawable = tree.drawable_for(removal_node)
-    tree.add_auxiliary_drawable(removal_drawable)
-
-    assert not isinstance(removal_drawable, NullDrawable)
-
-    sequence << AnimationBundle(
-        RgbAnimation(removal_drawable.stroke, "red"),
-    )
-
-    if len(tree.get_children(removal_node)) == 2:
-        swap_node = tree.get_left(removal_node)
-        assert swap_node is not None
-        sequence << RgbAnimation(tree.drawable_for(swap_node).stroke, "blue")
-        parent = swap_node
-
-        while swap_node is not None and tree.has_right(swap_node):
-            parent = swap_node
-            swap_node = tree.get_right(swap_node)
-            assert swap_node is not None
-            sequence << AnimationBundle(
-                RgbAnimation(tree.drawable_for(parent).stroke, "off_white"),
-                RgbAnimation(tree.drawable_for(swap_node).stroke, "blue"),
-            )
-
-        removal_parent = tree.get_parent(removal_node)
-        sequence << AnimationBundle(
-            tree.edges.disconnect(
-                tree.drawable_for(removal_node),
-                tree.drawable_for(tree.get_left(removal_node)),
-            ),
-            tree.edges.disconnect(
-                tree.drawable_for(removal_node),
-                tree.drawable_for(tree.get_right(removal_node)),
-            ),
-            tree.edges.disconnect(
-                tree.drawable_for(removal_parent), tree.drawable_for(removal_node)
-            )
-            if removal_parent
-            else None,
-            tree.edges.disconnect(
-                tree.drawable_for(swap_node),
-                tree.drawable_for(tree.get_parent(swap_node)),
-            ),
-        )
-        sequence << AnimationBundle(
-            RgbAnimation(tree.drawable_for(parent).stroke, "off_white"),
-            tree.edges.connect(
-                tree.drawable_for(swap_node),
-                tree.drawable_for(tree.get_left(removal_node)),
-            ),
-            tree.edges.connect(
-                tree.drawable_for(swap_node),
-                tree.drawable_for(tree.get_right(removal_node)),
-            ),
-            tree.edges.connect(
-                tree.drawable_for(removal_parent), tree.drawable_for(swap_node)
-            )
-            if removal_parent
-            else None,
-            tree.qswap(removal_node, swap_node),
-        )
-
-        sequence << RgbAnimation(tree.drawable_for(swap_node).stroke, "off_white")
-
-    elif tree.get_parent(removal_node):
-        sequence << AnimationBundle(
-            tree.edges.disconnect(
-                tree.drawable_for(tree.get_parent(removal_node)),
-                tree.drawable_for(removal_node),
-            ),
-            tree.edges.connect(
-                tree.drawable_for(tree.get_parent(removal_node)),
-                tree.drawable_for(tree.get_left(removal_node)),
-            )
-            if tree.get_left(removal_node)
-            else None,
-            tree.edges.connect(
-                tree.drawable_for(tree.get_parent(removal_node)),
-                tree.drawable_for(tree.get_right(removal_node)),
-            )
-            if tree.get_right(removal_node)
-            else None,
-        )
-
-    ## Reorganize tree if needed
-
-    if (
-        tree.is_root(removal_node)
-        or tree.get_left(tree.get_parent(removal_node)) is removal_node
-    ):
-        removal_node_is_right_child = False
-    else:
-        removal_node_is_right_child = True
-
-    removal_node_parent = tree.get_parent(removal_node)
-
-    # Unprocessed node, new index
-    move_queue = [
-        (tree.get_left(removal_node), removal_node_parent, removal_node_is_right_child),
-        (
-            tree.get_right(removal_node),
-            removal_node_parent,
-            removal_node_is_right_child,
-        ),
-    ]
-
-    tree[tree.var_index(removal_node)] = Var(None)
-
-    while move_queue:
-        node, parent, is_right_child = move_queue.pop(0)
-
-        if node is not None and not node.is_none:
-            move_queue.extend(
-                [(tree.get_left(node), node, False), (tree.get_right(node), node, True)]
-            )
-
-        if parent is None or parent.is_none:
-            old_index = tree.var_index(node)
-            tree.qswap(0, node)
-            tree[old_index] = Var(None)
-            continue
-
-        if node is None or node.is_none:
-            continue
-
-        old_index = tree.var_index(node)
-        if is_right_child:
-            tree.qswap(tree.get_right(parent), node)
-        else:
-            tree.qswap(tree.get_left(parent), node)
-
-        tree[old_index] = Var(None)
-
-    sequence << AnimationBundle(tree.organize(), fade_out(removal_drawable))
-    sequence << RunFunction(lambda: tree.remove_auxiliary_drawable(removal_drawable))
-    return sequence
-
-
-class AnimatedBinaryTreeArray(AnimatedList[Var, NullDrawable | Circle]):
-    def __init__(
-        self,
-        variables: Iterable[Var],
-        *,
-        radius: float,
-        level_heights: float | None = None,
-        node_width: float | None = None,
-        transform: Transform.TransformLike | None = None,
-    ):
-        self._radius = radius
-        self.level_heights = level_heights or 3 * radius
-        self.node_width = node_width or 3 * radius
-
-        self._edges = connector.Edges()
-        self.add_auxiliary_drawable(self._edges)
-        super().__init__(variables, transform=transform)
+            raise ValueError(f"{child} is not a child of {self}")
 
     @property
-    def edges(self) -> connector.Edges:
-        return self._edges
+    def connected_to_root(self) -> bool:
+        node = self
+        while node._parent is not None:
+            node = node._parent
+        return node is self._tree.root
 
-    def get_organizer(self):
-        num_levels = int(np.log2(len(self))) + 1
-        return BinaryTreeOrganizer(
-            num_levels=num_levels,
-            level_heights=self.level_heights,
-            node_width=self.node_width,
-        )
-
-    def new_drawable_for(self, var: Var) -> Circle | NullDrawable:
-        if var.is_none:
-            return NullDrawable()
-        n = Circle(radius=self._radius).add_child(
-            Text(str(var.value), font_size=self._radius)
-        )
-        return n
-
-    def get_parent_index(self, var: int | Var):
-        if isinstance(var, int):
-            var = self[var]
-        return int((self.var_index(var) + 1) // 2) - 1
-
-    def get_left_index(self, var: int | Var):
-        if isinstance(var, int):
-            var = self[var]
-        return int((self.var_index(var) + 1) * 2) - 1
-
-    def get_right_index(self, var: int | Var):
-        return self.get_left_index(var) + 1
+    def has_ancestor(self, other: "BTNode[_T]") -> bool:
+        node = self
+        while node is not None:
+            if node is other:
+                return True
+            node = node._parent
+        return False
 
     @property
-    def root(self) -> Var:
+    def children(self):
+        return list(self._children)
+
+    @property
+    def left(self) -> Optional["BTNode[_T]"]:
         return self[0]
 
-    def get_parent(self, var: Var) -> Optional[Var]:
-        idx = self.get_parent_index(var)
+    @left.setter
+    def left(self, other: Optional["BTNode[_T]"]):
+        self[0] = other
 
-        if idx < 0:
-            return None
+    @property
+    def right(self) -> Optional["BTNode[_T]"]:
+        return self[1]
 
-        return self[idx]
+    @right.setter
+    def right(self, other: Optional["BTNode[_T]"]):
+        self[1] = other
 
-    def get_left(self, var: Var) -> Optional[Var]:
-        idx = self.get_left_index(var)
+    @property
+    def parent(self) -> Optional["BTNode[_T]"]:
+        return self._parent
 
-        if idx >= len(self):
-            return None
+    def detach_from_parent(self) -> Self:
+        if self._parent is not None:
+            self._parent[self._parent.index(self)] = None
+        return self
 
-        return self[idx]
+    def set_left(self, other: Optional["BTNode[_T]"]) -> Self:
+        self.left = other
+        return self
 
-    def get_right(self, var: Var) -> Optional[Var]:
-        idx = self.get_right_index(var)
+    def set_right(self, other: Optional["BTNode[_T]"]) -> Self:
+        self.right = other
+        return self
 
-        if idx >= len(self):
-            return None
+    def __str__(self) -> str:
+        return f"BTNode({self.value})"
 
-        return self[idx]
+    def __repr__(self) -> str:
+        return str(self)
 
-    def has_left(self, var: Var) -> bool:
-        maybe_left = self.get_left(var)
-        return maybe_left is not None and not maybe_left.is_none
 
-    def has_right(self, var: Var) -> bool:
-        maybe_right = self.get_right(var)
-        return maybe_right is not None and not maybe_right.is_none
+class BTDrawable(Circle, Generic[_T]):
+    def __init__(self, node: BTNode[_T], radius: float = RADIUS):
+        super().__init__(radius=radius)
+        self._node = node
+        self.add_child(Text(str(node.value), font_size=radius))
 
-    def is_root(self, var: Var) -> bool:
-        return self.root is var
+    def __str__(self) -> str:
+        return f"BTDrawable({self._node.value})"
 
-    def is_child(self, var: Var) -> bool:
-        return self.get_parent(var) is not None
+    def __repr__(self) -> str:
+        return str(self)
 
-    def is_leaf(self, var: Var) -> bool:
-        return self.get_left(var) is None and self.get_right(var) is None
 
-    def get_children(self, var: Var) -> list[Var]:
-        children: list[Var] = []
-        for maybe_child in (self.get_left(var), self.get_right(var)):
-            if maybe_child is not None and not maybe_child.is_none:
-                children.append(maybe_child)
-        return children
+class AnimatedBinaryTree(AnimatedCollection[BTNode[_T], BTDrawable], TransformMixin):
+    def __init__(
+        self,
+        *,
+        num_levels: int,
+        radius: int,
+        level_heights: float | None = None,
+        node_width: float | None = None,
+    ):
+        self._radius = radius
+        self._level_heights = level_heights or 3 * radius
+        self._node_width = node_width or 3 * radius
+
+        self._root = None
+
+        self._drawable_map: dict[BTNode[_T], BTDrawable[_T]] = {}
+
+        self._organizer = BinaryTreeOrganizer(
+            num_levels=num_levels,
+            level_heights=self._level_heights,
+            node_width=self._node_width,
+        )
+        self._edges = connector.Edges()
+
+        super().__init__()
+
+        self.add_auxiliary_drawable(self._edges)
+
+    def connect(
+        self,
+        a: BTNode[_T],
+        b: BTNode[_T],
+        *,
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
+    ):
+        return self._edges.connect(
+            self.drawable_for(a), self.drawable_for(b), duration=duration
+        )
+
+    def disconnect(
+        self,
+        a: BTNode[_T],
+        b: BTNode[_T],
+        *,
+        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
+    ):
+        return self._edges.disconnect(
+            self.drawable_for(a), self.drawable_for(b), duration=duration
+        )
+
+    def connected(
+        self,
+        a: BTNode[_T],
+        b: BTNode[_T],
+    ) -> bool:
+        return self._edges.connected(self.drawable_for(a), self.drawable_for(b))
+
+    def connect_all(self) -> Animation:
+        connections: set[tuple[BTDrawable, BTDrawable]] = set()
+        worklist = [self.root] if self.root else []
+        while worklist:
+            node = worklist.pop(0)
+            if node.left:
+                connections.add((self.drawable_for(node), self.drawable_for(node.left)))
+                worklist.append(node.left)
+            if node.right:
+                connections.add(
+                    (self.drawable_for(node), self.drawable_for(node.right))
+                )
+                worklist.append(node.right)
+        return self._edges.connect_by_rule(
+            lambda a, b: (a, b) in connections or (b, a) in connections,
+            self.node_drawables,
+        )
+
+    def disconnect_all(self):
+        return self._edges.connect_by_rule(lambda a, b: False, self.node_drawables)
+
+    @property
+    def root(self) -> Optional[BTNode[_T]]:
+        return self._root
+
+    @root.setter
+    def root(self, value: Optional[BTNode[_T]]):
+        self._root = value
+
+    def Node(self, value: _T) -> BTNode[_T]:
+        """Create a new node in the tree with the given value.
+        Its drawable can be accessed with `drawable_for`."""
+        node = BTNode(self, value)
+        self.set_drawable_for(
+            node,
+            BTDrawable(node, radius=self._radius).translate(self.transform.translation),
+        )
+        return node
+
+    def delete_node(self, node: BTNode[_T]) -> BTDrawable[_T]:
+        """Removes a node from this Tree,
+        setting its children's parents to None and its parent's child pointer to None.
+        The drawable for this node is removed from this :class:`AnimatedCollection`'s
+        display and is returned"""
+
+        for i in range(len(node.children)):
+            if node[i]:
+                node[i] = None
+
+        if node.parent:
+            node.parent[node.parent.index(node)] = None
+
+        drawable = self._drawable_map[node]
+        del self._drawable_map[node]
+        return drawable
+
+    def set_transform(self, transform: Transform.TransformLike) -> Self:
+        super().set_transform(transform)
+        self._organizer.set_transform(transform)
+        return self
+
+    def drawable_for(self, node: BTNode[_T]) -> BTDrawable[_T]:
+        if node not in self._drawable_map:
+            raise ValueError(f"{node} not in tree")
+        return self._drawable_map[node]
+
+    def set_drawable_for(self, node: BTNode[_T], drawable: BTDrawable[_T]):
+        self._drawable_map[node] = drawable
+
+    def target_for(self, node: BTNode[_T]) -> Transform:
+        index = self._index_of(node)
+        return self._organizer[index]
+
+    def __iter__(self):
+        """Level-order traversal of the binary tree."""
+        worklist = [self.root] if self.root else []
+        while worklist:
+            node = worklist.pop(0)
+            yield node
+            if node.left:
+                worklist.append(node.left)
+            if node.right:
+                worklist.append(node.right)
+
+    def _index_of(self, node: BTNode[_T]) -> int:
+        """The organizer index for a node in the tree"""
+        worklist = [(self.root, 0)] if self.root else []
+        while worklist:
+            node_, index = worklist.pop(0)
+            if node_ is node:
+                return index
+            if node_.left:
+                worklist.append((node_.left, (index + 1) * 2 - 1))
+            if node_.right:
+                worklist.append((node_.right, (index + 1) * 2))
+        raise ValueError(f"{node} not in tree")
+
+    @property
+    def node_drawables(self):
+        return list(self._drawable_map.values())
+
+    @property
+    def all_drawables(self):
+        yield from self.auxiliary_drawables
+        yield from self.node_drawables
+
+
+class AnimatedBinarySearchTree(AnimatedBinaryTree[int]):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def insert(self, value: int) -> Animation:
+        new_node = self.Node(value)
+        new_node_drawable = self.drawable_for(new_node).set_opacity(0.0)
+        if self.root is None:
+            self.root = new_node
+            return AnimationBundle(
+                OpacityAnimation(new_node_drawable, 1.0),
+                TransformAnimation(
+                    new_node_drawable.transform, self.target_for(new_node)
+                ),
+            )
+        current = self.root
+        path = [current]
+        while True:
+            if value < current.value:
+                if current.left is None:
+                    current.left = new_node
+                    break
+                current = current.left
+            else:
+                if current.right is None:
+                    current.right = new_node
+                    break
+                current = current.right
+            path.append(current)
+
+        return AnimationSequence(
+            OpacityAnimation(
+                new_node_drawable.translate(
+                    self.transform.translation + UP * self._radius * 3
+                ),
+                1.0,
+            ),
+            *map(lambda n: self._compare("<", new_node, n), path),
+            AnimationBundle(
+                self.connect(current, new_node),
+                TransformAnimation(
+                    new_node_drawable.transform, self.target_for(new_node)
+                ),
+            ),
+        )
+
+    def find(self, value: int) -> Animation:
+        SMALL = 0
+        EQUAL = 1
+        LARGE = 2
+        current = self.root
+        path: list[tuple[BTNode[int], int]] = []
+        while current:
+            if value == current.value:
+                path.append((current, EQUAL))
+                break
+            elif value < current.value:
+                path.append((current, SMALL))
+                current = current.left
+            else:
+                path.append((current, LARGE))
+                current = current.right
+
+        FOUND = current is not None
+
+        magnifying_glass = (
+            self._magnifying_glass()
+            .set_opacity(0.0)
+            .translate(
+                self.transform.translation
+                + UP * self._radius * 2
+                + RIGHT * self._radius
+            )
+        )
+
+        self.add_auxiliary_drawable(magnifying_glass)
+
+        def small():
+            arrow = Text("← too big", font_size=self._radius).set_opacity(0.0)
+            return AnimationSequence(
+                RunFunction(
+                    magnifying_glass.add_child,
+                    lambda p: arrow.set_anchor(Anchor.TOP).translate(
+                        p.ushape.bottom * 1.25 + RIGHT * self._radius
+                    ),
+                ),
+                AnimationBundle(
+                    AnimationSequence(
+                        OpacityAnimation(arrow, 1.0, duration=0.5),
+                        OpacityAnimation(arrow, 0.0, duration=0.5),
+                    ),
+                    TranslationAnimation(
+                        arrow.transform,
+                        arrow.lazy.transform.translation + LEFT * self._radius * 2,
+                    ),
+                ),
+                RunFunction(magnifying_glass.remove_child, arrow),
+            )
+
+        def large():
+            arrow = Text("too small →", font_size=self._radius).set_opacity(0.0)
+            return AnimationSequence(
+                RunFunction(
+                    magnifying_glass.add_child,
+                    lambda p: arrow.set_anchor(Anchor.TOP).translate(
+                        p.ushape.bottom * 1.25 + LEFT * self._radius
+                    ),
+                ),
+                AnimationBundle(
+                    AnimationSequence(
+                        OpacityAnimation(arrow, 1.0, duration=0.5),
+                        OpacityAnimation(arrow, 0.0, duration=0.5),
+                    ),
+                    TranslationAnimation(
+                        arrow.transform,
+                        arrow.lazy.transform.translation + RIGHT * self._radius * 2,
+                    ),
+                ),
+                RunFunction(magnifying_glass.remove_child, arrow),
+            )
+
+        def equal(n: BTNode[int]):
+            check = Text("✓", font_size=self._radius).set_opacity(0.0)
+            return AnimationSequence(
+                RunFunction(
+                    magnifying_glass.add_child,
+                    lambda p: check.set_anchor(Anchor.TOP).translate(
+                        p.ushape.bottom * 1.25
+                    ),
+                ),
+                AnimationBundle(
+                    flash(self.drawable_for(n).stroke, "green"),
+                    AnimationSequence(
+                        OpacityAnimation(check, 1.0, duration=0.5),
+                        OpacityAnimation(check, 0.0, duration=0.5),
+                    ),
+                ),
+                RunFunction(magnifying_glass.remove_child, check),
+            )
+
+        return AnimationSequence(
+            AnimationBundle(OpacityAnimation(magnifying_glass, 1.0)),
+            *map(
+                lambda n: AnimationSequence(
+                    TransformAnimation(
+                        magnifying_glass.transform, self.drawable_for(n[0]).transform
+                    ),
+                    small() if n[1] == SMALL else None,
+                    equal(n[0]) if n[1] == EQUAL else None,
+                    large() if n[1] == LARGE else None,
+                ),
+                path,
+            ),
+            AnimationSequence(
+                TranslationAnimation(
+                    magnifying_glass.transform,
+                    magnifying_glass.lazy.transform.translation
+                    + DOWN * self._radius * 3,
+                ),
+                RgbAnimation(magnifying_glass.stroke, "red", duration=0.5),
+            )
+            if not FOUND
+            else None,
+            OpacityAnimation(magnifying_glass, 0.0),
+            RunFunction(self.remove_auxiliary_drawable, magnifying_glass),
+        )
+
+    def remove(self, value: int) -> Animation:
+        sequence = AnimationSequence()
+
+        node = self.root
+        find_path = []
+        while node:
+            if value == node.value:
+                break
+            elif value < node.value:
+                find_path.append(node)
+                node = node.left
+            else:
+                find_path.append(node)
+                node = node.right
+        if node is None:
+            raise ValueError(f"Value {value} not found in tree")
+
+        sequence.push(RgbAnimation(self.drawable_for(node).stroke, "red"))
+
+        swap_path: list[BTNode[int]] = []
+        if node.left and node.right:
+            successor = node.left
+            swap_path.append(successor)
+            while successor.right:
+                successor = successor.right
+                swap_path.append(successor)
+
+            sequence.push(
+                [
+                    RgbAnimation(self.drawable_for(swap_path[0]).stroke, "blue"),
+                    *map(
+                        lambda n: AnimationBundle(
+                            RgbAnimation(self.drawable_for(n[0]).stroke, "off_white"),
+                            RgbAnimation(self.drawable_for(n[1]).stroke, "blue"),
+                        ),
+                        zip(swap_path, swap_path[1:]),
+                    ),
+                    self.swap(node, swap_path[-1]),
+                    RgbAnimation(self.drawable_for(swap_path[-1]).stroke, "off_white"),
+                ]
+            )
+
+        child = node.left or node.right
+
+        if child:
+            sequence.push(
+                [
+                    AnimationSequence(
+                        RgbAnimation(self.drawable_for(child).stroke, "blue"),
+                        self.swap(node, child),
+                        RgbAnimation(self.drawable_for(child).stroke, "off_white"),
+                    )
+                ]
+            )
+
+        disconnect_animation = (
+            self.disconnect(node.parent, node)
+            if node.parent and self.connected(node.parent, node)
+            else None
+        )
+        node_d = self.delete_node(node)
+        self.add_auxiliary_drawable(node_d)
+
+        return sequence.push(
+            [
+                AnimationBundle(
+                    OpacityAnimation(node_d, 0.0),
+                    disconnect_animation,
+                ),
+                RunFunction(self.remove_auxiliary_drawable, node_d),
+            ]
+        )
+
+    def swap(self, node1: BTNode[int], node2: BTNode[int]):
+        if node1 is node2:
+            raise ValueError("Cannot swap a node with itself")
+        if not node1.connected_to_root or not node2.connected_to_root:
+            raise ValueError("Both nodes must be connected to the root")
+
+        node1.swap(node2)
+
+        return AnimationBundle(
+            LazyAnimation(
+                lambda node1=self.drawable_for(node1),
+                node2=self.drawable_for(node2): quadratic_swap(
+                    node1, node2, height_multiplier=1.5
+                )
+            ),
+            self.connect_all(),
+        )
+
+    def _compare(
+        self,
+        operator: Literal["<", ">", "="],
+        node1: BTNode[int],
+        node2: BTNode[int],
+    ):
+        match operator:
+            case "<":
+                operator = "<"
+                op_func = op.lt
+            case ">":
+                operator = ">"
+                op_func = op.gt
+            case "=":
+                operator = "="
+                op_func = op.eq
+            case _:
+                raise ValueError(f"Invalid operator: {operator}")
+
+        if op_func(node1.value, node2.value):
+            color = "green"
+            text = "✓"
+        else:
+            color = "red"
+            text = "X"
+
+        drawable1, drawable2 = self.drawable_for(node1), self.drawable_for(node2)
+
+        cmp_text = (
+            Text(f"{operator}", font_size=drawable2.shape.height)
+            .set_anchor(Anchor.RIGHT)
+            .set_fill(color)
+            .translate(drawable2.shape.left + LEFT * 0.35 * drawable2.shape.width)
+            .add_child(
+                lambda p: Text(text, font_size=drawable2.ushape.height / 2)
+                .set_anchor(Anchor.BOTTOM)
+                .set_fill(color)
+                .translate(p.ushape.top * 1.25)
+            )
+        ).set_opacity(0.0)
+
+        self.add_auxiliary_drawable(cmp_text)
+
+        return AnimationSequence(
+            AnimationBundle(
+                TranslationAnimation(
+                    drawable1.transform,
+                    drawable2.shape.left + LEFT * (drawable1.shape.width) * 1.5,
+                ),
+                ScaleAnimation(drawable1.transform, 0.75),
+            ),
+            fade_in(cmp_text),
+            NoAnimation(),
+            RunFunction(lambda: self.remove_auxiliary_drawable(cmp_text)),
+        )
+
+    @staticmethod
+    def _magnifying_glass(radius=2 * RADIUS, length=2 * RADIUS):
+        unit = Vec2(math.cos(math.pi * 3 / 8), math.sin(math.pi * 3 / 8))
+
+        start = radius * unit
+        end = (radius + length) * unit
+
+        return (
+            Circle(radius=radius)
+            .add_child(Drawing(path=Path().M(*start).L(*end)))
+            .set_fill(Color("white", opacity=0.0125))
+        )
 
 
 if __name__ == "__main__":
