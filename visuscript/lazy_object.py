@@ -31,6 +31,48 @@ class LazyObject:
             _calls=self._calls,
         )
 
+    def __add__(self, other: Any) -> "LazyObject":
+        return self.__getattr__("__add__")(other)
+
+    def __radd__(self, other: Any) -> "LazyObject":
+        return self.__getattr__("__radd__")(other)
+
+    def __sub__(self, other: Any) -> "LazyObject":
+        return self.__getattr__("__sub__")(other)
+
+    def __rsub__(self, other: Any) -> "LazyObject":
+        return self.__getattr__("__rsub__")(other)
+
+    def __mul__(self, other: Any) -> "LazyObject":
+        return self.__getattr__("__mul__")(other)
+
+    def __rmul__(self, other: Any) -> "LazyObject":
+        return self.__getattr__("__rmul__")(other)
+
+    def __truediv__(self, other: Any) -> "LazyObject":
+        return self.__getattr__("__truediv__")(other)
+
+    def __rtruediv__(self, other: Any) -> "LazyObject":
+        return self.__getattr__("__rtruediv__")(other)
+
+    def __neg__(self) -> "LazyObject":
+        return self.__getattr__("__neg__")()
+
+    def __pos__(self) -> "LazyObject":
+        return self.__getattr__("__pos__")()
+
+    def __abs__(self) -> "LazyObject":
+        return self.__getattr__("__abs__")()
+
+    def __invert__(self) -> "LazyObject":
+        return self.__getattr__("__invert__")()
+
+    def __getitem__(self, key: Any) -> "LazyObject":
+        return self.__getattr__("__getitem__")(key)
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        raise NotImplementedError("LazyObject does not support item assignment.")
+
     def _lazy_call(self, obj: Any, index: int):
         args, kwargs = self._calls[index]
         return obj(*args, **kwargs)
