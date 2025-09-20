@@ -9,9 +9,12 @@ from typing import (
     Self,
     TypedDict,
     Unpack,
+    ParamSpec,
 )
 from abc import ABC, abstractmethod, ABCMeta
 import inspect
+from copy import deepcopy
+
 
 from visuscript.config import config
 from visuscript.config import *
@@ -22,7 +25,6 @@ from visuscript.updater import Updater
 from visuscript.lazy_object import evaluate_lazy
 
 from .easing import sin_easing2
-from copy import deepcopy
 
 
 class AnimationMetaClass(ABCMeta):
@@ -254,25 +256,29 @@ class NoAnimation(Animation):
         return False
 
 
-# TODO Add an optional parameter to specify what properties are locked by RunFunction
+P = ParamSpec("P")
+
+
 class RunFunction(Animation):
     """A RunFunction Animation runs only a single advance, during which it calls a function."""
 
-    def __init__(self, function: Callable[[], Any], consume_frame: bool = False):
+    def __init__(self, function: Callable[P, Any], *args: P.args, **kwargs: P.kwargs):
         super().__init__()
         self._function = function
         self._has_been_run = False
         self._locker = PropertyLocker()
-        self._consume_frame = consume_frame
+        self._args = args
+        self._kwargs = kwargs
 
-    def __init_locker__(self, function: Callable[[], Any], consume_frame: bool = False):  # type: ignore[reportIncompatibleMethodOverride]
+    def __init_locker__(
+        self, function: Callable[P, Any], *args: P.args, **kwargs: P.kwargs
+    ):  # type: ignore[reportIncompatibleMethodOverride]
         return PropertyLocker()
 
     def advance(self) -> bool:
         if not self._has_been_run:
-            self._function()
+            self._function(*self._args, **self._kwargs)
             self._has_been_run = True
-            return self._consume_frame
         return False
 
 

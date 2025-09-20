@@ -79,20 +79,6 @@ class TestRunFunction(VisuscriptTestCase):
         self.assertFalse(animation.advance())
         self.assertEqual(x.val, 1)
 
-    def test_consume_frame(self):
-        x = self.Incrementer()
-        animation = RunFunction(x.increment, consume_frame=True)
-        self.assertEqual(x.val, 0)
-
-        self.assertTrue(animation.advance())
-        self.assertEqual(x.val, 1)
-
-        self.assertFalse(animation.advance())
-        self.assertEqual(x.val, 1)
-
-        self.assertFalse(animation.advance())
-        self.assertEqual(x.val, 1)
-
 
 class TestAnimationSequence(VisuscriptTestCase):
     def test_sequence_duration(self):
