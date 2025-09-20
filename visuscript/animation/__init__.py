@@ -24,7 +24,7 @@ from .animation_store import (
     AnimationBundle,
 )
 
-from .utility_animations import fade_in, fade_out, flash
+from .utility_animations import fade_in, fade_out, flash, quadratic_swap
 
 from .easing import (
     linear_easing,
@@ -58,4 +58,5 @@ __all__ = [
     "quintic_easing",
     "sin_easing",
     "sin_easing2",
+    "quadratic_swap",
 ]

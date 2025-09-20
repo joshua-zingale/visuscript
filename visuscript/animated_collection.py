@@ -2,7 +2,6 @@
 
 from visuscript.animation import (
     NoAnimation,
-    PathAnimation,
     AnimationBundle,
     TransformAnimation,
     LazyAnimation,
@@ -10,9 +9,9 @@ from visuscript.animation import (
     OpacityAnimation,
     AnimationSequence,
     RunFunction,
+    quadratic_swap,
 )
 from visuscript.primatives import TransformMixin
-from visuscript.segment import Path
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
 from visuscript.drawable.text import Text
 from visuscript.organizer import Organizer, GridOrganizer
@@ -26,10 +25,8 @@ from visuscript.primatives.protocols import (
     HasOpacity,
     CanBeLazed,
 )
-from visuscript.math_utility import magnitude
 
 from abc import abstractmethod, ABC
-from visuscript.primatives import Vec2
 from typing import (
     Iterator,
     Iterable,
@@ -609,33 +606,14 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
 
         drawable_a, drawable_b = self._swap(a, b)
 
-        def get_quadratic_swap():
-            diff = drawable_b.transform.translation - drawable_a.transform.translation
-            distance = magnitude(diff)
-            direction = diff / distance
-            ortho = Vec2(-direction.y, direction.x)
-
-            mid = drawable_a.transform.translation + direction * distance / 2
-            lift = ortho * drawable_a.shape.circumscribed_radius * 2 * height_multiplier
-
-            return AnimationBundle(
-                PathAnimation(
-                    drawable_a.transform,
-                    Path()
-                    .M(*drawable_a.transform.translation)
-                    .Q(*(mid - lift), *drawable_b.transform.translation),
-                    duration=duration,
-                ),
-                PathAnimation(
-                    drawable_b.transform,
-                    Path()
-                    .M(*drawable_b.transform.translation)
-                    .Q(*(mid + lift), *drawable_a.transform.translation),
-                    duration=duration,
-                ),
+        return LazyAnimation(
+            lambda: quadratic_swap(
+                drawable_a,
+                drawable_b,
+                height_multiplier=height_multiplier,
+                duration=duration,
             )
-
-        return LazyAnimation(get_quadratic_swap)
+        )
 
 
 class AnimatedList(AnimatedMutableSequence[_T, _CollectionDrawable], TransformMixin):
