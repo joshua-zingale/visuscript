@@ -1,8 +1,7 @@
-from typing import Self, Union, TypeAlias, cast
+import typing as t
 
-
-from visuscript.constants import PALETTE
-from visuscript.primatives.primatives import Rgb
+from visuscript.primatives.primatives import PALETTE
+from visuscript.primatives import Rgb, InterpolableFloat
 from visuscript.lazy_object import Lazible
 
 
@@ -13,7 +12,7 @@ class RgbMixin:
         super().__init__()
         self._rgb: Rgb = PALETTE["off_white"]
 
-    def set_rgb(self, rgb: Rgb.RgbLike) -> Self:
+    def set_rgb(self, rgb: Rgb.RgbLike) -> t.Self:
         """Sets this object's :class:`~visuscript.Rgb`"""
         self.rgb = rgb
         return self
@@ -25,10 +24,7 @@ class RgbMixin:
 
     @rgb.setter
     def rgb(self, value: Rgb.RgbLike):
-        if isinstance(value, str):
-            self._rgb = PALETTE[value]
-        else:
-            self._rgb = Rgb(*value)
+            self._rgb = Rgb.construct(value)
 
 
 class OpacityMixin:
@@ -36,28 +32,36 @@ class OpacityMixin:
 
     def __init__(self):
         super().__init__()
-        self.opacity: float = 1
+        self._opacity: InterpolableFloat = InterpolableFloat(1)
         """This object's opacity."""
 
-    def set_opacity(self, opacity: float) -> Self:
+    def set_opacity(self, opacity: float) -> t.Self:
         """Sets this object's opacity."""
-        self.opacity = opacity
+        self._opacity = InterpolableFloat(opacity)
         return self
+    
+    @property
+    def opacity(self) -> InterpolableFloat:
+        return self._opacity
+    
+    @opacity.setter
+    def opacity(self, other: float):
+        self._opacity = InterpolableFloat(other)
 
 
 class Color(RgbMixin, OpacityMixin, Lazible):
     """Represents color-properties, including :class:`~visuscript.Rgb` and opacity,
     of another object."""
 
-    ColorLike: TypeAlias = Union[Rgb.RgbLike, "Color"]
+    ColorLike: t.TypeAlias = t.Union[Rgb.RgbLike, "Color"]
 
     def __init__(self, rgb: Rgb.RgbLike, opacity: float | None = None):
         super().__init__()
 
-        self.rgb = cast(Rgb, rgb)  # The setter in RgbMixin ensures this property is Rgb
+        self.rgb = t.cast(Rgb, rgb)
 
         if opacity is not None:
-            self.opacity = opacity
+            self.opacity = t.cast(InterpolableFloat, opacity)
 
     @staticmethod
     def construct(other: ColorLike) -> "Color":

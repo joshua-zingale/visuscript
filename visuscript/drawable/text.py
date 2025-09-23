@@ -7,7 +7,7 @@ from visuscript.primatives import Vec2
 from PIL import ImageFont
 
 
-from visuscript.primatives.mixins import (
+from visuscript.mixins import (
     HierarchicalDrawable,
     AnchorMixin,
     FillMixin,
@@ -150,3 +150,6 @@ fill="{self.fill.rgb}" \
 fill-opacity="{self.fill.opacity}" \
 opacity="{self.global_opacity}"\
 >{xml_escape(self.text)}</text><text/>"""  # The extra tag is to skirt a bug in the rendering of the SVG
+
+    def __repr__(self) -> str:
+        return f'Text("{self.text}", font_size={self.font_size}, font_family="{self.font_family}")'

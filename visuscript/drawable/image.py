@@ -8,7 +8,7 @@ import svg
 import numpy as np
 
 from visuscript.primatives import *
-from visuscript.primatives.mixins import (
+from visuscript.mixins import (
     HierarchicalDrawable,
     GlobalShapeMixin,
     AnchorMixin,

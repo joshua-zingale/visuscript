@@ -1,23 +1,21 @@
 """This module contains functionality for :class:`~AnimatedCollection`."""
 
 from visuscript.animation import (
-    NoAnimation,
-    AnimationBundle,
-    TransformAnimation,
-    LazyAnimation,
+    wait,
+    bundle,
+    animate_transform,
     Animation,
-    OpacityAnimation,
-    AnimationSequence,
-    RunFunction,
+    animate_opacity,
+    sequence,
+    run,
     quadratic_swap,
 )
-from visuscript.primatives import TransformMixin
+from visuscript.mixins import TransformMixin, Drawable
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG
 from visuscript.drawable.text import Text
 from visuscript.organizer import Organizer, GridOrganizer
 from visuscript.drawable import Pivot, Rect
 from visuscript.primatives import Transform
-from visuscript.primatives.mixins import Drawable
 from visuscript.primatives.protocols import (
     HasShape,
     HasTransform,
@@ -266,10 +264,10 @@ class AnimatedCollection(ABC, Generic[_T, _CollectionDrawable]):
     ) -> Animation:
         """Returns an :class:`~visuscript.animation.Animation` that positions all of the :class:`CollectionDrawable` instances
         corresponding to `_T` instances in this :class:`AnimatedCollection` according to its rules."""
-        animation_bundle = AnimationBundle(NoAnimation(duration=duration))
+        animation_bundle = bundle(wait(duration))
         for var in self:
             animation_bundle.push(
-                TransformAnimation(
+                animate_transform(
                     self.drawable_for(var).transform,
                     self.target_for(var),
                     duration=duration,
@@ -443,7 +441,7 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
         :param duration: The duration of the returned :class:`~visuscript.animation.Animation`, defaults to DEFER_TO_CONFIG.
         :return: An :class:`~visuscript.animation.Animation` clearing the collection.
         """
-        animations = AnimationBundle()
+        animations = bundle()
         while len(self) > 0:
             animations.push(self.pop(-1, duration=duration))
         return animations
@@ -473,7 +471,7 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
         :param duration: The duration of the returned :class:`~visuscript.animation.Animation`, defaults to DEFER_TO_CONFIG.
         :return: An :class:`~visuscript.animation.Animation` reversing the collection.
         """
-        return AnimationBundle(
+        return bundle(
             *[
                 self.swap(i, j, duration=duration)
                 for i, j in zip(
@@ -498,9 +496,9 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
         drawable = self.drawable_for(var)
         self.add_auxiliary_drawable(drawable)
         del self[index]
-        return AnimationSequence(
-            OpacityAnimation(drawable, 0.0, duration=duration),
-            RunFunction(lambda: self.remove_auxiliary_drawable(drawable)),
+        return sequence(
+            animate_opacity(drawable, 0.0, duration=duration),
+            run(self.remove_auxiliary_drawable, drawable),
         )
 
     def remove(
@@ -573,13 +571,13 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
         :return: An Animation linearly swapping each `_T`'s :class:`CollectionDrawable`'s respective :class:`~visuscript.primatives.Transform`.        :rtype: Animation
         """
         if a == b:
-            return NoAnimation(duration=duration)
+            return wait(duration)
 
         drawable_a, drawable_b = self._swap(a, b)
 
-        return AnimationBundle(
-            TransformAnimation(drawable_a.transform, drawable_b.lazy.transform),
-            TransformAnimation(drawable_b.transform, drawable_a.lazy.transform),
+        return bundle(
+            animate_transform(drawable_a.transform, drawable_b.lazy.transform),
+            animate_transform(drawable_b.transform, drawable_a.lazy.transform),
         )
 
     def qswap(
@@ -602,18 +600,16 @@ class AnimatedMutableSequence(AnimatedSequence[_T, _CollectionDrawable]):
         :return: An Animation along a quadratic curve swapping each `_T`'s :class:`CollectionDrawable`'s respective :class:`~visuscript.primatives.Transform`.
         """
         if a == b:
-            return NoAnimation(duration=duration)
+            return wait(duration)
 
         drawable_a, drawable_b = self._swap(a, b)
 
-        return LazyAnimation(
-            lambda: quadratic_swap(
+        return quadratic_swap(
                 drawable_a,
                 drawable_b,
                 height_multiplier=height_multiplier,
                 duration=duration,
             )
-        )
 
 
 class AnimatedList(AnimatedMutableSequence[_T, _CollectionDrawable], TransformMixin):
@@ -676,7 +672,7 @@ class AnimatedList(AnimatedMutableSequence[_T, _CollectionDrawable], TransformMi
         new_drawable.opacity = 0.0
         new_drawable.transform = self.target_for(value)
         self._drawable_map[value] = new_drawable
-        return OpacityAnimation(new_drawable, 1.0, duration=duration)
+        return animate_opacity(new_drawable, 1.0, duration=duration)
 
     def drawable_for(self, var: _T, /) -> _CollectionDrawable:
         if var not in self._drawable_map:

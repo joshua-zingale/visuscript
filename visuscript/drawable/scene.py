@@ -4,7 +4,7 @@ from typing import Iterable, Iterator, no_type_check, Self, Any
 from copy import copy
 
 
-from visuscript.primatives.mixins import (
+from visuscript.mixins import (
     Drawable,
     AnchorMixin,
     TransformMixin,
@@ -13,7 +13,7 @@ from visuscript.primatives.mixins import (
 from visuscript.constants import Anchor, OutputFormat
 from visuscript.drawable import Rect
 from visuscript.updater import UpdaterBundle
-from visuscript.primatives import *
+from visuscript.primatives import Transform, Vec2
 from visuscript.primatives.protocols import CanBeDrawn
 from visuscript.config import config
 

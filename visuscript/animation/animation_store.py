@@ -1,8 +1,6 @@
-from .animation import Animation, AnimationABC
-from visuscript.property_locker import PropertyLocker
+import typing as t
 
-from typing import Iterable, Self
-
+from .primatives import Animation
 
 class AnimationSequence(Animation):
     """An AnimationSequence runs through Animations in sequence.
@@ -10,20 +8,13 @@ class AnimationSequence(Animation):
     An AnimationSequence can be used to play multiple animation, one after another.
     """
 
-    def __init__(self, *animations: AnimationABC | None):
+    def __init__(self, *animations: Animation | None):
         super().__init__()
-        self._animations: list[AnimationABC] = []
+        self._animations: list[Animation] = []
         self._animation_index = 0
-        self._locker = PropertyLocker()
 
         for animation in animations:
             self.push(animation)
-
-    def __init_locker__(self, *animations: AnimationABC | None):
-        locker = PropertyLocker()
-        for animation in filter(None, animations):
-            locker.update(animation.locker, ignore_conflicts=True)
-        return locker
 
     def advance(self) -> bool:
         while (
@@ -38,16 +29,16 @@ class AnimationSequence(Animation):
 
     def push(
         self,
-        animation: AnimationABC | Iterable[AnimationABC | None] | None,
+        animation: Animation | t.Iterable[Animation | None] | None,
         _call_method: str = "push",
-    ) -> Self:
+    ) -> t.Self:
         """Adds an Animation to the end sequence."""
         if animation is None:
             pass
-        elif isinstance(animation, AnimationABC):
-            self._locker.update(animation.locker, ignore_conflicts=True)
+        elif isinstance(animation, Animation):
+            self.locker.update(animation.locker, ignore_conflicts=True)
             self._animations.append(animation)
-        elif isinstance(animation, Iterable):  # type: ignore[reportUnnecessaryIsInstance]
+        elif isinstance(animation, t.Iterable):  # type: ignore[reportUnnecessaryIsInstance]
             for animation_ in animation:
                 self.push(animation_)
         else:
@@ -56,7 +47,7 @@ class AnimationSequence(Animation):
             )
         return self
 
-    def __lshift__(self, other: AnimationABC | Iterable[AnimationABC | None] | None):
+    def __lshift__(self, other: Animation | t.Iterable[Animation | None] | None):
         """See :meth:AnimationSequence.push"""
         self.push(other, _call_method="<<")
 
@@ -67,18 +58,12 @@ class AnimationBundle(Animation):
     An AnimationBundle can be used to play multiple Animation concurrently.
     """
 
-    def __init__(self, *animations: AnimationABC | None):
+    def __init__(self, *animations: Animation | None):
         super().__init__()
-        self._animations: list[AnimationABC] = []
+        self._animations: list[Animation] = []
 
         for animation in animations:
-            self.push(animation, _update_locker=False)
-
-    def __init_locker__(self, *animations: AnimationABC | None):
-        locker = PropertyLocker()
-        for animation in filter(None, animations):
-            locker.update(animation.locker)
-        return locker
+            self.push(animation)
 
     def advance(self) -> bool:
         advance_made = sum(map(lambda x: x.next_frame(), self._animations)) > 0
@@ -86,26 +71,24 @@ class AnimationBundle(Animation):
 
     def push(
         self,
-        animation: AnimationABC | Iterable[AnimationABC | None] | None,
+        animation: Animation | t.Iterable[Animation | None] | None,
         _call_method: str = "push",
-        _update_locker: bool = True,
-    ) -> Self:
+    ) -> t.Self:
         """Adds an animation to this bundle."""
         if animation is None:
             pass
-        elif isinstance(animation, AnimationABC):
-            if _update_locker:
-                self._locker.update(animation.locker)
+        elif isinstance(animation, Animation):
+            self.locker.update(animation.locker)
             self._animations.append(animation)
-        elif isinstance(animation, Iterable):  # type: ignore[reportUnnecessaryIsInstance]
+        elif isinstance(animation, t.Iterable):  # type: ignore[reportUnnecessaryIsInstance]
             for animation_ in animation:
                 self.push(animation_)
         else:
             raise TypeError(
-                f"'{_call_method}' is only implemented for types AnimationABC, Iterable[AnimationABC], and None, not for '{type(animation)}'"
+                f"'{_call_method}' is only implemented for types Animation, Iterable[Animation], and None, not for '{type(animation)}'"
             )
         return self
 
-    def __lshift__(self, other: AnimationABC | Iterable[AnimationABC] | None):
+    def __lshift__(self, other: Animation | t.Iterable[Animation] | None):
         """See :meth:AnimationBundle.push"""
         self.push(other, _call_method="<<")

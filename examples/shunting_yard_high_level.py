@@ -1,4 +1,5 @@
 from visuscript import *
+from visuscript.animation import fade_in
 from visuscript.drawable import Arrow
 from visuscript.organizer import Organizer
 from visuscript.primatives.protocols import HasTransform
@@ -61,7 +62,7 @@ def main():
         Transform(LEFT * SEPARATION * (len(tokens) // 2) - SEPARATION / 2 + FONT_SIZE)
     )
     scene << polish_tokens
-    scene.player << AnimationBundle(
+    scene.player << bundle(
         organizer_animation(polish_tokens, polish_organizer),
         fade_in(shunting_arrow),
         fade_in(shunting_text),
@@ -89,7 +90,7 @@ def main():
         .set_opacity(0.0)
     )
     scene << expression_text
-    scene.player << AnimationBundle(
+    scene.player << bundle(
         organizer_animation(evaluation_tokens, evaluation_organizer),
         fade_in(expression_text),
     )
@@ -100,9 +101,9 @@ def main():
 
 
 def organizer_animation(objects: Sequence[HasTransform], organizer: Organizer):
-    return AnimationBundle(
+    return bundle(
         *map(
-            lambda v: TransformAnimation(v[0].transform, v[1]), zip(objects, organizer)
+            lambda v: animate_transform(v[0].transform, v[1]), zip(objects, organizer)
         )
     )
 
@@ -138,23 +139,23 @@ def evaluate_step(tokens: list[Union["Operator", "Value"]]):
         .set_transform(lvalue.transform)
     )
     operator = tokens[i]
-    return AnimationSequence(
-        AnimationBundle(
-            *map(lambda v: RgbAnimation(v.fill, "gold"), tokens[i - 2 : i + 1])
+    return sequence(
+        bundle(
+            *map(lambda v: animate_rgb(v.fill, "gold"), tokens[i - 2 : i + 1])
         ),
-        AnimationBundle(
-            *map(lambda v: ScaleAnimation(v.transform, 0.5), tokens[i - 2 : i + 1]),
-            TranslationAnimation(
+        bundle(
+            *map(lambda v: animate_scale(v.transform, 0.5), tokens[i - 2 : i + 1]),
+            animate_translation(
                 lvalue.transform,
                 lvalue.tshape.center
                 + DOWN * FONT_SIZE
                 + LEFT * lvalue.tshape.width / 3
                 + LEFT * operator.tshape.width / 4,
             ),
-            TranslationAnimation(
+            animate_translation(
                 operator.transform, lvalue.tshape.center + DOWN * FONT_SIZE
             ),
-            TranslationAnimation(
+            animate_translation(
                 rvalue.transform,
                 lvalue.tshape.center
                 + DOWN * FONT_SIZE
@@ -162,15 +163,15 @@ def evaluate_step(tokens: list[Union["Operator", "Value"]]):
                 + RIGHT * operator.tshape.width / 4,
             ),
         ),
-        RunFunction(lambda: scene.add_drawable(value)),
-        AnimationBundle(
-            OpacityAnimation(value, 1.0),
-            *map(lambda v: OpacityAnimation(v, 0.0), tokens[i - 2 : i + 1]),
+        run(scene.add_drawable, value),
+        bundle(
+            animate_opacity(value, 1.0),
+            *map(lambda v: animate_opacity(v, 0.0), tokens[i - 2 : i + 1]),
         ),
-        RunFunction(lambda: scene.remove_drawables([lvalue, operator, rvalue])),
-        RunFunction(lambda: tokens.__setitem__(i - 2, value)),
-        RunFunction(lambda: tokens.remove(operator)),
-        RunFunction(lambda: tokens.remove(rvalue)),
+        run(scene.remove_drawables, [lvalue, operator, rvalue]),
+        run(tokens.__setitem__, i - 2, value),
+        run(tokens.remove, operator),
+        run(tokens.remove, rvalue),
     )
 
 

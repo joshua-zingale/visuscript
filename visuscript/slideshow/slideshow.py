@@ -3,7 +3,7 @@ import json
 
 from visuscript.primatives.protocols import CanBeDrawn
 from visuscript.animation import AnimationBundle
-from visuscript.primatives import Color
+from visuscript.mixins import Color
 from visuscript.drawable import Scene
 from visuscript.config import config
 

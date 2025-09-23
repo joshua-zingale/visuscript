@@ -36,8 +36,8 @@ scene.add_drawable(
 
 def push_operand(operand: Text):
     stack.append(operand)
-    return AnimationSequence(
-        TransformAnimation(operand.transform, stack_organizer[-len(stack)])
+    return sequence(
+        animate_transform(operand.transform, stack_organizer[-len(stack)])
     )
 
 
@@ -59,51 +59,51 @@ def read_operator(operator: Text):
 
     result = stack[-1].set_opacity(0.0).set_fill("blue")
     scene << result
-    return AnimationSequence(
-        AnimationBundle(
-            TranslationAnimation(operator.transform, operand1.tshape.center),
-            TranslationAnimation(
+    return sequence(
+        bundle(
+            animate_translation(operator.transform, operand1.tshape.center),
+            animate_translation(
                 operand1.transform,
                 operand1.tshape.center + LEFT * operand1.ushape.width,
             ),
-            TranslationAnimation(
+            animate_translation(
                 operand2.transform,
                 operand1.tshape.center + RIGHT * operand2.ushape.width,
             ),
         ),
-        RunFunction(
+        run(
             lambda: result.translate(
                 operand2.tshape.right + RIGHT * result.tshape.width
             )
         ),
-        AnimationBundle(
-            RgbAnimation(operator.fill, "red"),
-            RgbAnimation(operand1.fill, "orange"),
-            RgbAnimation(operand2.fill, "orange"),
-            OpacityAnimation(result, 1.0),
+        bundle(
+            animate_rgb(operator.fill, "red"),
+            animate_rgb(operand1.fill, "orange"),
+            animate_rgb(operand2.fill, "orange"),
+            animate_opacity(result, 1.0),
         ),
-        NoAnimation(duration=2),
-        AnimationBundle(
-            TranslationAnimation(result.transform, operator.lazy.tshape.center),
-            OpacityAnimation(operator.fill, 0.0, duration=0.5),
-            OpacityAnimation(operand1.fill, 0.0, duration=0.5),
-            OpacityAnimation(operand2.fill, 0.0, duration=0.5),
+        wait(2),
+        bundle(
+            animate_translation(result.transform, operator.lazy.tshape.center),
+            animate_opacity(operator.fill, 0.0, duration=0.5),
+            animate_opacity(operand1.fill, 0.0, duration=0.5),
+            animate_opacity(operand2.fill, 0.0, duration=0.5),
         ),
     )
 
 
 for text, duplicate in zip(inputs, input_duplicated):
     if stack:
-        scene.player << RgbAnimation(stack[-1].fill, "off_white")
+        scene.player << animate_rgb(stack[-1].fill, "off_white")
     if re.search(r"^\d*\.?\d+$", text.text):
-        scene.player << AnimationBundle(
+        scene.player << bundle(
             push_operand(text),
-            RgbAnimation(duplicate.fill, "yellow"),
+            animate_rgb(duplicate.fill, "yellow"),
         )
     else:
-        scene.player << AnimationBundle(
+        scene.player << bundle(
             read_operator(text),
-            RgbAnimation(duplicate.fill, "yellow"),
+            animate_rgb(duplicate.fill, "yellow"),
         )
 
-scene.player << NoAnimation()
+scene.player << wait()

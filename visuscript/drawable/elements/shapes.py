@@ -1,5 +1,5 @@
 from visuscript.primatives import Vec2
-from visuscript.primatives.mixins import (
+from visuscript.mixins import (
     HierarchicalDrawable,
     GlobalShapeMixin,
     AnchorMixin,

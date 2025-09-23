@@ -1,6 +1,11 @@
-"""Contains mixins usable for creating :class:`~mixins.Drawable` mixins.
+"""Contains mixins usable for creating displayable objects that are
+compatible with the Visuscript ecosystem.
 
-Also contains :class:`~mixins.Color`.
+To create a new displayable object, inherit from :class:`Drawable`.
+Then, add appropriate mixins according to what features your new
+object should have, e.g. a :class:`Shape` or an opacity.
+
+Also contains :class:`Color`.
 """
 
 from .color import RgbMixin, OpacityMixin, Color

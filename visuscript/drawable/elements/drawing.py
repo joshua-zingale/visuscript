@@ -1,5 +1,5 @@
 from visuscript.segment import Path
-from visuscript.primatives.mixins import (
+from visuscript.mixins import (
     HierarchicalDrawable,
     GlobalShapeMixin,
     AnchorMixin,
@@ -18,7 +18,7 @@ class Drawing(
     AnchorMixin,
     OpacityMixin,
 ):
-    """A :class:`~visuscript.primatives.mixins.HierarchicalDrawable` for which the self-display is defined by a :class:`~visuscript.Path`."""
+    """A :class:`~visuscript.mixins.HierarchicalDrawable` for which the self-display is defined by a :class:`~visuscript.Path`."""
 
     def __init__(self, path: Path):
         self._path: Path = path
