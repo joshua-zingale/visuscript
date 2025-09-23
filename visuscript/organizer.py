@@ -1,5 +1,7 @@
-from visuscript.primatives.mixins import TransformMixin
-from visuscript.primatives.primatives import Transform, Vec2
+"""Contains :class:`Organizer` types for arranging displayable objects."""
+
+from visuscript.mixins import TransformMixin
+from visuscript.primatives import Transform, Vec2
 from typing import Iterable, Iterator
 from abc import ABC, abstractmethod
 import numpy as np

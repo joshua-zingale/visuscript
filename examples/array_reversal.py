@@ -1,5 +1,5 @@
 from visuscript import *
-from visuscript.animated_collection import *
+from visuscript.animated_collection import AnimatedList, Var
 
 WIDTH = 32
 
@@ -30,12 +30,12 @@ class CellArray(AnimatedList):
 
 # The algorithm to be animated, which returns an animation sequence
 def reverse_array(arr: CellArray):
-    sequence = AnimationSequence()
+    seq = sequence()
     for i, j in zip(
         range(0, len(arr) // 2), range(len(arr) - 1, len(arr) // 2 - 1, -1)
     ):
-        sequence << arr.qswap(i, j, height_multiplier=2)
-    return sequence
+        seq << arr.qswap(i, j)
+    return seq
 
 
 if __name__ == "__main__":

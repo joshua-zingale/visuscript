@@ -28,6 +28,22 @@ class SizeMismatch(ValueError):
             f"Size mismatch for {operation}: Size {size1} is not compatible with Size {size2}."
         )
 
+class InterpolableFloat(float):
+    def __add__(self, other: float):
+        return InterpolableFloat(float(self) + other)
+    def __sub__(self, other: float):
+        return InterpolableFloat(float(self) - other)
+    def __mul__(self, other: float):
+        return InterpolableFloat(float(self) * other)
+    def __rmul__(self, other: float):
+        return InterpolableFloat(float(self) * other)
+    def __truediv__(self, other: float):
+        return InterpolableFloat(float(self) / other)
+    def __rtruediv__(self, other: float):
+        return InterpolableFloat(other / float(self))
+    
+    def get_interpolated_object(self):
+        return float(self)
 
 class Vec(Sequence[float], Interpolable):
     VecLike: TypeAlias = Union["Vec", Sequence[float]]
@@ -164,6 +180,9 @@ class Vec2(Vec):
             f"Cannot create a vector out of '{other.__class__.__name__}' {end_string}."
         )
 
+    def get_interpolated_object(self):
+        return self
+
 
 class Rgb(Interpolable):
     """A Red Green Blue (RGB) color."""
@@ -185,6 +204,13 @@ class Rgb(Interpolable):
                 for s, o in zip(self._rgb, other._rgb)
             )
         )
+    
+    @staticmethod
+    def construct(rgb: RgbLike):
+        if isinstance(rgb, str):
+            return Rgb(*PALETTE[rgb])
+        else:
+            return Rgb(*rgb)
 
     def __iter__(self) -> Iterator[int]:
         yield from self._rgb
@@ -203,6 +229,9 @@ class Rgb(Interpolable):
 
     def __truediv__(self, other: float) -> "Rgb":
         return self * (1 / other)
+    
+    def __rtruediv__(self, other: float) -> "Rgb":
+        return Rgb(*map(lambda c: int(other/c), self))
 
     def __eq__(self, other: "Rgb"):  # type: ignore
         return (
@@ -234,7 +263,59 @@ class Rgb(Interpolable):
     @property
     def b(self) -> int:
         return self._rgb[2]
+    
+    def get_interpolator(self) -> "RgbInterpolator":
+        return RgbInterpolator((self.r, self.g, self.b))
 
+class RgbInterpolator:
+
+    def __init__(self, rgb: tuple[float, float, float]):
+        self._rgb = rgb
+    def __add__(self, other: "RgbInterpolator") -> "RgbInterpolator":
+        return RgbInterpolator(tuple(map(add, self, other)))
+    def __sub__(self, other: "RgbInterpolator") -> "RgbInterpolator":
+        return RgbInterpolator(tuple(map(sub, self, other)))
+    def __mul__(self, other: float) -> "RgbInterpolator":
+        return RgbInterpolator(tuple(map(mul, self, 3*(other,))))
+    def __rmul__(self, other: float) -> "RgbInterpolator":
+        return RgbInterpolator(tuple(map(mul, self, 3*(other,))))
+    def __truediv__(self, other: float) -> "RgbInterpolator":
+        return RgbInterpolator(tuple(map(truediv, self, 3*(other,))))
+    def __rtruediv__(self, other: float) -> "RgbInterpolator":
+        return RgbInterpolator(tuple(map(truediv, 3*(other,), self)))
+    
+    def __iter__(self):
+        for c in self._rgb:
+            yield c
+
+    def get_interpolated_object(self):
+        return Rgb(*map(lambda v: int(min(max(v, 0), 255)), self))
+
+PALETTE: dict[str, Rgb] = {  
+    "dark_slate": Rgb(28, 28, 28),
+    "soft_blue": Rgb(173, 216, 230),
+    "vibrant_orange": Rgb(255, 165, 0),
+    "pale_green": Rgb(144, 238, 144),
+    "bright_yellow": Rgb(255, 255, 0),
+    "steel_blue": Rgb(70, 130, 180),
+    "forest_green": Rgb(34, 139, 34),
+    "burnt_orange": Rgb(205, 127, 50),
+    "light_gray": Rgb(220, 220, 220),
+    "off_white": Rgb(245, 245, 220),
+    "medium_gray": Rgb(150, 150, 150),
+    "slate_gray": Rgb(112, 128, 144),
+    "crimson": Rgb(220, 20, 60),
+    "gold": Rgb(255, 215, 0),
+    "sky_blue": Rgb(135, 206, 235),
+    "light_coral": Rgb(240, 128, 128),
+    "red": Rgb(255, 99, 71),
+    "orange": Rgb(255, 165, 0),
+    "yellow": Rgb(255, 215, 0),
+    "green": Rgb(124, 252, 0),
+    "blue": Rgb(65, 105, 225),
+    "purple": Rgb(138, 43, 226),
+    "white": Rgb(255, 255, 255),
+}
 
 class Transform(Invalidator, Interpolable, Lazible):
     """A two dimensional transformation with translation, scale, and rotation."""
@@ -252,7 +333,7 @@ class Transform(Invalidator, Interpolable, Lazible):
 
         self._translation: Vec2 = Vec2.construct(translation)
         self._scale: Vec2 = Vec2.construct(scale)
-        self._rotation: float = rotation
+        self._rotation: InterpolableFloat = InterpolableFloat(rotation)
 
         self._invalidatables: set[Invalidatable] = set()
 
@@ -281,13 +362,13 @@ class Transform(Invalidator, Interpolable, Lazible):
         yield from self._invalidatables
 
     @property
-    def rotation(self):
+    def rotation(self) -> InterpolableFloat:
         return self._rotation
 
     @rotation.setter
     @invalidates
     def rotation(self, value: float):
-        self._rotation = value
+        self._rotation = InterpolableFloat(value)
 
     def rotate(self, vec2: Vec2.Vec2Like) -> Vec2:
         t = self.rotation * math.pi / 180

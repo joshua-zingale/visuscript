@@ -1,18 +1,13 @@
-from visuscript import *
-from visuscript.animation import Animation, quadratic_swap, LazyAnimation
-from visuscript.drawable.connector import *
 import math
-from visuscript.config import *
-from visuscript.animated_collection import (
-    AnimatedCollection,
-)
-from visuscript.primatives import TransformMixin
-from visuscript.organizer import BinaryTreeOrganizer
-from visuscript import connector
-from typing import Sequence, Optional, Generic, TypeVar, Self, Literal
-import random
 import operator as op
+import random
 
+from visuscript import *
+from visuscript.animation import Animation, quadratic_swap, fade_in, fade_out, flash
+from visuscript.animated_collection import AnimatedCollection
+from visuscript.mixins import TransformMixin
+from visuscript.organizer import BinaryTreeOrganizer
+from typing import Sequence, Optional, Generic, TypeVar, Self, Literal
 
 RADIUS = 8
 NUM_NODES = 31
@@ -24,9 +19,9 @@ def main():
     text = Text("Binary Search Trees", font_size=50).set_opacity(0.0)
     s << text
     s.player << fade_in(text)
-    s.player << AnimationBundle(
-        RunFunction(lambda: text.set_anchor(Anchor.TOP_LEFT, keep_position=True)),
-        TransformAnimation(
+    s.player << bundle(
+        run(lambda: text.set_anchor(Anchor.TOP_LEFT, keep_position=True)),
+        animate_transform(
             text.transform, Transform(s.ushape.top_left + [10, 10], scale=0.5)
         ),
     )
@@ -44,8 +39,8 @@ def main():
 
     s << operation_text
 
-    flash_text = lambda text, other_animation: AnimationSequence(
-        RunFunction(lambda: operation_text.set_text(text)),
+    flash_text = lambda text, other_animation: sequence(
+        run(lambda: operation_text.set_text(text)),
         fade_in(operation_text, duration=0.5),
         other_animation,
         fade_out(operation_text, duration=0.5),
@@ -70,18 +65,18 @@ def main():
     ):
         s.player << flash_text(
             f"remove({num})",
-            AnimationSequence(
+            sequence(
                 tree.find(num).set_speed(2) if find == FIND else None,
                 tree.remove(num),
             ),
         )
 
 
-def to_balanced_tree(sequence: Sequence[int]) -> Sequence[int]:
-    sequence = sorted(sequence)
-    new_sequence: list[None | int] = [None] * len(sequence)
+def to_balanced_tree(seq: Sequence[int]) -> Sequence[int]:
+    seq = sorted(seq)
+    new_seq: list[None | int] = [None] * len(seq)
 
-    worklist = [(0, len(sequence), 0)]
+    worklist = [(0, len(seq), 0)]
     while worklist:
         low, high, idx = worklist.pop(0)
         if low >= high:
@@ -89,19 +84,19 @@ def to_balanced_tree(sequence: Sequence[int]) -> Sequence[int]:
 
         mid = (low + high) // 2
 
-        new_sequence[idx] = sequence[mid]
+        new_seq[idx] = seq[mid]
 
         worklist.extend([(low, mid, (idx + 1) * 2 - 1), (mid + 1, high, (idx + 1) * 2)])
 
-    for s in new_sequence:
+    for s in new_seq:
         if s is None:
             raise RuntimeError("Should not happen")
-    return new_sequence  # type: ignore
+    return new_seq  # type: ignore
 
 
-def insertion_order(sequence: Sequence[int]) -> Sequence[int]:
-    sequence = to_balanced_tree(sequence)
-    new_sequence = []
+def insertion_order(seq: Sequence[int]) -> Sequence[int]:
+    seq = to_balanced_tree(seq)
+    new_seq = []
 
     worklist = [0]
 
@@ -109,13 +104,13 @@ def insertion_order(sequence: Sequence[int]) -> Sequence[int]:
 
     while worklist:
         index = pop_random()
-        if index >= len(sequence):
+        if index >= len(seq):
             continue
-        new_sequence.append(sequence[index])
+        new_seq.append(seq[index])
 
         worklist.extend([(index + 1) * 2 - 1, (index + 1) * 2])
 
-    return new_sequence
+    return new_seq
 
 
 _T = TypeVar("_T")
@@ -290,7 +285,7 @@ class AnimatedBinaryTree(AnimatedCollection[BTNode[_T], BTDrawable], TransformMi
         a: BTNode[_T],
         b: BTNode[_T],
         *,
-        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
+        duration: float | config.ConfigurationDeference = config.DEFER_TO_CONFIG,
     ):
         return self._edges.connect(
             self.drawable_for(a), self.drawable_for(b), duration=duration
@@ -301,7 +296,7 @@ class AnimatedBinaryTree(AnimatedCollection[BTNode[_T], BTDrawable], TransformMi
         a: BTNode[_T],
         b: BTNode[_T],
         *,
-        duration: float | ConfigurationDeference = DEFER_TO_CONFIG,
+        duration: float | config.ConfigurationDeference = config.DEFER_TO_CONFIG,
     ):
         return self._edges.disconnect(
             self.drawable_for(a), self.drawable_for(b), duration=duration
@@ -430,9 +425,9 @@ class AnimatedBinarySearchTree(AnimatedBinaryTree[int]):
         new_node_drawable = self.drawable_for(new_node).set_opacity(0.0)
         if self.root is None:
             self.root = new_node
-            return AnimationBundle(
-                OpacityAnimation(new_node_drawable, 1.0),
-                TransformAnimation(
+            return bundle(
+                animate_opacity(new_node_drawable, 1.0),
+                animate_transform(
                     new_node_drawable.transform, self.target_for(new_node)
                 ),
             )
@@ -451,17 +446,17 @@ class AnimatedBinarySearchTree(AnimatedBinaryTree[int]):
                 current = current.right
             path.append(current)
 
-        return AnimationSequence(
-            OpacityAnimation(
+        return sequence(
+            animate_opacity(
                 new_node_drawable.translate(
                     self.transform.translation + UP * self._radius * 3
                 ),
                 1.0,
             ),
             *map(lambda n: self._compare("<", new_node, n), path),
-            AnimationBundle(
+            bundle(
                 self.connect(current, new_node),
-                TransformAnimation(
+                animate_transform(
                     new_node_drawable.transform, self.target_for(new_node)
                 ),
             ),
@@ -500,72 +495,72 @@ class AnimatedBinarySearchTree(AnimatedBinaryTree[int]):
 
         def small():
             arrow = Text("← too big", font_size=self._radius).set_opacity(0.0)
-            return AnimationSequence(
-                RunFunction(
+            return sequence(
+                run(
                     magnifying_glass.add_child,
                     lambda p: arrow.set_anchor(Anchor.TOP).translate(
                         p.ushape.bottom * 1.25 + RIGHT * self._radius
                     ),
                 ),
-                AnimationBundle(
-                    AnimationSequence(
-                        OpacityAnimation(arrow, 1.0, duration=0.5),
-                        OpacityAnimation(arrow, 0.0, duration=0.5),
+                bundle(
+                    sequence(
+                        animate_opacity(arrow, 1.0, duration=0.5),
+                        animate_opacity(arrow, 0.0, duration=0.5),
                     ),
-                    TranslationAnimation(
+                    animate_translation(
                         arrow.transform,
                         arrow.lazy.transform.translation + LEFT * self._radius * 2,
                     ),
                 ),
-                RunFunction(magnifying_glass.remove_child, arrow),
+                run(magnifying_glass.remove_child, arrow),
             )
 
         def large():
             arrow = Text("too small →", font_size=self._radius).set_opacity(0.0)
-            return AnimationSequence(
-                RunFunction(
+            return sequence(
+                run(
                     magnifying_glass.add_child,
                     lambda p: arrow.set_anchor(Anchor.TOP).translate(
                         p.ushape.bottom * 1.25 + LEFT * self._radius
                     ),
                 ),
-                AnimationBundle(
-                    AnimationSequence(
-                        OpacityAnimation(arrow, 1.0, duration=0.5),
-                        OpacityAnimation(arrow, 0.0, duration=0.5),
+                bundle(
+                    sequence(
+                        animate_opacity(arrow, 1.0, duration=0.5),
+                        animate_opacity(arrow, 0.0, duration=0.5),
                     ),
-                    TranslationAnimation(
+                    animate_translation(
                         arrow.transform,
                         arrow.lazy.transform.translation + RIGHT * self._radius * 2,
                     ),
                 ),
-                RunFunction(magnifying_glass.remove_child, arrow),
+                run(magnifying_glass.remove_child, arrow),
             )
 
         def equal(n: BTNode[int]):
             check = Text("✓", font_size=self._radius).set_opacity(0.0)
-            return AnimationSequence(
-                RunFunction(
+            return sequence(
+                run(
                     magnifying_glass.add_child,
                     lambda p: check.set_anchor(Anchor.TOP).translate(
                         p.ushape.bottom * 1.25
                     ),
                 ),
-                AnimationBundle(
+                bundle(
                     flash(self.drawable_for(n).stroke, "green"),
-                    AnimationSequence(
-                        OpacityAnimation(check, 1.0, duration=0.5),
-                        OpacityAnimation(check, 0.0, duration=0.5),
+                    sequence(
+                        animate_opacity(check, 1.0, duration=0.5),
+                        animate_opacity(check, 0.0, duration=0.5),
                     ),
                 ),
-                RunFunction(magnifying_glass.remove_child, check),
+                run(magnifying_glass.remove_child, check),
             )
 
-        return AnimationSequence(
-            AnimationBundle(OpacityAnimation(magnifying_glass, 1.0)),
+        return sequence(
+            bundle(animate_opacity(magnifying_glass, 1.0)),
             *map(
-                lambda n: AnimationSequence(
-                    TransformAnimation(
+                lambda n: sequence(
+                    animate_transform(
                         magnifying_glass.transform, self.drawable_for(n[0]).transform
                     ),
                     small() if n[1] == SMALL else None,
@@ -574,22 +569,22 @@ class AnimatedBinarySearchTree(AnimatedBinaryTree[int]):
                 ),
                 path,
             ),
-            AnimationSequence(
-                TranslationAnimation(
+            sequence(
+                animate_translation(
                     magnifying_glass.transform,
                     magnifying_glass.lazy.transform.translation
                     + DOWN * self._radius * 3,
                 ),
-                RgbAnimation(magnifying_glass.stroke, "red", duration=0.5),
+                animate_rgb(magnifying_glass.stroke, "red", duration=0.5),
             )
             if not FOUND
             else None,
-            OpacityAnimation(magnifying_glass, 0.0),
-            RunFunction(self.remove_auxiliary_drawable, magnifying_glass),
+            animate_opacity(magnifying_glass, 0.0),
+            run(self.remove_auxiliary_drawable, magnifying_glass),
         )
 
     def remove(self, value: int) -> Animation:
-        sequence = AnimationSequence()
+        seq = sequence()
 
         node = self.root
         find_path = []
@@ -605,7 +600,7 @@ class AnimatedBinarySearchTree(AnimatedBinaryTree[int]):
         if node is None:
             raise ValueError(f"Value {value} not found in tree")
 
-        sequence.push(RgbAnimation(self.drawable_for(node).stroke, "red"))
+        seq.push(animate_rgb(self.drawable_for(node).stroke, "red"))
 
         swap_path: list[BTNode[int]] = []
         if node.left and node.right:
@@ -615,30 +610,30 @@ class AnimatedBinarySearchTree(AnimatedBinaryTree[int]):
                 successor = successor.right
                 swap_path.append(successor)
 
-            sequence.push(
+            seq.push(
                 [
-                    RgbAnimation(self.drawable_for(swap_path[0]).stroke, "blue"),
+                    animate_rgb(self.drawable_for(swap_path[0]).stroke, "blue"),
                     *map(
-                        lambda n: AnimationBundle(
-                            RgbAnimation(self.drawable_for(n[0]).stroke, "off_white"),
-                            RgbAnimation(self.drawable_for(n[1]).stroke, "blue"),
+                        lambda n: bundle(
+                            animate_rgb(self.drawable_for(n[0]).stroke, "off_white"),
+                            animate_rgb(self.drawable_for(n[1]).stroke, "blue"),
                         ),
                         zip(swap_path, swap_path[1:]),
                     ),
                     self.swap(node, swap_path[-1]),
-                    RgbAnimation(self.drawable_for(swap_path[-1]).stroke, "off_white"),
+                    animate_rgb(self.drawable_for(swap_path[-1]).stroke, "off_white"),
                 ]
             )
 
         child = node.left or node.right
 
         if child:
-            sequence.push(
+            seq.push(
                 [
-                    AnimationSequence(
-                        RgbAnimation(self.drawable_for(child).stroke, "blue"),
+                    sequence(
+                        animate_rgb(self.drawable_for(child).stroke, "blue"),
                         self.swap(node, child),
-                        RgbAnimation(self.drawable_for(child).stroke, "off_white"),
+                        animate_rgb(self.drawable_for(child).stroke, "off_white"),
                     )
                 ]
             )
@@ -651,13 +646,13 @@ class AnimatedBinarySearchTree(AnimatedBinaryTree[int]):
         node_d = self.delete_node(node)
         self.add_auxiliary_drawable(node_d)
 
-        return sequence.push(
+        return seq.push(
             [
-                AnimationBundle(
-                    OpacityAnimation(node_d, 0.0),
+                bundle(
+                    animate_opacity(node_d, 0.0),
                     disconnect_animation,
                 ),
-                RunFunction(self.remove_auxiliary_drawable, node_d),
+                run(self.remove_auxiliary_drawable, node_d),
             ]
         )
 
@@ -669,13 +664,8 @@ class AnimatedBinarySearchTree(AnimatedBinaryTree[int]):
 
         node1.swap(node2)
 
-        return AnimationBundle(
-            LazyAnimation(
-                lambda node1=self.drawable_for(node1),
-                node2=self.drawable_for(node2): quadratic_swap(
-                    node1, node2, height_multiplier=1.5
-                )
-            ),
+        return bundle(
+            quadratic_swap(self.drawable_for(node1), self.drawable_for(node2), height_multiplier=1),
             self.connect_all(),
         )
 
@@ -722,17 +712,17 @@ class AnimatedBinarySearchTree(AnimatedBinaryTree[int]):
 
         self.add_auxiliary_drawable(cmp_text)
 
-        return AnimationSequence(
-            AnimationBundle(
-                TranslationAnimation(
+        return sequence(
+            bundle(
+                animate_translation(
                     drawable1.transform,
                     drawable2.shape.left + LEFT * (drawable1.shape.width) * 1.5,
                 ),
-                ScaleAnimation(drawable1.transform, 0.75),
+                animate_scale(drawable1.transform, 0.75),
             ),
             fade_in(cmp_text),
-            NoAnimation(),
-            RunFunction(lambda: self.remove_auxiliary_drawable(cmp_text)),
+            wait(),
+            run(lambda: self.remove_auxiliary_drawable(cmp_text)),
         )
 
     @staticmethod

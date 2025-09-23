@@ -27,6 +27,7 @@ This is all very hacky right now but it works.
 """
 
 from visuscript import *
+from visuscript.animation import flash, fade_out
 from visuscript.drawable.code import PythonText
 from visuscript.drawable.connector import Arrow
 
@@ -115,8 +116,8 @@ def main():
 
         for rect in rects:
             s.animations << [
-                OpacityAnimation(rect, 1),
-                RotationAnimation(rect.transform, 360),
+                animate_opacity(rect, 1),
+                animate_rotation(rect.transform, 360),
             ]
 
     bar = Drawing(
@@ -137,7 +138,7 @@ def main():
         s << heading("Features")
         s << bullets(
             "Create arbitrary 2D graphics with Drawing and Path.",
-            "Create arbitrary animations through composition with AnimationBundle and AnimationSequence.",
+            "Create arbitrary animations through composition with bundle and sequence.",
             "Represent and animate datastructures with AnimatedCollection inheritors.",
             "Runtime checks for conflicting animations or updaters with PropertyLocker.",
             font_size=NORMAL,
@@ -196,7 +197,7 @@ def main():
             .add_child(Text("RgbAnimation", font_size=NORMAL).rotate(-15))
             .set_stroke(Color("off_white", opacity=0)),
             Circle(NORMAL)
-            .add_child(Text("AnimationSequence", font_size=NORMAL).rotate(-15))
+            .add_child(Text("sequence", font_size=NORMAL).rotate(-15))
             .set_stroke(Color("off_white", opacity=0)),
         )
         s << components(
@@ -259,12 +260,12 @@ def main():
     ##3
     with scene as s:
         s << heading("Animation")
-        s.animations << AnimationSequence(
-            AnimationBundle(
-                RotationAnimation(drawing.transform, drawing.transform.rotation + 360),
-                ScaleAnimation(drawing.transform, 1),
+        s.animations << sequence(
+            bundle(
+                animate_rotation(drawing.transform, drawing.transform.rotation + 360),
+                animate_scale(drawing.transform, 1),
             ),
-            PathAnimation(
+            animate_path(
                 drawing.transform,
                 Path()
                 .M(*drawing.tshape.center)
@@ -274,7 +275,7 @@ def main():
                 .L(*drawing.ushape.center),
                 duration=2,
             ),
-            ScaleAnimation(drawing.transform, 3),
+            animate_scale(drawing.transform, 3),
             fade_out(drawing),
         )
         s << (
@@ -286,7 +287,7 @@ def main():
 
     ##4
     with scene as s:
-        from visuscript.animation import linear_easing
+
 
         s << heading("Updaters")
         circle = (
@@ -319,8 +320,8 @@ def main():
             s.transform, circle.transform, acceleration=500
         )
         s.updaters << TranslationUpdater(crosshair.transform, s.transform)
-        s.animations << AnimationSequence(
-            PathAnimation(
+        s.animations << sequence(
+            animate_path(
                 circle.transform,
                 Path()
                 .M(*circle.ushape.center)
@@ -337,9 +338,9 @@ def main():
                     *s.ushape.center + [25, 0],
                 ),
                 duration=7,
-                easing_function=linear_easing,
+                easing_function=easing.linear_easing,
             ),
-            NoAnimation(),
+            wait(),
         )
         s << (
             PythonText(code_blocks[4], font_size=4)
@@ -363,7 +364,7 @@ def main():
         s << bullets(
             "Animate algorithms by writing them as normal.",
             "Add animation hooks (compare, swap).",
-            "Return an AnimationSequence and push to Scene to animate.",
+            "Return an sequence and push to Scene to animate.",
         )
 
         s << (
@@ -445,16 +446,16 @@ def _unused():
         def swap(self, a, b, *args, **kwargs):
             assert isinstance(a, int)
             assert isinstance(b, int)
-            return AnimationBundle(
+            return bundle(
                 super().swap(a, b).compress(),
-                RunFunction(self.add_swap),
+                run(self.add_swap),
                 flash(self.drawables[a].fill, "green"),
                 flash(self.drawables[b].fill, "green") if a != b else None,
             )
 
         def compare(self, a: int, b: int):
-            return AnimationBundle(
-                RunFunction(self.add_compare),
+            return bundle(
+                run(self.add_compare),
                 flash(self.drawables[a].fill, "light_gray"),
                 flash(self.drawables[b].fill, "light_gray") if a != b else None,
             )
@@ -468,17 +469,17 @@ def _unused():
     ##
 
     ##318
-    def bubble_sort(abl: AnimatedBarList) -> AnimationSequence:
-        sequence = AnimationSequence()
+    def bubble_sort(abl: AnimatedBarList) -> animation.Animation:
+        seq = sequence()
         changed = True
         while changed:
             changed = False
             for i in range(1, len(abl)):
-                sequence << abl.compare(i - 1, i)
+                seq << abl.compare(i - 1, i)
                 if abl[i - 1] > abl[i]:
-                    sequence << abl.swap(i - 1, i)
+                    seq << abl.swap(i - 1, i)
                     changed = True
-        return sequence
+        return seq
 
     ##
 

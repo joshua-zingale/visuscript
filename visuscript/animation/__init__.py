@@ -1,62 +1,60 @@
-from .animation import (
-    Animation,
-    LazyAnimation,
-    NoAnimation,
-    RunFunction,
-    UpdaterAnimation,
-    AlphaAnimation,
-    PathAnimation,
+"""Contains the :class:`Animation` type, constructors for :class:`Animation` types, and interpolation and easing modules."""
+from .primatives import Animation
+
+from .animation_store import AnimationBundle, AnimationSequence
+
+
+from .property_animations import (
+    animate_translation,
+    animate_scale,
+    animate_rotation,
+    animate_rgb,
+    animate_opacity,
 )
 
-from .property_animation import (
-    NotInterpolableError,
-    PropertyAnimation,
-    TranslationAnimation,
-    ScaleAnimation,
-    RotationAnimation,
-    TransformAnimation,
-    OpacityAnimation,
-    RgbAnimation,
+from .animations import (
+    wait,
+    run,
+    animate_path,
+    animate_updater,
+    quadratic_swap,
+    fade_in,
+    fade_out,
+    flash,
+    animate_transform,
 )
 
-from .animation_store import (
-    AnimationSequence,
-    AnimationBundle,
+from .constructors import (
+    sequence,
+    bundle,
+    construct,
+    laze,
 )
 
-from .utility_animations import fade_in, fade_out, flash, quadratic_swap
-
-from .easing import (
-    linear_easing,
-    quintic_easing,
-    sin_easing,
-    sin_easing2,
-)
+from . import easing, interpolation
 
 __all__ = [
     "Animation",
-    "LazyAnimation",
-    "NoAnimation",
-    "RunFunction",
-    "UpdaterAnimation",
-    "AlphaAnimation",
-    "PathAnimation",
-    "NotInterpolableError",
-    "PropertyAnimation",
-    "TranslationAnimation",
-    "ScaleAnimation",
-    "RotationAnimation",
-    "TransformAnimation",
-    "OpacityAnimation",
-    "RgbAnimation",
     "AnimationSequence",
     "AnimationBundle",
+    "animate_translation",
+    "animate_scale",
+    "animate_rotation",
+    "animate_transform",
+    "animate_rgb",
+    "animate_opacity",
+    "animate_path",
+    "animate_updater",
+    "quadratic_swap",
     "fade_in",
     "fade_out",
     "flash",
-    "linear_easing",
-    "quintic_easing",
-    "sin_easing",
-    "sin_easing2",
-    "quadratic_swap",
+    "wait",
+    "run",
+    "sequence",
+    "bundle",
+    "construct",
+    "laze",
+    "easing",
+    "interpolation"
 ]

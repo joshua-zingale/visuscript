@@ -1,4 +1,5 @@
 from visuscript import *
+from visuscript.animation import flash, Animation
 from visuscript.animated_collection import AnimatedList, Var
 import random
 
@@ -54,16 +55,16 @@ class AnimatedBarList(AnimatedList[Var, Rect]):
     def swap(self, a, b, *args, **kwargs):
         assert isinstance(a, int)
         assert isinstance(b, int)
-        return AnimationBundle(
+        return bundle(
             super().swap(a, b).compress(),
-            RunFunction(self.add_swap),
+            run(self.add_swap),
             flash(self.drawables[a].fill, "green"),
             flash(self.drawables[b].fill, "green") if a != b else None,
         )
 
     def compare(self, a: int, b: int):
-        return AnimationBundle(
-            RunFunction(self.add_compare),
+        return bundle(
+            run(self.add_compare),
             flash(self.drawables[a].fill, "light_gray"),
             flash(self.drawables[b].fill, "light_gray") if a != b else None,
         )
@@ -75,58 +76,58 @@ class AnimatedBarList(AnimatedList[Var, Rect]):
         self.num_swaps += 1
 
 
-def bubble_sort(abl: AnimatedBarList) -> AnimationSequence:
-    sequence = AnimationSequence()
+def bubble_sort(abl: AnimatedBarList) -> Animation:
+    seq = sequence()
     changed = True
     while changed:
         changed = False
         for i in range(1, len(abl)):
-            sequence << abl.compare(i - 1, i)
+            seq << abl.compare(i - 1, i)
             if abl[i - 1] > abl[i]:
-                sequence << abl.swap(i - 1, i)
+                seq << abl.swap(i - 1, i)
                 changed = True
-    return sequence
+    return seq
 
 
-def insertion_sort(abl: AnimatedBarList) -> AnimationSequence:
-    sequence = AnimationSequence()
+def insertion_sort(abl: AnimatedBarList) -> Animation:
+    seq = sequence()
     for i in range(1, len(abl)):
         for j in range(i, 0, -1):
-            sequence << abl.compare(j - 1, j)
+            seq << abl.compare(j - 1, j)
             if abl[j] < abl[j - 1]:
-                sequence << abl.swap(j - 1, j)
+                seq << abl.swap(j - 1, j)
             else:
                 break
-    return sequence
+    return seq
 
 
 def quick_sort(abl: AnimatedBarList, low: int | None = None, high: int | None = None):
-    sequence = AnimationSequence()
+    seq = sequence()
     if low is None:
         low = 0
     if high is None:
         high = len(abl) - 1
     if low < high:
-        pi, seq = partition(abl, low, high)
-        sequence << seq
-        sequence << quick_sort(abl, low, pi - 1)
-        sequence << quick_sort(abl, pi + 1, high)
-        return sequence
+        pi, subseq = partition(abl, low, high)
+        seq << subseq
+        seq << quick_sort(abl, low, pi - 1)
+        seq << quick_sort(abl, pi + 1, high)
+        return seq
 
 
 def partition(abl: AnimatedBarList, low, high):
-    sequence = AnimationSequence()
+    seq = sequence()
 
     i = low - 1
 
     for j in range(low, high):
-        sequence << abl.compare(j, high)
+        seq << abl.compare(j, high)
         if abl[j] < abl[high]:
             i += 1
-            sequence << abl.swap(i, j)
+            seq << abl.swap(i, j)
 
-    sequence << abl.swap(i + 1, high)
-    return i + 1, sequence
+    seq << abl.swap(i + 1, high)
+    return i + 1, seq
 
 
 if __name__ == "__main__":

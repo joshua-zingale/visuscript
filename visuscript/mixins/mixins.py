@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Sequence, Self, Union, Iterable, Callable, Iterator, overload
-
+import typing as t
 
 from visuscript.constants import Anchor
-from visuscript.primatives.primatives import Transform, Vec2
-from visuscript._internal._invalidator import Invalidatable
+from visuscript.primatives import Transform, Vec2, Shape
 from visuscript.config import config
-from .color import Color, OpacityMixin
 from visuscript.lazy_object import Lazible
+from visuscript._internal._invalidator import Invalidatable
+
+from .color import Color, OpacityMixin
 
 
 class TransformMixin:
@@ -37,12 +37,12 @@ class TransformMixin:
     def transform(self, other: Transform.TransformLike):
         self.set_transform(other)
 
-    @overload
-    def translate(self, x: Vec2) -> Self:
+    @t.overload
+    def translate(self, x: Vec2) -> t.Self:
         """Sets the translation on this object's :class:`~visuscript.Transform`."""
 
-    @overload
-    def translate(self, x: float | None = None, y: float | None = None) -> Self:
+    @t.overload
+    def translate(self, x: float | None = None, y: float | None = None) -> t.Self:
         """Sets the translation on this object's :class:`~visuscript.Transform`.
 
         :param x: The new x value for this object's translation. If None, defaults to the current translation's x value.
@@ -50,7 +50,7 @@ class TransformMixin:
         :return: self
         """
 
-    def translate(self, x: Vec2 | float | None = None, y: float | None = None) -> Self:
+    def translate(self, x: Vec2 | float | None = None, y: float | None = None) -> t.Self:
         if isinstance(x, Vec2):
             self.transform.translation = x
             return self
@@ -63,17 +63,17 @@ class TransformMixin:
         self.transform.translation = Vec2(x, y)
         return self
 
-    def scale(self, scale: int | float | Sequence[float]) -> Self:
+    def scale(self, scale: int | float | t.Sequence[float]) -> t.Self:
         """Sets the scale on this object's :class:`~visuscript.Transform`."""
         self.transform.scale = scale
         return self
 
-    def rotate(self, degrees: float) -> Self:
+    def rotate(self, degrees: float) -> t.Self:
         """Sets the rotation on this object's :class:`~visuscript.Transform`."""
         self.transform.rotation = degrees
         return self
 
-    def set_transform(self, transform: Transform.TransformLike) -> Self:
+    def set_transform(self, transform: Transform.TransformLike) -> t.Self:
         """Sets this object's :class:`~visuscript.Transform`."""
         self._transform.update(Transform.construct(transform))
         return self
@@ -95,7 +95,7 @@ class FillMixin:
     def fill(self, other: Color.ColorLike):
         self.set_fill(other)
 
-    def set_fill(self, color: Color.ColorLike) -> Self:
+    def set_fill(self, color: Color.ColorLike) -> t.Self:
         """Sets this object's fill :class:`~visuscript.Color`."""
         color = Color.construct(color)
         self._fill.rgb = color.rgb
@@ -120,7 +120,7 @@ class StrokeMixin:
     def stroke(self, other: Color.ColorLike):
         self.set_stroke(other)
 
-    def set_stroke(self, color: Color.ColorLike) -> Self:
+    def set_stroke(self, color: Color.ColorLike) -> t.Self:
         """Sets this object's stroke :class:`~visuscript.Color`."""
         color = Color.construct(color)
         self._stroke.rgb = color.rgb
@@ -136,7 +136,7 @@ class StrokeMixin:
     def stroke_width(self, other: float):
         self.set_stroke_width(other)
 
-    def set_stroke_width(self, width: float) -> Self:
+    def set_stroke_width(self, width: float) -> t.Self:
         """Sets the width of this object's stroke."""
         self._stroke_width = width
         return self
@@ -213,7 +213,7 @@ class AnchorMixin(ShapeMixin):
         super().__init__()
         self._anchor: Anchor = Anchor.CENTER
 
-    def set_anchor(self, anchor: Anchor, keep_position: bool = False) -> Self:
+    def set_anchor(self, anchor: Anchor, keep_position: bool = False) -> t.Self:
         """Sets thie anchor.
 
         :param anchor: The anchor to set for this object.
@@ -285,7 +285,7 @@ class Drawable(ABC, Lazible):
     def extrusion(self, other: float):
         self._extrusion = other
 
-    def set_extrusion(self, extrusion: float) -> Self:
+    def set_extrusion(self, extrusion: float) -> t.Self:
         """Sets this object's extrusion."""
         self.extrusion = extrusion
         return self
@@ -295,7 +295,7 @@ class HierarchicalDrawable(
     Drawable,
     TransformMixin,
     OpacityMixin,
-    Iterable["HierarchicalDrawable"],
+    t.Iterable["HierarchicalDrawable"],
     Invalidatable,
 ):
     """Designates an object as being drawable and as being hierarchical in that
@@ -329,15 +329,15 @@ class HierarchicalDrawable(
             child._invalidate()
 
     @property
-    def parent(self) -> Union["HierarchicalDrawable", None]:
+    def parent(self) -> t.Union["HierarchicalDrawable", None]:
         """The parent of this object if it exists, else None."""
         return self._parent
 
-    def iter_children(self) -> Iterable["HierarchicalDrawable"]:
+    def iter_children(self) -> t.Iterable["HierarchicalDrawable"]:
         """Returns an iterable over all this object's children."""
         yield from self._children
 
-    def set_global_transform(self, transform: Transform) -> Self:
+    def set_global_transform(self, transform: Transform) -> t.Self:
         """
         The global transform on this object.
 
@@ -358,9 +358,9 @@ class HierarchicalDrawable(
 
     def set_parent(
         self,
-        parent: Union["HierarchicalDrawable", None],
+        parent: t.Union["HierarchicalDrawable", None],
         preserve_global_transform: bool = False,
-    ) -> Self:
+    ) -> t.Self:
         """
         Sets this object's parent, replacing any that may have already existed.
         Also adds this object as a child of the new parent and removes it as a child of any previous parent.
@@ -398,12 +398,12 @@ class HierarchicalDrawable(
     def add_child(
         self,
         child_or_initializer: "HierarchicalDrawable"
-        | Callable[
-            [Self],
-            "HierarchicalDrawable" | Iterable["HierarchicalDrawable"],
+        | t.Callable[
+            [t.Self],
+            "HierarchicalDrawable" | t.Iterable["HierarchicalDrawable"],
         ],
         preserve_global_transform: bool = False,
-    ) -> Self:
+    ) -> t.Self:
         """Sets a child's parent to this object.
 
         :param child_or_initializer: The child to be added. This may be a :class:`HierarchicalDrawable` or a function.
@@ -417,7 +417,7 @@ class HierarchicalDrawable(
             :meth:`HierarchicalDrawable.set_parent`
         """
 
-        if isinstance(child_or_initializer, Callable):
+        if isinstance(child_or_initializer, t.Callable):
             child = child_or_initializer(self)
             if isinstance(child, HierarchicalDrawable):
                 child.set_parent(
@@ -436,7 +436,7 @@ class HierarchicalDrawable(
 
     def remove_child(
         self, child: "HierarchicalDrawable", preserve_global_transform: bool = True
-    ) -> Self:
+    ) -> t.Self:
         """
         Removes a child from among this objects children by settings its parent to None.
 
@@ -458,12 +458,12 @@ class HierarchicalDrawable(
     def add_children(
         self,
         *children: "HierarchicalDrawable"
-        | Callable[
+        | t.Callable[
             ["HierarchicalDrawable"],
-            "HierarchicalDrawable" | Iterable["HierarchicalDrawable"],
+            "HierarchicalDrawable" | t.Iterable["HierarchicalDrawable"],
         ],
         preserve_global_transform: bool = False,
-    ) -> Self:
+    ) -> t.Self:
         """
         Adds each positional argument as a child to this object.
         This is a convenience method for adding multiple children to the object.
@@ -510,7 +510,7 @@ class HierarchicalDrawable(
 
         return transform.copy()
 
-    def __iter__(self) -> Iterator["HierarchicalDrawable"]:
+    def __iter__(self) -> t.Iterator["HierarchicalDrawable"]:
         """
         Iterate over this object and its children in ascending order of extrusion, secondarily ordering parents before children.
         """
@@ -557,57 +557,7 @@ class Element(
     pass
 
 
-class Shape:
-    """Holds geometric properties for an object."""
 
-    def __init__(self, obj: ShapeMixin, transform: Transform = Transform()):
-        """
-        :param obj: The object for which to initialize a :class:`Shape`.
-        :param transform: Applies this :class:`~visuscript.Transform` to the :class:`Shape` of obj.
-        """
-
-        top_left = obj.calculate_top_left() + (
-            obj.anchor_offset if isinstance(obj, AnchorMixin) else 0
-        )
-        width = obj.calculate_width()
-        height = obj.calculate_height()
-        circumscribed_radius = obj.calculate_circumscribed_radius()
-
-        self.width: float = width * transform.scale.x
-        """The width of the object's rectangular circumscription."""
-
-        self.height: float = height * transform.scale.y
-        """The height of the object's rectangular circumscription."""
-
-        self.circumscribed_radius: float = circumscribed_radius * transform.scale.max()
-        """The radius of the smallest circle that circumscribes the obj."""
-
-        self.top_left: Vec2 = transform @ (top_left)
-        """The top-left coordinate of the object's rectangular circumscription."""
-
-        self.top: Vec2 = transform @ (top_left + [width / 2, 0])
-        """The top-middle coordinate of the object's rectangular circumscription."""
-
-        self.top_right: Vec2 = transform @ (top_left + [width, 0])
-        """The top-right coordinate of the object's rectangular circumscription."""
-
-        self.left: Vec2 = transform @ (top_left + [0, height / 2])
-        """The left-middle coordinate of the object's rectangular circumscription."""
-
-        self.bottom_left: Vec2 = transform @ (top_left + [0, height])
-        """The bottom-left coordinate of the object's rectangular circumscription."""
-
-        self.bottom: Vec2 = transform @ (top_left + [width / 2, height])
-        """The bottom-middle coordinate of the object's rectangular circumscription."""
-
-        self.bottom_right: Vec2 = transform @ (top_left + [width, height])
-        """The bottom-right coordinate of the object's rectangular circumscription."""
-
-        self.right: Vec2 = transform @ (top_left + [width, height / 2])
-        """The right-middle coordinate of the object's rectangular circumscription."""
-
-        self.center: Vec2 = transform @ (top_left + [width / 2, height / 2])
-        """The center coordinate of the object's rectangular circumscription."""
 
 
 def invalidate_property(obj: object, prop: str):

@@ -59,10 +59,10 @@ scene.add_drawable(text_to_flash)
 
 def flash_text(text: str, animation: Animation):
     text_to_flash.set_text(text)
-    return AnimationSequence(
-        OpacityAnimation(text_to_flash, 1.0),
+    return sequence(
+        animate_opacity(text_to_flash, 1.0),
         animation,
-        OpacityAnimation(text_to_flash, 0.0),
+        animate_opacity(text_to_flash, 0.0),
     )
 
 
@@ -77,10 +77,10 @@ def push(value: str):
 
     return flash_text(
         f"Push({value})",
-        AnimationSequence(
-            TranslationAnimation(tos_ptr.transform, cells[tos].tshape.left),
-            AnimationBundle(
-                OpacityAnimation(old_text, 0.0), OpacityAnimation(text, 1.0)
+        sequence(
+            animate_translation(tos_ptr.transform, cells[tos].tshape.left),
+            bundle(
+                animate_opacity(old_text, 0.0), animate_opacity(text, 1.0)
             ),
         ),
     )
@@ -93,9 +93,9 @@ def pop():
 
     return flash_text(
         "Pop()",
-        AnimationBundle(
-            TranslationAnimation(tos_ptr.transform, cells[tos].tshape.left),
-            OpacityAnimation(text, 0.5),
+        bundle(
+            animate_translation(tos_ptr.transform, cells[tos].tshape.left),
+            animate_opacity(text, 0.5),
         ),
     )
 

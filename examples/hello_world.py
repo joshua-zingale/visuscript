@@ -3,13 +3,11 @@ from visuscript import *
 with Scene() as s:
     text = Text("Hello, World!")
     s << text
-    s.animations << AnimationSequence(
-        RgbAnimation(text.fill, "red"),
-        RgbAnimation(text.fill, "white"),
-        RgbAnimation(text.fill, "blue"),
+    s.animations << sequence(
+        animate_rgb(text.fill, "red", "white", "blue", duration=3, easing_function=easing.linear_easing),
     )
 
-    s.animations << TransformAnimation(
+    s.animations << animate_transform(
         text.transform,
         Transform(
             translation=[100, -30],

@@ -1,7 +1,6 @@
 """An example that demonstrates Updaters."""
 
 from visuscript import *
-from visuscript.animation import linear_easing
 
 with Scene() as s:
     circle = (
@@ -36,8 +35,8 @@ with Scene() as s:
     s.updaters << TranslationUpdater(s.transform, circle.transform, acceleration=500)
     s.updaters << TranslationUpdater(crosshair.transform, s.transform)
 
-    s.animations << AnimationSequence(
-        PathAnimation(
+    s.animations << sequence(
+        animate_path(
             circle.transform,
             Path()
             .M(*circle.ushape.center)
@@ -52,7 +51,7 @@ with Scene() as s:
                 *s.ushape.center,
             ),
             duration=7,
-            easing_function=linear_easing,
+            easing_function=easing.linear_easing,
         ),
-        NoAnimation(),
+        wait(),
     )

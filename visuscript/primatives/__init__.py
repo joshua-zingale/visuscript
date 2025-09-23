@@ -1,40 +1,13 @@
-"""Contains fundamental data types mixins."""
+"""Contains fundamental data type and mixins of Visuscript."""
 
-from .primatives import Vec2, Transform, Rgb
-from .mixins import (
-    RgbMixin,
-    OpacityMixin,
-    Color,
-    Drawable,
-    TransformMixin,
-    FillMixin,
-    StrokeMixin,
-    ShapeMixin,
-    TransformableShapeMixin,
-    AnchorMixin,
-    HierarchicalDrawable,
-    GlobalShapeMixin,
-    Element,
-    Shape,
-)
+from .primatives import Vec2, Transform, Rgb, InterpolableFloat
+from .shape import Shape
 
 
 __all__ = [
-    "RgbMixin",
-    "OpacityMixin",
-    "Color",
-    "Drawable",
-    "TransformMixin",
-    "FillMixin",
-    "StrokeMixin",
-    "ShapeMixin",
-    "TransformableShapeMixin",
-    "AnchorMixin",
-    "HierarchicalDrawable",
-    "GlobalShapeMixin",
-    "Element",
-    "Shape",
     "Vec2",
     "Rgb",
     "Transform",
+    "InterpolableFloat",
+    "Shape",
 ]

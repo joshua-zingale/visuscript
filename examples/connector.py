@@ -7,4 +7,4 @@ c2 = Circle(10).translate(100, 50)
 l = Arrow(source=c1, destination=c2, source_target=LineTarget.CENTER)
 s << (c1, c2, l)
 
-s.player << PathAnimation(c2.transform, Path().M(*c2.gshape.center).Q(0, -100, -100, 0))
+s.player << animate_path(c2.transform, Path().M(*c2.gshape.center).Q(0, -100, -100, 0), duration=3)

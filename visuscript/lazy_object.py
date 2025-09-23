@@ -1,4 +1,4 @@
-from typing import cast, Any, Tuple, Self
+from typing import cast, Any, Tuple, Self, TypeVar
 from functools import cached_property
 
 
@@ -94,17 +94,43 @@ def evaluate_lazy(args: list[Any], kwargs: dict[str, Any]):
     new_args: list[Any] = []
     for arg in args:
         if isinstance(arg, LazyObject):
-            new_args.append(arg.evaluate_lazy_object())
+            new_args.append(evaluate_lazy_object_or_tuple(arg))
         else:
             new_args.append(arg)
     new_kwargs: dict[str, Any] = dict()
     for key, value in kwargs.items():
         if isinstance(value, LazyObject):
-            new_kwargs[key] = value.evaluate_lazy_object()
+            new_kwargs[key] = evaluate_lazy_object_or_tuple(value)
         else:
             new_kwargs[key] = value
 
     return new_args, new_kwargs
+
+def evaluate_lazy_object_or_tuple(obj: LazyObject | tuple[Any, ...] | Any) -> tuple[Any, ...] | Any:
+    """Evaluates a lazy object and returns the result.
+    If the object is a tuple, constructs a new tuple by evaluating all
+    lazy objects in the tuple and leaving all other objects the same.
+    
+    Leaves all other objects the same.
+    """
+    if isinstance(obj, LazyObject):
+        return obj.evaluate_lazy_object()
+    elif isinstance(obj, tuple):
+        return tuple(map(evaluate_lazy_object_or_tuple, obj)) # type: ignore
+    else:
+        return obj
+
+
+
+_T = TypeVar("_T")
+def make_lazy(obj: _T) -> _T:
+    """Returns a :class:`LazyObject` for an object
+    
+    To help with type-related hints in code editors,
+    this function "lies" by claiming to return the type
+    of the argument.
+    """
+    return cast(_T, LazyObject(obj))
 
 
 class Lazible:

@@ -21,12 +21,11 @@ If the utility is not added to your PATH, the following works as well:
 """
 
 from .drawable import Circle, Rect, Image, Pivot, Drawing, connector
-from .primatives import Transform, Vec2, Rgb, Color
+from .primatives import Transform, Vec2, Rgb
 from .drawable.scene import Scene
 from .organizer import GridOrganizer
 from .drawable.text import Text
 from .segment import Path
-from .primatives import mixins
 from .constants import (
     Anchor,
     OutputFormat,
@@ -37,25 +36,25 @@ from .constants import (
 )
 from .updater import UpdaterBundle, TranslationUpdater, FunctionUpdater, run_updater
 from .animation import (
-    AnimationBundle,
-    AnimationSequence,
-    TransformAnimation,
-    TranslationAnimation,
-    ScaleAnimation,
-    RotationAnimation,
-    PathAnimation,
-    OpacityAnimation,
-    NoAnimation,
-    RunFunction,
-    RgbAnimation,
-    UpdaterAnimation,
-    fade_in,
-    fade_out,
-    flash,
+    animate_translation,
+    animate_scale,
+    animate_rotation,
+    animate_transform,
+    animate_rgb,
+    animate_opacity,
+    animate_path,
+    sequence,
+    bundle,
+    run,
+    wait,
 )
 
+from .mixins import Color
+
+from . import animation, config, drawable, mixins, organizer
+from .animation import easing
+
 __all__ = [
-    "mixins",
     "Scene",
     "Circle",
     "Rect",
@@ -69,21 +68,6 @@ __all__ = [
     "Color",
     "Path",
     "GridOrganizer",
-    "AnimationBundle",
-    "AnimationSequence",
-    "TransformAnimation",
-    "TranslationAnimation",
-    "ScaleAnimation",
-    "RotationAnimation",
-    "PathAnimation",
-    "OpacityAnimation",
-    "NoAnimation",
-    "RunFunction",
-    "RgbAnimation",
-    "UpdaterAnimation",
-    "fade_in",
-    "fade_out",
-    "flash",
     "UpdaterBundle",
     "TranslationUpdater",
     "FunctionUpdater",
@@ -94,5 +78,22 @@ __all__ = [
     "RIGHT",
     "DOWN",
     "LEFT",
+    "animate_translation",
+    "animate_scale",
+    "animate_rotation",
+    "animate_transform",
+    "animate_rgb",
+    "animate_opacity",
+    "animate_path",
+    "sequence",
+    "bundle",
+    "run",
+    "wait",
+    "animation",
+    "drawable",
+    "config",
     "connector",
+    "easing",
+    "mixins",
+    "organizer",
 ]

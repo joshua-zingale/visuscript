@@ -1,5 +1,12 @@
+"""Contains easing functions for interpolation."""
 from math import cos, pi as PI
 
+__all__ = [
+    "linear_easing",
+    "quintic_easing",
+    "sin_easing",
+    "sin_easing2",
+]
 
 def linear_easing(x: float) -> float:
     return x

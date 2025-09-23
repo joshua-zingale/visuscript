@@ -21,12 +21,12 @@ slide = slideshow.create_slide()
 
 c = Circle(10)
 slide << c
-slide.animations << TranslationAnimation(c.transform, [100, 100], duration=2)
+slide.animations << animate_translation(c.transform, [100, 100], duration=2)
 
 
 slide = slideshow.create_slide()
 slide << c
-slide.animations << TranslationAnimation(c.transform, [-100, -100])
+slide.animations << animate_translation(c.transform, [-100, -100])
 
 
 slide = slideshow.create_slide("other")
@@ -35,7 +35,7 @@ slide << Text("Some Text for slide 3")
 slide = slideshow.create_slide("other")
 text = Text("Some Text for slide 4")
 slide << text
-slide.animations << RotationAnimation(text.transform, 360)
+slide.animations << animate_rotation(text.transform, 360)
 
 
 slideshow.export_slideshow()

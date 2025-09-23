@@ -1,12 +1,12 @@
 from visuscript.primatives import Vec2
-from visuscript.primatives.mixins import (
+from visuscript.mixins import (
     HierarchicalDrawable,
     GlobalShapeMixin,
 )
 
 
 class Pivot(GlobalShapeMixin, HierarchicalDrawable):
-    """A Pivot is :class:`~visuscript.primatives.mixins.HierarchicalDrawable` with no display for itself.
+    """A Pivot is a :class:`~visuscript.mixins.HierarchicalDrawable` with no display for itself.
 
     A Pivot can be used to construct more complex visual object by adding children."""
 

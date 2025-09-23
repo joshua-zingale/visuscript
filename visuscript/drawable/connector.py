@@ -1,24 +1,25 @@
-from visuscript.primatives.mixins import (
+from visuscript.mixins import (
     Drawable,
     ShapeMixin,
     FillMixin,
     StrokeMixin,
     OpacityMixin,
+    Color,
 )
 from visuscript.primatives.protocols import HasShape
 from visuscript.segment import Path
 from visuscript.drawable import Drawing, Pivot
-from visuscript.primatives import Vec2, Color
+from visuscript.primatives import Vec2
 from visuscript.constants import LineTarget
 from visuscript.config import ConfigurationDeference, DEFER_TO_CONFIG, config
 from visuscript.math_utility import magnitude
 from visuscript.animation import (
     fade_in,
     fade_out,
-    AnimationSequence,
-    RunFunction,
+    sequence,
+    bundle,
+    run,
     Animation,
-    AnimationBundle,
 )
 
 from abc import abstractmethod
@@ -265,16 +266,16 @@ class Edges(Drawable):
         :param elements: The group of objects from which pairs will be taken.
         :return: An Animation fading in/out all of the edges
         """
-        bundle = AnimationBundle()
+        a_bundle = bundle()
 
         for e1, e2 in itertools.combinations(elements, 2):
             should_be_connected = rule(e1, e2)
             if should_be_connected and not self.connected(e1, e2):
-                bundle.push(self.connect(e1, e2, duration=duration))
+                a_bundle.push(self.connect(e1, e2, duration=duration))
             elif self.connected(e1, e2) and not should_be_connected:
-                bundle.push(self.disconnect(e1, e2, duration=duration))
+                a_bundle.push(self.disconnect(e1, e2, duration=duration))
 
-        return bundle
+        return a_bundle
 
     def get_edge(self, element1: HasShape, element2: HasShape) -> Connector:
         """Gets the :class:`Connector` connecting two objects."""
@@ -332,9 +333,9 @@ class Edges(Drawable):
 
         self._fading_away.add(edge)
 
-        return AnimationSequence(
+        return sequence(
             fade_out(edge, duration=duration),
-            RunFunction(lambda: self._fading_away.remove(edge)),
+            run(self._fading_away.remove, edge),
         )
 
     def draw(self):

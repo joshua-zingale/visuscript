@@ -1,12 +1,14 @@
-from typing import Protocol, runtime_checkable
-from .mixins import Shape
-from visuscript.primatives import Transform, Rgb
-from visuscript.primatives import Color
-from typing import Self
+"""Contains Protocols used throughout Visuscript's interfaces."""
 
 
-@runtime_checkable
-class CanBeDrawn(Protocol):
+import typing as t
+
+from .primatives import Transform, Rgb, InterpolableFloat
+from .shape import Shape
+
+
+@t.runtime_checkable
+class CanBeDrawn(t.Protocol):
     @property
     def extrusion(self) -> float: ...
 
@@ -16,21 +18,20 @@ class CanBeDrawn(Protocol):
     def draw(self) -> str: ...
 
 
-class CanBeLazed(Protocol):
+class CanBeLazed(t.Protocol):
     @property
-    def lazy(self) -> Self: ...
+    def lazy(self) -> t.Self:
+        """This should actually return a Lazy version of the class.
+        The "Self" type hint is to make the type checker happy."""
+        ...
 
-    """This should actually return a Lazy version of the class.
-    
-    The "Self" type hint is to make the type checker happy."""
 
-
-class HasShape(Protocol):
+class HasShape(t.Protocol):
     @property
     def shape(self) -> Shape: ...
 
 
-class HasTransform(Protocol):
+class HasTransform(t.Protocol):
     @property
     def transform(self) -> Transform: ...
 
@@ -38,25 +39,17 @@ class HasTransform(Protocol):
     def transform(self, other: Transform) -> None: ...
 
 
-class HasOpacity(Protocol):
+class HasOpacity(t.Protocol):
     @property
-    def opacity(self) -> float: ...
+    def opacity(self) -> InterpolableFloat: ...
 
     @opacity.setter
     def opacity(self, other: float): ...
 
 
-class HasRgb(Protocol):
+class HasRgb(t.Protocol):
     @property
     def rgb(self) -> Rgb: ...
 
     @rgb.setter
     def rgb(self, other: Rgb): ...
-
-
-class HasFill(Protocol):
-    @property
-    def fill(self) -> Color: ...
-
-    @fill.setter
-    def fill(self, other: Color): ...
