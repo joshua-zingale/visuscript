@@ -1,5 +1,5 @@
 from .base_class import VisuscriptTestCase
-from visuscript.primatives.mixins import Element
+from visuscript.mixins import Element
 from visuscript.primatives import Vec2
 
 

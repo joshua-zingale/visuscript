@@ -284,6 +284,9 @@ class RgbInterpolator:
     def __rtruediv__(self, other: float) -> "RgbInterpolator":
         return RgbInterpolator(tuple(map(truediv, 3*(other,), self)))
     
+    def __repr__(self):
+        return f"RGBInterpolator{self._rgb}"
+    
     def __iter__(self):
         for c in self._rgb:
             yield c
