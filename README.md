@@ -3,12 +3,12 @@
 Visuscript is a two-dimensional vector-graphics-based animation library for Python, inspired by [manim](https://www.manim.community).
 Visuscript is designed to facilitate the creation of didactic animations for computer-science principles.
 
-## ⚠️ STABILITY WARNING ⚠️
 
-This library is currently **in development** and is subject to breaking changes.
-APIs, features, and internal structures may change without prior notice.
-It is not yet recommended for production use.
-Please use with caution and expect updates that may require adjustments to your code.
+> [!WARNING]
+> This library is currently **in alpha** and is subject to breaking changes.
+> APIs, features, and internal structures may change without prior notice.
+> It is not yet recommended for production use.
+> Please use with caution and expect updates that may require adjustments to your code.
 
 
 ## Features
