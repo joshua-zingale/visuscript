@@ -1,8 +1,10 @@
-from . import MockAnimationState, MockObject, WFloat, WMockObject
+from . import MockAnimationState, MockObject, WFloat, WMockObject, run_for
+from tests.primatives import rgb_diff
 
 import pytest
 
-from visuscript.animation.constructors import construct, laze, keyframe_construct
+from visuscript import Color, Circle, Rgb
+from visuscript.animation.constructors import construct, laze, keyframe_construct, sequence
 from visuscript.lazy_object import Lazible
 from visuscript.property_locker import PropertyLocker
 from visuscript.animation.protocols import Keyframe
@@ -115,6 +117,47 @@ def test_keyframe_construct_with_locker():
     assert not animation.locker.locks(obj, "y")
 
     
+
+def test_sequence():
+    from visuscript.animation import fade_in, fade_out, flash
+
+    circle = Circle(5).set_stroke(Color(Rgb(50, 50, 50))).set_opacity(0.25)
+
+    seq = sequence(
+        fade_in(circle, duration=2),
+        flash(circle.stroke, Rgb(100, 100, 100), duration=4),
+        fade_out(circle, duration=2),
+    )
+
+    circle.set_stroke(Color(Rgb(0, 0, 0))).set_opacity(0)
+
+    # Fade in
+    assert circle.opacity == 0
+    run_for(seq, 1)
+    assert circle.opacity == pytest.approx(0.5)
+    run_for(seq, 1)
+    assert circle.opacity == 1
+
+    # Flash
+    assert circle.stroke.rgb == Rgb(0, 0, 0)
+    run_for(seq, 1)
+    # assert rgb_diff(circle.stroke.rgb, Rgb(50, 50, 50)) < 4
+    run_for(seq, 1)
+    assert rgb_diff(circle.stroke.rgb, Rgb(100, 100, 100)) < 4
+    run_for(seq, 1)
+    # assert rgb_diff(circle.stroke.rgb, Rgb(50, 50, 50)) < 4
+    run_for(seq, 1)
+    assert circle.stroke.rgb == Rgb(0, 0, 0)
+
+    # Fade out
+    run_for(seq, 1)
+
+    assert circle.opacity == pytest.approx(0.5)
+
+    run_for(seq, 1)
+    assert circle.opacity == 0
+
+
 
 
 

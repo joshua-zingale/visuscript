@@ -2,7 +2,7 @@ from .base_class import VisuscriptTestCase
 from visuscript.animated_collection import AnimatedArray, Var
 from visuscript import (
     Rect,
-    AnimationSequence,
+    sequence,
     Text,
 )
 
@@ -68,7 +68,7 @@ class TestAnimatedList(VisuscriptTestCase):
         loc2 = array.drawables[1].transform.translation
         loc3 = array.drawables[-1].transform.translation
 
-        animation = AnimationSequence(
+        animation = sequence(
             array.qswap(0, -1, duration=1),
             array.qswap(0, 1, duration=2),
         )
@@ -128,13 +128,13 @@ class TestAnimatedArray(VisuscriptTestCase):
         data = list(map(Var, [0, 1, 2, 3, 4, 5]))
         array = AnimatedArray(data, len(data))
 
-        sequence = AnimationSequence()
+        seq = sequence()
         for i, j in zip(
             range(0, len(array) // 2), range(len(array) - 1, len(array) // 2 - 1, -1)
         ):
-            sequence << array.qswap(i, j)
+            seq << array.qswap(i, j)
 
-        sequence.finish()
+        seq.finish()
 
         for val, array_val in zip(reversed(data), array):
             self.assertEqual(val, array_val)

@@ -9,7 +9,7 @@ from visuscript.lazy_object import make_lazy
 from visuscript.property_locker import PropertyLocker
 from visuscript.updater import Updater
 
-from .constructors import sequence, bundle, laze, construct, duration_to_frame_count
+from .constructors import bundle, laze, construct, duration_to_frame_count
 from .primatives import Animation
 from .property_animations import (
     animate_opacity,
@@ -19,7 +19,7 @@ from .property_animations import (
     animate_rotation,
     _InterpolationKwargs, # type: ignore[reportPrivateUsage]
     )
-from .easing import sin_easing2
+from .easing import sin_easing2, linear_easing
 
 def fade_in(
     obj: HasOpacity, duration: float | ConfigurationDeference = DEFER_TO_CONFIG
@@ -43,10 +43,7 @@ def flash(
     """Returns an Animation to flash a Color's rgb to another and then back to its original rgb.."""
     if isinstance(duration, ConfigurationDeference):
         duration = config.animation_duration
-    return sequence(
-        animate_rgb(color, rgb, duration=duration/3),
-        animate_rgb(color, color.rgb, initial=make_lazy(color).rgb, duration=duration/3)
-        )
+    return animate_rgb(color, rgb, make_lazy(color).rgb, duration=duration, easing_function=linear_easing)
 
 
 def wait(duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> Animation:
@@ -60,9 +57,8 @@ def wait(duration: float | ConfigurationDeference = DEFER_TO_CONFIG) -> Animatio
 _P = t.ParamSpec("_P")
 
 def run(function: t.Callable[_P, t.Any], *args: _P.args, **kwargs: _P.kwargs) -> Animation:
-    def wrapper(been_run: bool):
-        if not been_run:
-            function(*args, **kwargs)
+    def wrapper(_: bool):
+        function(*args, **kwargs)
         return None
     return construct(wrapper, False)
 

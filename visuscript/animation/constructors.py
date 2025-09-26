@@ -23,6 +23,9 @@ def construct(advancer: t.Callable[[_T], _T | None], initial_state: _T, locker: 
         The function has one parameter, which should store the state of the :class:`~visuscript.Animation`;
         then the function must then return a modified state object,
         which will be the input to the `advancer` for the next frame.
+        To indicate that no frame should be generate from an execution of the advancer,
+        it must return None, after which the advancer will not be executed for animation's
+        sake.
     :param initial_state: The argument passed into the `advancer` before the first frame of
         the :class:`~visuscript.Animation` is generated.
     :param locker: The property locker that indicates all objects (and the properties thereof)
@@ -86,12 +89,15 @@ class _ConstructedAnimation(Animation, t.Generic[_T]):
         if locker:
             self.locker.update(locker)
         self._advancer = advancer
+        self._try_advance = True
 
     def advance(self) -> bool:
-        maybe_next_state = self._advancer(self._state)
-        if maybe_next_state:
-            self._state = maybe_next_state
-            return True
+        if self._try_advance:
+            maybe_next_state = self._advancer(self._state)
+            if maybe_next_state:
+                self._state = maybe_next_state
+                return True
+            self._try_advance = False
         return False
     
 class _LazyAnimation(Animation, t.Generic[_P]):
